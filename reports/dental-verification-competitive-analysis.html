@@ -1,0 +1,769 @@
+<title>Dental Insurance Verification — Competitive Strategy</title>
+<style>
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #F5F3EF; --bg-card: #FFFFFF; --bg-card-alt: #FAFAF7;
+      --bg-hero: #0C1B2E; --hero-ink: #E8E4DC; --hero-ink-2: #9EAAB8;
+      --ink: #0C1B2E; --ink-2: #3D4E5F; --ink-3: #6E7B88;
+      --border: #D8D3CA; --border-light: #E8E4DC;
+      --accent: #1B7A5A; --accent-bg: #EDF7F3; --accent-border: #B8DDD0;
+      --warm: #C0713A; --warm-bg: #FDF5EE; --warm-border: #E8CDB5;
+      --steel: #4A6FA5; --steel-bg: #EEF3FA; --steel-border: #B8CAE0;
+      --danger: #B8443C; --danger-bg: #FDF0EF; --danger-border: #E8C4C1;
+      --purple: #6B5BA8; --purple-bg: #F3F0FA;
+      --tag-bg: #E8E4DC; --tag-text: #5A5247;
+      --shadow: 0 1px 3px rgba(12,27,46,0.06);
+      --shadow-lg: 0 8px 32px rgba(12,27,46,0.08);
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0C1B2E; --bg-card: #122240; --bg-card-alt: #162848;
+      --bg-hero: #060E1A; --hero-ink: #D4CFC5; --hero-ink-2: #6E7B88;
+      --ink: #D4CFC5; --ink-2: #9EAAB8; --ink-3: #5A6878;
+      --border: #1A3050; --border-light: #162848;
+      --accent: #3DB88A; --accent-bg: #0E1E1A; --accent-border: #1A3830;
+      --warm: #D8904E; --warm-bg: #1E1610; --warm-border: #3A2818;
+      --steel: #6E9AD4; --steel-bg: #101828; --steel-border: #1A2840;
+      --danger: #D46860; --danger-bg: #1E1214; --danger-border: #3A1C1C;
+      --purple: #9088CC; --purple-bg: #18142E;
+      --tag-bg: #1A3050; --tag-text: #9EAAB8;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #F5F3EF; --bg-card: #FFFFFF; --bg-card-alt: #FAFAF7;
+    --bg-hero: #0C1B2E; --hero-ink: #E8E4DC; --hero-ink-2: #9EAAB8;
+    --ink: #0C1B2E; --ink-2: #3D4E5F; --ink-3: #6E7B88;
+    --border: #D8D3CA; --border-light: #E8E4DC;
+    --accent: #1B7A5A; --accent-bg: #EDF7F3; --accent-border: #B8DDD0;
+    --warm: #C0713A; --warm-bg: #FDF5EE; --warm-border: #E8CDB5;
+    --steel: #4A6FA5; --steel-bg: #EEF3FA; --steel-border: #B8CAE0;
+    --danger: #B8443C; --danger-bg: #FDF0EF; --danger-border: #E8C4C1;
+    --purple: #6B5BA8; --purple-bg: #F3F0FA;
+    --tag-bg: #E8E4DC; --tag-text: #5A5247;
+    --shadow: 0 1px 3px rgba(12,27,46,0.06);
+    --shadow-lg: 0 8px 32px rgba(12,27,46,0.08);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0C1B2E; --bg-card: #122240; --bg-card-alt: #162848;
+    --bg-hero: #060E1A; --hero-ink: #D4CFC5; --hero-ink-2: #6E7B88;
+    --ink: #D4CFC5; --ink-2: #9EAAB8; --ink-3: #5A6878;
+    --border: #1A3050; --border-light: #162848;
+    --accent: #3DB88A; --accent-bg: #0E1E1A; --accent-border: #1A3830;
+    --warm: #D8904E; --warm-bg: #1E1610; --warm-border: #3A2818;
+    --steel: #6E9AD4; --steel-bg: #101828; --steel-border: #1A2840;
+    --danger: #D46860; --danger-bg: #1E1214; --danger-border: #3A1C1C;
+    --purple: #9088CC; --purple-bg: #18142E;
+    --tag-bg: #1A3050; --tag-text: #9EAAB8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--ink);
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    background: var(--bg-hero); color: var(--hero-ink);
+    padding: 64px 24px 56px; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: -120px; right: -80px;
+    width: 400px; height: 400px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(27,122,90,0.12) 0%, transparent 70%);
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero-tag {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent);
+    border: 1px solid rgba(27,122,90,0.3); border-radius: 3px;
+    padding: 4px 10px; margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: clamp(28px, 4vw, 40px); font-weight: 700;
+    line-height: 1.2; margin-bottom: 16px; text-wrap: balance;
+    letter-spacing: -0.5px;
+  }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero-sub {
+    font-size: 17px; color: var(--hero-ink-2);
+    max-width: 600px; line-height: 1.6;
+  }
+
+  /* Sections */
+  .section { padding: 48px 0; }
+  .section + .section { border-top: 1px solid var(--border-light); }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 8px;
+  }
+  .section-title {
+    font-size: 24px; font-weight: 700; line-height: 1.3;
+    margin-bottom: 8px; letter-spacing: -0.3px;
+  }
+  .section-desc {
+    font-size: 15px; color: var(--ink-2); max-width: 640px;
+    margin-bottom: 32px; line-height: 1.6;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 28px; margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 17px; font-weight: 700; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-title .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .card p, .card li {
+    font-size: 14px; color: var(--ink-2); line-height: 1.65;
+  }
+  .card ul { padding-left: 18px; }
+  .card li { margin-bottom: 6px; }
+  .card li strong { color: var(--ink); }
+
+  /* Competitor grid */
+  .comp-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px; margin-bottom: 32px;
+  }
+  .comp-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 24px; box-shadow: var(--shadow);
+    position: relative;
+  }
+  .comp-card.ours {
+    border-color: var(--accent); border-width: 2px;
+    background: var(--accent-bg);
+  }
+  .comp-name {
+    font-size: 16px; font-weight: 700; margin-bottom: 4px;
+  }
+  .comp-type {
+    font-size: 12px; font-weight: 600; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px;
+  }
+  .comp-price {
+    font-size: 22px; font-weight: 700; color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .comp-card.ours .comp-price { color: var(--accent); }
+  .comp-feat { font-size: 13px; color: var(--ink-2); line-height: 1.6; }
+  .comp-feat li { margin-bottom: 4px; }
+  .comp-feat li::marker { color: var(--accent); }
+  .comp-badge {
+    position: absolute; top: 12px; right: 12px;
+    background: var(--accent); color: #fff; font-size: 10px;
+    font-weight: 700; padding: 3px 8px; border-radius: 3px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  /* Data grid */
+  .data-row {
+    display: grid; grid-template-columns: 160px 1fr;
+    border-bottom: 1px solid var(--border-light);
+    padding: 10px 0; font-size: 14px; gap: 12px;
+  }
+  .data-row:last-child { border-bottom: none; }
+  .data-label { font-weight: 600; color: var(--ink-3); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .data-value { color: var(--ink); }
+
+  /* Strategy boxes */
+  .strat-box {
+    border-radius: 8px; padding: 24px; margin-bottom: 16px;
+    border-left: 4px solid;
+  }
+  .strat-box.green { background: var(--accent-bg); border-color: var(--accent); }
+  .strat-box.warm { background: var(--warm-bg); border-color: var(--warm); }
+  .strat-box.steel { background: var(--steel-bg); border-color: var(--steel); }
+  .strat-box.danger { background: var(--danger-bg); border-color: var(--danger); }
+  .strat-box.purple { background: var(--purple-bg); border-color: var(--purple); }
+  .strat-box h3 {
+    font-size: 15px; font-weight: 700; margin-bottom: 8px;
+  }
+  .strat-box.green h3 { color: var(--accent); }
+  .strat-box.warm h3 { color: var(--warm); }
+  .strat-box.steel h3 { color: var(--steel); }
+  .strat-box.danger h3 { color: var(--danger); }
+  .strat-box.purple h3 { color: var(--purple); }
+  .strat-box p, .strat-box li {
+    font-size: 14px; color: var(--ink-2); line-height: 1.65;
+  }
+  .strat-box ul { padding-left: 18px; margin-top: 8px; }
+  .strat-box li { margin-bottom: 5px; }
+  .strat-box li strong { color: var(--ink); }
+
+  /* Comparison table */
+  .table-wrap { overflow-x: auto; margin: 24px 0; border-radius: 8px; border: 1px solid var(--border); }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    background: var(--bg-card-alt); font-weight: 700; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-3);
+    padding: 12px 16px; text-align: left; border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 16px; border-bottom: 1px solid var(--border-light);
+    color: var(--ink-2); vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td strong { color: var(--ink); }
+  .highlight-row td { background: var(--accent-bg); }
+  .highlight-row td:first-child { font-weight: 700; color: var(--accent); }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 32px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 11px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--border);
+  }
+  .tl-item { position: relative; margin-bottom: 28px; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -25px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--accent); background: var(--bg);
+  }
+  .tl-item.done::before { background: var(--accent); }
+  .tl-week {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;
+  }
+  .tl-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .tl-desc { font-size: 13px; color: var(--ink-2); line-height: 1.6; }
+
+  /* Verdict */
+  .verdict {
+    background: var(--bg-hero); color: var(--hero-ink);
+    padding: 48px 24px; margin-top: 48px;
+    border-top: 3px solid var(--accent);
+  }
+  .verdict h2 { font-size: 24px; font-weight: 700; margin-bottom: 24px; }
+  .verdict-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+  }
+  .verdict-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 20px;
+  }
+  .verdict-card .vl {
+    font-size: 11px; font-weight: 600; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+  }
+  .verdict-card .vv {
+    font-size: 20px; font-weight: 700; color: var(--hero-ink);
+  }
+  .verdict-card .vd {
+    font-size: 12px; color: var(--hero-ink-2); margin-top: 4px;
+  }
+  .verdict-note {
+    font-size: 14px; color: var(--hero-ink-2); line-height: 1.7;
+    max-width: 640px;
+  }
+  .verdict-note strong { color: var(--hero-ink); }
+
+  /* Inline tag */
+  .tag {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    background: var(--tag-bg); color: var(--tag-text);
+    padding: 2px 8px; border-radius: 3px; letter-spacing: 0.3px;
+  }
+  .tag.green { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); }
+  .tag.warm { background: var(--warm-bg); color: var(--warm); border: 1px solid var(--warm-border); }
+  .tag.danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+
+  /* Flow diagram */
+  .flow {
+    display: flex; align-items: stretch; gap: 0;
+    margin: 24px 0; overflow-x: auto; padding-bottom: 8px;
+  }
+  .flow-step {
+    flex: 1; min-width: 140px; background: var(--bg-card);
+    border: 1px solid var(--border); padding: 16px;
+    position: relative; text-align: center;
+  }
+  .flow-step:first-child { border-radius: 8px 0 0 8px; }
+  .flow-step:last-child { border-radius: 0 8px 8px 0; }
+  .flow-step + .flow-step { border-left: none; }
+  .flow-step::after {
+    content: ''; position: absolute; right: -10px; top: 50%;
+    transform: translateY(-50%); width: 0; height: 0;
+    border-left: 10px solid var(--border); border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent; z-index: 1;
+  }
+  .flow-step:last-child::after { display: none; }
+  .flow-num {
+    font-size: 11px; font-weight: 700; color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .flow-label {
+    font-size: 13px; font-weight: 600; color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .flow-detail {
+    font-size: 11px; color: var(--ink-3); line-height: 1.4;
+  }
+  .flow-pct {
+    font-size: 18px; font-weight: 700; color: var(--accent);
+    margin-top: 6px;
+  }
+
+  @media (max-width: 600px) {
+    .hero { padding: 40px 16px 36px; }
+    .hero h1 { font-size: 26px; }
+    .comp-grid { grid-template-columns: 1fr; }
+    .data-row { grid-template-columns: 1fr; gap: 2px; }
+    .flow { flex-direction: column; }
+    .flow-step { border-radius: 0; }
+    .flow-step:first-child { border-radius: 8px 8px 0 0; }
+    .flow-step:last-child { border-radius: 0 0 8px 8px; }
+    .flow-step + .flow-step { border-left: 1px solid var(--border); border-top: none; }
+    .flow-step::after { display: none; }
+    .verdict-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <span class="hero-tag">Competitive Strategy</span>
+    <h1>Dental Insurance Verification<br><em>1인 개발자가 이기는 법</em></h1>
+    <p class="hero-sub">시장 $3.2B, 19.3% 거절률, 독립치과 59% — 대형 DSO만 노리는 경쟁자 사이에서 빈틈을 파고드는 전략</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- SECTION 1: Market Landscape -->
+  <div class="section">
+    <div class="section-label">Part 1</div>
+    <div class="section-title">시장 현황: 왜 지금인가</div>
+    <div class="section-desc">2025-2026 치과 보험 검증 시장은 거절률 폭등과 CDT 코드 변경으로 인해 자동화 수요가 급증하고 있다.</div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--danger)"></span>핵심 시장 데이터</div>
+      <div class="data-row"><div class="data-label">청구 거절률</div><div class="data-value"><strong>19.3%</strong> — 전년 대비 상승, 78%의 치과가 "거절 증가" 체감</div></div>
+      <div class="data-row"><div class="data-label">2026 CDT 변경</div><div class="data-value"><strong>28개 신규 코드</strong> 추가 → 거절률 34% 추가 급등</div></div>
+      <div class="data-row"><div class="data-label">주요 거절 사유</div><div class="data-value">잘못된 CDT 코드 (12%), 빈도 제한 초과 (10%), 사전승인 누락 (8%)</div></div>
+      <div class="data-row"><div class="data-label">독립치과 비중</div><div class="data-value"><strong>59.29%</strong> — 대부분 1~3명 프론트 데스크</div></div>
+      <div class="data-row"><div class="data-label">수동 검증 비용</div><div class="data-value">건당 $2.50~10 (아웃소싱), 직원이 하면 12~25분/건 = 시급 $18~22</div></div>
+      <div class="data-row"><div class="data-label">일일 검증 건수</div><div class="data-value">독립치과 평균 <strong>15~30건/일</strong></div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Competitor Map -->
+  <div class="section">
+    <div class="section-label">Part 2</div>
+    <div class="section-title">경쟁자 지도</div>
+    <div class="section-desc">현재 시장은 크게 4가지 유형의 플레이어가 있다. 대부분 DSO(치과 대형 체인)를 타겟으로 하며, 독립치과 전용 솔루션은 사실상 부재.</div>
+
+    <div class="comp-grid">
+      <div class="comp-card">
+        <div class="comp-name">Needletail AI</div>
+        <div class="comp-type">AI-First / DSO 전용</div>
+        <div class="comp-price">비공개 (연 계약)</div>
+        <ul class="comp-feat">
+          <li>Multi-agent: Portal AI + Voice AI + QA Agent</li>
+          <li>97% 자동화율 (자체 주장)</li>
+          <li>DSO/그룹 프랙티스 전용</li>
+          <li><strong>약점:</strong> 독립치과 접근 불가, 가격 장벽</li>
+        </ul>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">DentalRobot</div>
+        <div class="comp-type">Portal Scraping / 6년 경력</div>
+        <div class="comp-price">$150/mo (Lite)</div>
+        <ul class="comp-feat">
+          <li>240+ 보험사 포탈 연동</li>
+          <li>6년 운영, 안정적 기술</li>
+          <li>PMS 연동 (Dentrix, Eaglesoft, Open Dental)</li>
+          <li><strong>약점:</strong> Voice AI 없음, UI 구식, 셋업 복잡</li>
+        </ul>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">Milo (Savvy Agents)</div>
+        <div class="comp-type">AI Bundle / 범용</div>
+        <div class="comp-price">$200/mo (600건)</div>
+        <ul class="comp-feat">
+          <li>보험 검증 + 수납 + 예약 통합</li>
+          <li>번들 가격 $500~870/mo</li>
+          <li>범용 AI 에이전트 플랫폼</li>
+          <li><strong>약점:</strong> 검증 전문성 부족, 번들 강제, 비쌈</li>
+        </ul>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">아웃소싱 (DCS, Staffingly)</div>
+        <div class="comp-type">Human / 인력 기반</div>
+        <div class="comp-price">$2.50~10/건</div>
+        <ul class="comp-feat">
+          <li>인도/필리핀 원격 인력</li>
+          <li>주당 $299~399 (풀타임)</li>
+          <li>유연하지만 확장성 없음</li>
+          <li><strong>약점:</strong> 품질 편차, 시간대 문제, 직원 교체</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <tr>
+          <th>항목</th>
+          <th>Needletail</th>
+          <th>DentalRobot</th>
+          <th>Milo</th>
+          <th>아웃소싱</th>
+          <th style="color:var(--accent)">우리 (목표)</th>
+        </tr>
+        <tr>
+          <td><strong>타겟</strong></td>
+          <td>DSO 50+ locations</td>
+          <td>그룹/DSO</td>
+          <td>범용</td>
+          <td>독립치과</td>
+          <td class="highlight-row" style="color:var(--accent);font-weight:700">독립치과 1~5인</td>
+        </tr>
+        <tr>
+          <td><strong>가격</strong></td>
+          <td>비공개 (高)</td>
+          <td>$150~300/mo</td>
+          <td>$200~870/mo</td>
+          <td>$600~1,600/mo*</td>
+          <td><strong>$149/mo</strong></td>
+        </tr>
+        <tr>
+          <td><strong>셋업 시간</strong></td>
+          <td>수 주</td>
+          <td>3~5일</td>
+          <td>1주+</td>
+          <td>1~2주</td>
+          <td><strong>30분</strong></td>
+        </tr>
+        <tr>
+          <td><strong>기술</strong></td>
+          <td>Portal+Voice+AI</td>
+          <td>Portal Scraping</td>
+          <td>AI Bundle</td>
+          <td>수동</td>
+          <td><strong>EDI+Portal+Voice</strong></td>
+        </tr>
+        <tr>
+          <td><strong>계약</strong></td>
+          <td>연 계약</td>
+          <td>월/연 계약</td>
+          <td>월 계약</td>
+          <td>주/월 계약</td>
+          <td><strong>월 계약, 위약금 없음</strong></td>
+        </tr>
+      </table>
+    </div>
+    <p style="font-size:12px;color:var(--ink-3);">* 아웃소싱 비용: 30건/일 x $2.50~10/건 x 20일 기준</p>
+  </div>
+
+  <!-- SECTION 3: The Gap -->
+  <div class="section">
+    <div class="section-label">Part 3</div>
+    <div class="section-title">빈틈: 독립치과의 "Verification Hell"</div>
+    <div class="section-desc">경쟁자 대부분이 DSO를 쫓는 동안, 독립치과 120,000+개는 여전히 수동으로 보험을 확인하고 있다.</div>
+
+    <div class="strat-box green">
+      <h3>독립치과가 겪는 현실</h3>
+      <ul>
+        <li>프론트 데스크 1~2명이 하루 15~30건 수동 확인</li>
+        <li>각 건당 <strong>12~25분</strong> — 보험사 포탈 로그인, 정보 입력, 결과 스크린샷, PMS에 수기 입력</li>
+        <li>Delta Dental / MetLife / Cigna / Aetna / United — 각각 다른 포탈, 다른 인터페이스</li>
+        <li>내일 환자 20명 → 오늘 오후 3시간을 <strong>보험 확인에만</strong> 소비</li>
+        <li>확인 안 하면 → 청구 거절 → 환자에게 추가 청구 → 분쟁 → 별점 1점</li>
+      </ul>
+    </div>
+
+    <div class="strat-box danger">
+      <h3>왜 기존 솔루션을 안 쓰나?</h3>
+      <ul>
+        <li><strong>가격:</strong> DentalRobot $150은 가능하지만 셋업이 복잡, Needletail은 아예 대화 불가</li>
+        <li><strong>복잡성:</strong> API 연동, 서버 설정, IT 인력 필요 — 독립치과에는 IT 담당자가 없다</li>
+        <li><strong>오버킬:</strong> Milo 같은 번들은 필요 없는 기능까지 강제 구매</li>
+        <li><strong>계약:</strong> 연 계약, 최소 인원 요구 — 소규모 치과에 맞지 않음</li>
+        <li><strong>결론:</strong> "내가 직접 하는 게 낫다"라고 판단하고 수동으로 계속함</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 4: How it works technically -->
+  <div class="section">
+    <div class="section-label">Part 4</div>
+    <div class="section-title">기술 아키텍처: 어떻게 만드나</div>
+    <div class="section-desc">핵심은 하이브리드 접근 — EDI 270/271을 기본으로, 포탈 스크래핑으로 상세 데이터, Voice AI로 14% 폴백을 커버한다.</div>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-label">환자 선택</div>
+        <div class="flow-detail">PMS에서 내일 환자 목록 가져오기</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-label">EDI 270 전송</div>
+        <div class="flow-detail">Clearinghouse API로 기본 적격성 확인</div>
+        <div class="flow-pct">60%</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-label">포탈 스크래핑</div>
+        <div class="flow-detail">빈도 제한, CDT별 benefit 상세 추출</div>
+        <div class="flow-pct">86%</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-label">Voice AI 폴백</div>
+        <div class="flow-detail">포탈 실패 시 보험사에 자동 전화</div>
+        <div class="flow-pct">14%</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">5</div>
+        <div class="flow-label">결과 반환</div>
+        <div class="flow-detail">PMS 자동 기록 + 실시간 대시보드</div>
+        <div class="flow-pct">100%</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title"><span class="dot" style="background:var(--steel)"></span>기술 스택 상세</div>
+      <div class="data-row"><div class="data-label">EDI 270/271</div><div class="data-value"><strong>Availity API</strong> (무료 개발자 계정) — HIPAA 표준 적격성 조회. 기본 정보 (active/inactive, copay, deductible). 응답 2~5초.</div></div>
+      <div class="data-row"><div class="data-label">포탈 스크래핑</div><div class="data-value"><strong>Playwright + Puppeteer</strong> — Delta Dental, MetLife, Cigna, Aetna, United 5대 보험사 포탈. 빈도 제한, 대기 기간, CDT 코드별 benefit 상세. 86% 성공률.</div></div>
+      <div class="data-row"><div class="data-label">Voice AI</div><div class="data-value"><strong>Twilio + Deepgram STT + GPT-4o TTS</strong> — 포탈 실패 14%에 대해 보험사 전화 자동화. IVR 네비게이션, 대기, 정보 추출. 비용: ~$0.15/콜.</div></div>
+      <div class="data-row"><div class="data-label">PMS 연동</div><div class="data-value"><strong>Open Dental REST API</strong> — 12,000+ 설치 기반. 공개 API, 무료. 환자 정보 읽기 + 보험 정보 쓰기 자동화.</div></div>
+      <div class="data-row"><div class="data-label">프론트엔드</div><div class="data-value"><strong>Next.js 14</strong> (App Router) + <strong>Supabase</strong> (auth, DB, realtime). 실시간 대시보드.</div></div>
+      <div class="data-row"><div class="data-label">결제</div><div class="data-value"><strong>Stripe</strong> — $149/mo 구독, usage-based 초과 요금 (600건 초과 시 $0.25/건)</div></div>
+      <div class="data-row"><div class="data-label">배포</div><div class="data-value"><strong>Vercel</strong> + Supabase Edge Functions. HIPAA BAA 필요 (Supabase Pro $25/mo).</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Competitive Advantage Strategy -->
+  <div class="section">
+    <div class="section-label">Part 5</div>
+    <div class="section-title">경쟁력 전략: 5가지 차별화</div>
+    <div class="section-desc">기술보다 중요한 건 포지셔닝이다. 독립치과 전용 + 극단적 쉬움 + 공정한 가격이 핵심.</div>
+
+    <div class="strat-box green">
+      <h3>1. "30분 셋업" — 극단적 쉬움</h3>
+      <p>DentalRobot은 셋업에 3~5일, IT 지원 필요. 우리는:</p>
+      <ul>
+        <li><strong>Sign up → PMS 연결 → 보험사 credential 입력 → 끝.</strong> 30분 이내.</li>
+        <li>Open Dental 사용자: API 키 하나 입력하면 자동 연동</li>
+        <li>Dentrix/Eaglesoft 사용자: CSV 업로드 또는 간단 브라우저 확장</li>
+        <li>셋업 가이드 비디오 3분, 라이브 채팅 온보딩 지원</li>
+        <li><strong>핵심 메시지:</strong> "IT 사람 부를 필요 없어요"</li>
+      </ul>
+    </div>
+
+    <div class="strat-box warm">
+      <h3>2. "Denial Prevention" — 검증이 아니라 거절 방지</h3>
+      <p>단순히 "보험 있다/없다"만 확인하는 게 아니다. 거절을 사전에 막는다:</p>
+      <ul>
+        <li><strong>CDT 빈도 체크:</strong> "D0120 (구강검사) — 이 환자 마지막 검사 4개월 전, 6개월 간격 필요. 2개월 뒤에 예약하세요" 경고</li>
+        <li><strong>사전승인 알림:</strong> "D2740 (크라운) — 이 보험사 사전승인 필수. 지금 요청하시겠습니까?"</li>
+        <li><strong>연간 한도 추적:</strong> "남은 benefit $340. 이 시술 비용 $800. 환자 본인부담 $460 예상"</li>
+        <li><strong>COB 자동 감지:</strong> 이중 보험 환자 자동 식별 + 1차/2차 보험 순서 확인</li>
+        <li><strong>핵심 메시지:</strong> "검증 도구가 아닙니다. 거절 방지 시스템입니다."</li>
+      </ul>
+    </div>
+
+    <div class="strat-box steel">
+      <h3>3. "Batch Verify" — 한 번에 내일 환자 전체</h3>
+      <p>경쟁사 대부분은 건별 조회. 우리는 배치 처리:</p>
+      <ul>
+        <li><strong>자동 배치:</strong> 매일 오후 4시, PMS에서 내일 환자 목록 자동 가져와서 일괄 검증</li>
+        <li>아침 출근하면 "내일 환자 22명 검증 완료, 3건 주의 필요" 대시보드</li>
+        <li>주의 필요 건만 클릭해서 확인 → 10분이면 하루 검증 끝</li>
+        <li>기존: 3시간/일 → 우리: <strong>10분/일</strong></li>
+      </ul>
+    </div>
+
+    <div class="strat-box danger">
+      <h3>4. "$149/mo 올인클루시브" — 가격 투명성</h3>
+      <p>경쟁사 가격 구조의 문제:</p>
+      <ul>
+        <li>Milo: $200/mo에 600건 → 초과 시 추가 비용 불투명</li>
+        <li>DentalRobot: $150/mo Lite → 기능 제한, 풀 버전은 $300+</li>
+        <li>아웃소싱: 건당 과금 → 월 비용 예측 불가 ($600~1,600)</li>
+        <li><strong>우리: $149/mo, 월 600건 포함.</strong> 초과 시 $0.25/건 (명확). 연 계약 없음.</li>
+        <li>독립치과 평균 22건/일 x 22일 = 484건 → 600건 한도 내 충분</li>
+        <li><strong>핵심 메시지:</strong> "숨겨진 비용 없이, 매달 $149."</li>
+      </ul>
+    </div>
+
+    <div class="strat-box purple">
+      <h3>5. Open Dental "Native" 느낌 — PMS 통합 우선</h3>
+      <p>PMS 선택과 출시 전략:</p>
+      <ul>
+        <li><strong>1단계: Open Dental 전용</strong> — 12,000+ 설치, 공개 REST API, 커뮤니티 포럼 활발</li>
+        <li>Open Dental 사용자에게는 "네이티브 확장" 수준의 통합 제공</li>
+        <li>PMS 안에서 바로 보이는 보험 상태 (iframe 또는 sidebar extension)</li>
+        <li><strong>2단계 (6개월 후):</strong> Dentrix 연동 (HL7/FHIR 브릿지)</li>
+        <li><strong>3단계:</strong> Eaglesoft (2026 구독 전환 시점에 진입 — 전환 고통 활용)</li>
+        <li>Open Dental 커뮤니티 → <strong>첫 40 고객 확보 채널</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 6: 40 Customers Plan -->
+  <div class="section">
+    <div class="section-label">Part 6</div>
+    <div class="section-title">40명 확보 시나리오</div>
+    <div class="section-desc">첫 40 고객을 어떻게 확보할 것인가. 채널별 전략과 예상 전환율.</div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>채널 1: Open Dental 커뮤니티 (15명 목표)</div>
+      <ul>
+        <li><strong>Open Dental 포럼</strong> (forum.opendental.com) — 활발한 사용자 커뮤니티, 플러그인/연동 논의 활발</li>
+        <li>"Insurance Verification" 키워드로 이미 수십 개 스레드 존재</li>
+        <li>포럼에 "무료 베타 사용자 모집" 포스트 → 10명 베타 → 7명 전환 예상</li>
+        <li>Open Dental 마켓플레이스에 플러그인 등록 (수수료 없음)</li>
+        <li>Open Dental 사용자 Facebook 그룹 (5,000+ 멤버) 타겟</li>
+        <li>전환율: 베타 → 유료 <strong>60~70%</strong> (pain point이 명확하므로)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--warm)"></span>채널 2: 치과 커뮤니티 + Reddit (10명 목표)</div>
+      <ul>
+        <li><strong>r/dentistry</strong> (180K+ 멤버), <strong>r/DentalAssistant</strong> — 보험 검증 불만 글 다수</li>
+        <li><strong>Dental Town</strong> (dentaltown.com) — 치과의사 전용 포럼, 200K+ 멤버</li>
+        <li><strong>Dental Office Managers</strong> Facebook 그룹 (40K+ 멤버)</li>
+        <li>전략: 먼저 가치 있는 답변/자료 제공 → 신뢰 구축 → 제품 소개</li>
+        <li>"보험 거절 방지 체크리스트" 무료 PDF → 이메일 수집 → 제품 안내</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--steel)"></span>채널 3: 콜드 아웃리치 (15명 목표)</div>
+      <ul>
+        <li>Google Maps에서 "dental office" + 도시별 검색 → Open Dental 사용 치과 필터링</li>
+        <li>Open Dental 로고가 웹사이트에 있거나, job posting에서 "Open Dental" 언급하는 치과 타겟</li>
+        <li>이메일 타겟: Office Manager (의사 아님) — 실제 검증 업무 담당자</li>
+        <li>"내일 환자 보험 검증에 하루 3시간 쓰시나요?" — 1줄 이메일</li>
+        <li>200통 발송 → 15% 오픈 → 30통 → 5% 전환 → <strong>15명</strong></li>
+        <li>Loom 비디오 데모 첨부 (3분) → 전환율 2x</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 7: MVP Timeline -->
+  <div class="section">
+    <div class="section-label">Part 7</div>
+    <div class="section-title">MVP 로드맵: 12주</div>
+    <div class="section-desc">1인 개발자가 12주 안에 출시 가능한 범위. Phase 1은 Open Dental + 상위 5개 보험사.</div>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-week">Week 1-2</div>
+        <div class="tl-title">기반 인프라</div>
+        <div class="tl-desc">Next.js + Supabase 셋업. 인증, 치과 프로필, 환자 관리 CRUD. Stripe 결제 연동. HIPAA BAA 서명 (Supabase Pro).</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Week 3-4</div>
+        <div class="tl-title">EDI 270/271 연동</div>
+        <div class="tl-desc">Availity 개발자 계정 → sandbox 테스트 → 실시간 적격성 조회 구현. 기본 결과 파싱 + DB 저장. 배치 요청 큐 구현.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Week 5-7</div>
+        <div class="tl-title">포탈 스크래핑 엔진</div>
+        <div class="tl-desc">Playwright로 Delta Dental, MetLife, Cigna, Aetna, United 5대 포탈 자동화. CDT별 benefit, 빈도 제한, 대기 기간 추출. 2FA 처리 (치과 credential 사용).</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Week 8-9</div>
+        <div class="tl-title">Open Dental 연동</div>
+        <div class="tl-desc">REST API로 환자 목록 가져오기. 보험 검증 결과 PMS에 자동 기록. 내일 환자 자동 배치 트리거 (cron).</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Week 10-11</div>
+        <div class="tl-title">대시보드 + 거절 방지</div>
+        <div class="tl-desc">실시간 검증 현황 대시보드. CDT 빈도 경고, 사전승인 알림, 연간 한도 추적. 환자별 요약 리포트 (PDF 출력).</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Week 12</div>
+        <div class="tl-title">베타 출시</div>
+        <div class="tl-desc">Open Dental 포럼 베타 모집 (10명). 온보딩 가이드 + Loom 비디오. 2주 무료 체험 → $149/mo 전환. Voice AI는 V2에서 추가.</div>
+      </div>
+    </div>
+
+    <div class="strat-box warm" style="margin-top:24px;">
+      <h3>MVP에서 제외 (V2로 미루기)</h3>
+      <ul>
+        <li><strong>Voice AI:</strong> Twilio + STT 연동은 복잡도 높음. V1은 포탈 실패 건 = 수동 확인 알림으로 대체</li>
+        <li><strong>Dentrix/Eaglesoft 연동:</strong> 파트너십 또는 리버스 엔지니어링 필요. V2에서 CSV 브릿지 먼저</li>
+        <li><strong>COB 자동 처리:</strong> 이중 보험 로직 복잡. V1은 감지 + 경고만, 자동 처리는 V2</li>
+        <li><strong>자동 사전승인 요청:</strong> V1은 알림만, V2에서 자동 제출</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 8: Unit Economics -->
+  <div class="section">
+    <div class="section-label">Part 8</div>
+    <div class="section-title">유닛 이코노믹스</div>
+    <div class="section-desc">고객당 비용 구조와 수익성 분석.</div>
+
+    <div class="card">
+      <div class="data-row"><div class="data-label">월 구독료</div><div class="data-value"><strong>$149/mo</strong></div></div>
+      <div class="data-row"><div class="data-label">EDI 비용</div><div class="data-value">Availity: 무료 (payer-funded model). Change Healthcare: $0.05~0.10/건</div></div>
+      <div class="data-row"><div class="data-label">포탈 스크래핑</div><div class="data-value">서버 비용 ~$0.01/건 (Playwright headless). 월 500건 = <strong>$5</strong></div></div>
+      <div class="data-row"><div class="data-label">Voice AI (V2)</div><div class="data-value">~$0.15/콜. 14% 폴백 x 500건 = 70콜 = <strong>$10.50</strong></div></div>
+      <div class="data-row"><div class="data-label">인프라</div><div class="data-value">Supabase Pro $25 + Vercel Pro $20 + 스크래핑 서버 $30 = <strong>$75/mo (총)</strong></div></div>
+      <div class="data-row"><div class="data-label">고객당 비용</div><div class="data-value">인프라 $75 / 40명 = $1.88 + 변동비 $5~15 = <strong>~$9/고객/월</strong></div></div>
+      <div class="data-row"><div class="data-label">고객당 마진</div><div class="data-value">$149 - $9 = <strong>$140/고객/월 (94% 마진)</strong></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- VERDICT -->
+<div class="verdict">
+  <div class="wrap">
+    <h2>결론: 40명 달성 시 수치</h2>
+    <div class="verdict-grid">
+      <div class="verdict-card">
+        <div class="vl">MRR</div>
+        <div class="vv">$5,960</div>
+        <div class="vd">40명 x $149/mo</div>
+      </div>
+      <div class="verdict-card">
+        <div class="vl">월 비용</div>
+        <div class="vv">$435</div>
+        <div class="vd">인프라 $75 + 변동비 $360</div>
+      </div>
+      <div class="verdict-card">
+        <div class="vl">월 순수익</div>
+        <div class="vv">$5,525</div>
+        <div class="vd">목표 $4,000 초과</div>
+      </div>
+      <div class="verdict-card">
+        <div class="vl">마진</div>
+        <div class="vv">92.7%</div>
+        <div class="vd">SaaS 평균 70-80% 대비 높음</div>
+      </div>
+    </div>
+
+    <div class="verdict-note">
+      <strong>핵심 전략 요약:</strong> Needletail이 DSO를 쫓고 DentalRobot이 복잡한 셋업을 요구하는 사이, 독립치과 120,000+개가 여전히 하루 3시간을 수동 검증에 쓰고 있다. 우리의 무기는 세 가지:
+      <strong>(1) 30분 셋업</strong> — IT 인력 없는 치과도 바로 시작,
+      <strong>(2) 거절 방지 AI</strong> — 단순 검증이 아닌 CDT 빈도/한도/사전승인 사전 경고,
+      <strong>(3) $149 올인클루시브</strong> — 숨겨진 비용 없이 월정액.
+      Open Dental 커뮤니티에서 시작, 12주 MVP, 첫 10명 베타 → 40명 유료 전환이 목표.
+    </div>
+  </div>
+</div>
