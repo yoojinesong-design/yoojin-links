@@ -1,0 +1,940 @@
+<title>B2B 마이크로SaaS 기회 분석 리포트</title>
+<style>
+  /* ── Design Plan ──
+     Color: Dark, data-driven palette — like a Bloomberg terminal meets a Korean startup pitch deck.
+       --ink: #1A1D23 (near-black with blue bias)
+       --paper: #F7F6F3 (warm off-white, not cream)
+       --accent: #2D5BFF (saturated cobalt — signals opportunity/money)
+       --accent-dim: #1A3A99
+       --muted: #8B8D94 (cool grey)
+       --surface: #EEECEA (card surface)
+       --highlight: #FFE066 (gold marker for top 3)
+       --risk: #E8553A (warm red for risk callouts)
+     Type: "Georgia" for headings (editorial gravity), system sans for body (utilitarian data).
+     Layout: Single-column report with card-based opportunity grid. Dense but scannable.
+  */
+
+  @font-face {
+    font-family: 'ReportDisplay';
+    src: local('Georgia'), local('Noto Serif KR'), local('Batang');
+    font-weight: 400;
+  }
+
+  :root {
+    --ink: #1A1D23;
+    --ink-secondary: #4A4D55;
+    --paper: #F7F6F3;
+    --accent: #2D5BFF;
+    --accent-dim: #1A3A99;
+    --accent-light: #E8EEFF;
+    --muted: #8B8D94;
+    --surface: #EEECEA;
+    --surface-alt: #E4E2DF;
+    --highlight: #FFE066;
+    --highlight-bg: #FFF8D6;
+    --risk: #E8553A;
+    --risk-bg: #FDF0ED;
+    --border: #D8D6D2;
+    --font-display: 'ReportDisplay', Georgia, 'Noto Serif KR', serif;
+    --font-body: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    --font-mono: 'SF Mono', 'Cascadia Code', 'Noto Sans Mono', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #E8E6E1;
+      --ink-secondary: #A0A3AB;
+      --paper: #14161B;
+      --accent: #4D7AFF;
+      --accent-dim: #3A5FCC;
+      --accent-light: #1E2640;
+      --muted: #6B6E76;
+      --surface: #1E2028;
+      --surface-alt: #262830;
+      --highlight: #FFE066;
+      --highlight-bg: #2A2618;
+      --risk: #F06B52;
+      --risk-bg: #2A1E1A;
+      --border: #2E3038;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #E8E6E1;
+    --ink-secondary: #A0A3AB;
+    --paper: #14161B;
+    --accent: #4D7AFF;
+    --accent-dim: #3A5FCC;
+    --accent-light: #1E2640;
+    --muted: #6B6E76;
+    --surface: #1E2028;
+    --surface-alt: #262830;
+    --highlight: #FFE066;
+    --highlight-bg: #2A2618;
+    --risk: #F06B52;
+    --risk-bg: #2A1E1A;
+    --border: #2E3038;
+  }
+  :root[data-theme="light"] {
+    --ink: #1A1D23;
+    --ink-secondary: #4A4D55;
+    --paper: #F7F6F3;
+    --accent: #2D5BFF;
+    --accent-dim: #1A3A99;
+    --accent-light: #E8EEFF;
+    --muted: #8B8D94;
+    --surface: #EEECEA;
+    --surface-alt: #E4E2DF;
+    --highlight: #FFE066;
+    --highlight-bg: #FFF8D6;
+    --risk: #E8553A;
+    --risk-bg: #FDF0ED;
+    --border: #D8D6D2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .report {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── Header ── */
+  .report-header {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 24px;
+    margin-bottom: 48px;
+  }
+
+  .report-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .report-title {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 400;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin-bottom: 12px;
+  }
+
+  .report-subtitle {
+    font-size: 16px;
+    color: var(--ink-secondary);
+    max-width: 600px;
+    line-height: 1.5;
+  }
+
+  /* ── Criteria strip ── */
+  .criteria {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 48px;
+  }
+
+  .criteria-pill {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    padding: 5px 12px;
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--ink-secondary);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .criteria-pill.target {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ── Method ── */
+  .method-section {
+    margin-bottom: 48px;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .method-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+  }
+
+  .method-card {
+    padding: 16px;
+    background: var(--surface);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .method-card strong {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .method-card span {
+    font-size: 12px;
+    color: var(--ink-secondary);
+    line-height: 1.5;
+  }
+
+  .method-stat {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+    margin-top: 8px;
+  }
+
+  /* ── Opportunity Cards ── */
+  .opps-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  .opps-header h2 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 400;
+  }
+
+  .opps-header .count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .opp-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 28px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .opp-card.top-pick {
+    border-color: var(--highlight);
+    border-width: 2px;
+  }
+
+  .opp-card.top-pick::before {
+    content: 'TOP 3';
+    position: absolute;
+    top: -1px;
+    right: 20px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    background: var(--highlight);
+    color: #1A1D23;
+    padding: 3px 10px 4px;
+    border-radius: 0 0 4px 4px;
+  }
+
+  .opp-number {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .opp-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+
+  .opp-target {
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .opp-quote {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--ink-secondary);
+    line-height: 1.6;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .opp-quote cite {
+    display: block;
+    font-style: normal;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 8px;
+    letter-spacing: 0.03em;
+  }
+
+  .opp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 24px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 560px) {
+    .opp-grid { grid-template-columns: 1fr; }
+  }
+
+  .opp-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .opp-field-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .opp-field-value {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .opp-field-value.price {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .opp-field-value a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent-light);
+  }
+
+  .opp-field-value a:hover {
+    border-bottom-color: var(--accent);
+  }
+
+  .opp-risk {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--risk-bg);
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--risk);
+    line-height: 1.4;
+  }
+
+  .opp-risk::before {
+    content: '!';
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--risk);
+    color: white;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 1px;
+  }
+
+  /* ── Top 3 Section ── */
+  .top3-section {
+    margin-top: 56px;
+    border-top: 2px solid var(--ink);
+    padding-top: 32px;
+  }
+
+  .top3-header {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 400;
+    margin-bottom: 8px;
+  }
+
+  .top3-sub {
+    font-size: 14px;
+    color: var(--ink-secondary);
+    margin-bottom: 28px;
+    max-width: 640px;
+  }
+
+  .top3-card {
+    background: var(--highlight-bg);
+    border: 2px solid var(--highlight);
+    border-radius: 6px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+
+  .top3-rank {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--highlight);
+    float: left;
+    margin-right: 20px;
+    line-height: 1;
+  }
+
+  .top3-name {
+    font-family: var(--font-display);
+    font-size: 18px;
+    margin-bottom: 4px;
+    font-weight: 400;
+  }
+
+  .top3-reason {
+    font-size: 14px;
+    color: var(--ink-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .top3-channels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    clear: both;
+  }
+
+  .channel-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 3px 10px;
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--ink-secondary);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Exclusion note ── */
+  .exclusion-note {
+    margin-top: 48px;
+    padding: 20px 24px;
+    background: var(--surface);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .exclusion-note h3 {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .exclusion-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .exclusion-list li {
+    font-size: 12px;
+    color: var(--ink-secondary);
+    padding: 3px 10px;
+    background: var(--surface-alt);
+    border-radius: 3px;
+  }
+
+  .exclusion-list li::before {
+    content: '×  ';
+    color: var(--risk);
+    font-weight: 700;
+  }
+
+  /* ── Footer ── */
+  .report-footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    letter-spacing: 0.02em;
+  }
+</style>
+
+<div class="report">
+
+  <!-- Header -->
+  <header class="report-header">
+    <div class="report-meta">B2B Micro-SaaS Opportunity Report &middot; 2026.07.29</div>
+    <h1 class="report-title">1인 개발자를 위한<br>B2B 마이크로SaaS 기회 분석</h1>
+    <p class="report-subtitle">월 $99~299 가격대, 고객 40명 이하로 월 $4,000 순이익 달성 가능한 아이템 8개 선별.</p>
+  </header>
+
+  <!-- Criteria -->
+  <div class="criteria">
+    <span class="criteria-pill target">$99~299/월</span>
+    <span class="criteria-pill target">≤40 고객</span>
+    <span class="criteria-pill target">≥$4,000 순이익/월</span>
+    <span class="criteria-pill">양면 마켓플레이스 제외</span>
+    <span class="criteria-pill">노션으로 되는 일 제외</span>
+    <span class="criteria-pill">대기업 로드맵 기능 제외</span>
+    <span class="criteria-pill">규제 심한 분야 제외</span>
+    <span class="criteria-pill">AI 비용 &gt;20% 제외</span>
+  </div>
+
+  <!-- Methodology -->
+  <div class="method-section">
+    <div class="section-label">조사 방법론</div>
+    <div class="method-grid">
+      <div class="method-card">
+        <strong>G2 / Capterra 저평점 리뷰</strong>
+        <span>8개 업종, 34개 제품의 1~3성 리뷰 분석</span>
+        <span class="method-stat">62개 불만 패턴</span>
+      </div>
+      <div class="method-card">
+        <strong>Reddit / 커뮤니티</strong>
+        <span>15개 서브레딧 + BiggerPockets, TeamBlind 등 30+건 검색</span>
+        <span class="method-stat">15개 수작업 고통</span>
+      </div>
+      <div class="method-card">
+        <strong>Upwork / Fiverr</strong>
+        <span>반복 외주 작업 10개 카테고리, 비용 대비 자동화 가능성</span>
+        <span class="method-stat">10개 자동화 기회</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ 8 Opportunities ═══════════ -->
+  <div class="opps-header">
+    <h2>후보 아이템</h2>
+    <span class="count">8건</span>
+  </div>
+
+  <!-- ── #1 ── -->
+  <div class="opp-card top-pick">
+    <div class="opp-number">#1</div>
+    <div class="opp-title">회계사/세무사 고객 서류 수집 포털</div>
+    <div class="opp-target">대상: 직원 1~5명 소규모 세무/회계 사무소</div>
+    <div class="opp-quote">
+      "Documents trickle in over email, organizers sit uncompleted, and W-2s arrive in February for a client who signed in October."
+      <cite>— TeamBlind, 회계법인 문서 수집 플랫폼 피드백 스레드</cite>
+    </div>
+    <div class="opp-quote">
+      "38% of clients who switch CPA firms cite 'slow or disorganized onboarding' as a contributing factor."
+      <cite>— CPA Charge 온보딩 가이드</cite>
+    </div>
+    <div class="opp-grid">
+      <div class="opp-field">
+        <span class="opp-field-label">예상 가격</span>
+        <span class="opp-field-value price">$149/월</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">40명 모으는 현실 시간</span>
+        <span class="opp-field-value">6~9개월. 세금 시즌(1~4월) 전에 론칭하면 3개월 내 가능.</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">고객이 모여 있는 장소</span>
+        <span class="opp-field-value">
+          <a href="https://www.reddit.com/r/taxpros/" target="_blank">r/taxpros</a>,
+          <a href="https://www.reddit.com/r/bookkeeping/" target="_blank">r/bookkeeping</a>,
+          <a href="https://www.accountingweb.com/" target="_blank">AccountingWeb</a>,
+          Facebook "Bookkeepers" 그룹 (45K+)
+        </span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">1인 개발 시간</span>
+        <span class="opp-field-value">6~8주. 파일 업로드 + 체크리스트 + 이메일 알림이 핵심. 조건부 문서 요청 로직이 차별점.</span>
+      </div>
+    </div>
+    <div class="opp-risk">TaxDome, ContentSnare 같은 기존 플레이어가 있음. 단, 이들은 월 $50~80+ 올인원이라 "서류 수집만" 필요한 소규모 사무소엔 과잉. 기능 범위를 좁게 유지해야 함.</div>
+  </div>
+
+  <!-- ── #2 ── -->
+  <div class="opp-card top-pick">
+    <div class="opp-number">#2</div>
+    <div class="opp-title">건설 하도급 변경주문(Change Order) 추적기</div>
+    <div class="opp-target">대상: 연매출 $1~5M 소규모 전문 시공사 (전기, 배관, HVAC 하도급)</div>
+    <div class="opp-quote">
+      "Specialty contractors put revenue at risk by financing extra work out-of-pocket and then relying on processes that lend themselves to poor, disorganized, and even lost documentation."
+      <cite>— ClearStory, Sub Change Order Pain Points</cite>
+    </div>
+    <div class="opp-quote">
+      "88% of construction spreadsheets contain errors. Change order request logs are commonly done in spreadsheets with many columns."
+      <cite>— eSUB, Construction Spreadsheet Shortcomings</cite>
+    </div>
+    <div class="opp-grid">
+      <div class="opp-field">
+        <span class="opp-field-label">예상 가격</span>
+        <span class="opp-field-value price">$199/월</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">40명 모으는 현실 시간</span>
+        <span class="opp-field-value">8~12개월. 하도급업체는 보수적이라 입소문이 느리지만, 한 번 쓰면 이탈률 극히 낮음.</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">고객이 모여 있는 장소</span>
+        <span class="opp-field-value">
+          <a href="https://www.reddit.com/r/Construction/" target="_blank">r/Construction</a>,
+          <a href="https://www.reddit.com/r/electricians/" target="_blank">r/electricians</a>,
+          LinkedIn "Subcontractor" 그룹,
+          지역 Subcontractor Association 디렉토리
+        </span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">1인 개발 시간</span>
+        <span class="opp-field-value">8~10주. COR 로그 + 사진 첨부 + GC 서명 추적 + PDF 내보내기. 모바일 현장 사용이 필수.</span>
+      </div>
+    </div>
+    <div class="opp-risk">Procore($10K+/년), ClearStory가 시장을 점유 중이나 소규모 하도급은 가격 장벽으로 접근 불가. 최대 리스크는 "우리는 엑셀이면 충분하다"는 관성.</div>
+  </div>
+
+  <!-- ── #3 ── -->
+  <div class="opp-card top-pick">
+    <div class="opp-number">#3</div>
+    <div class="opp-title">소규모 해충 방제업체 운영 도구</div>
+    <div class="opp-target">대상: 기술자 1~5명 규모의 해충 방제(Pest Control) 업체</div>
+    <div class="opp-quote">
+      "Most pest control companies continue to use spreadsheets, paper calendars, or simple scheduling software. Spreadsheets are a liability, not a database."
+      <cite>— PestBase AI, 2025 업계 가이드</cite>
+    </div>
+    <div class="opp-quote">
+      "ServiceTitan, PestPac, FieldRoutes 모두 소규모 업체에겐 가격 장벽. $250~500/기술자/월 + 구현비 $5K~$50K."
+      <cite>— Capterra 리뷰 다수</cite>
+    </div>
+    <div class="opp-grid">
+      <div class="opp-field">
+        <span class="opp-field-label">예상 가격</span>
+        <span class="opp-field-value price">$149/월</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">40명 모으는 현실 시간</span>
+        <span class="opp-field-value">6~10개월. NPMA(전미해충관리협회) 지역 챕터 미팅에서 직접 시연이 가장 효과적.</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">고객이 모여 있는 장소</span>
+        <span class="opp-field-value">
+          Facebook "Pest Control Operators" 그룹 (12K+),
+          <a href="https://www.npmapestworld.org/" target="_blank">NPMA</a> 지역 챕터,
+          <a href="https://www.reddit.com/r/pestcontrol/" target="_blank">r/pestcontrol</a>
+        </span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">1인 개발 시간</span>
+        <span class="opp-field-value">10~12주. 스케줄링 + 서비스 이력 + 화학물질 기록 + 정기 서비스 리마인더. 오프라인 모바일 필수.</span>
+      </div>
+    </div>
+    <div class="opp-risk">필드서비스 관리 시장은 경쟁 과열. 차별점은 해충 방제 전용 기능(화학물질 사용 기록, 컴플라이언스 문서)에 집중. 오프라인 모바일이 기술적 난이도.</div>
+  </div>
+
+  <!-- ── #4 ── -->
+  <div class="opp-card">
+    <div class="opp-number">#4</div>
+    <div class="opp-title">소규모 화물중개(Freight Broker) 운송사 온보딩/컴플라이언스</div>
+    <div class="opp-target">대상: 직원 1~10명 소규모 화물 브로커</div>
+    <div class="opp-quote">
+      "Carrier onboarding (COIs, W-9s, authority checks) remains manual. Communication is fragmented across disconnected systems."
+      <cite>— G2 리뷰, DAT/Trucker Tools 관련 다수</cite>
+    </div>
+    <div class="opp-quote">
+      "DAT's load board faces serious fraud problems — 19,000 fake loads in one incident. Per-user pricing punishes growth with 25~45% renewal increases."
+      <cite>— G2/Capterra 리뷰</cite>
+    </div>
+    <div class="opp-grid">
+      <div class="opp-field">
+        <span class="opp-field-label">예상 가격</span>
+        <span class="opp-field-value price">$249/월</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">40명 모으는 현실 시간</span>
+        <span class="opp-field-value">10~14개월. 물류 업계는 인맥 기반. TIA(운송중개인협회) 컨퍼런스 참가 필수.</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">고객이 모여 있는 장소</span>
+        <span class="opp-field-value">
+          <a href="https://www.freightwaves.com/" target="_blank">FreightWaves</a> 포럼,
+          Facebook "Freight Broker" 그룹 (25K+),
+          <a href="https://www.tianet.org/" target="_blank">TIA</a> 회원 디렉토리
+        </span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">1인 개발 시간</span>
+        <span class="opp-field-value">8~10주. 운송사 COI/W-9 수집 + FMCSA 인증 자동 확인 + 만료 알림. API 연동이 핵심.</span>
+      </div>
+    </div>
+    <div class="opp-risk">물류 도메인 지식 없이 진입하면 용어/워크플로 이해에 시간 소모. FMCSA API 의존도 높음.</div>
+  </div>
+
+  <!-- ── #5 ── -->
+  <div class="opp-card">
+    <div class="opp-number">#5</div>
+    <div class="opp-title">자동차 정비소 고객 커뮤니케이션 허브</div>
+    <div class="opp-target">대상: 리프트 2~6대 규모의 독립 자동차 정비소</div>
+    <div class="opp-quote">
+      "Mitchell 1 is desktop-only with no cloud or remote access — 15+ reviews mention this."
+      <cite>— G2/Capterra, Mitchell 1 리뷰</cite>
+    </div>
+    <div class="opp-quote">
+      "RepairShopr's SMS/email communication has been broken for 16+ months."
+      <cite>— Capterra 리뷰, 다수 확인</cite>
+    </div>
+    <div class="opp-grid">
+      <div class="opp-field">
+        <span class="opp-field-label">예상 가격</span>
+        <span class="opp-field-value price">$129/월</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">40명 모으는 현실 시간</span>
+        <span class="opp-field-value">6~9개월. 정비소는 지역 밀집 — 한 도시에서 10개 확보 후 인접 도시 확장.</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">고객이 모여 있는 장소</span>
+        <span class="opp-field-value">
+          <a href="https://www.reddit.com/r/MechanicAdvice/" target="_blank">r/MechanicAdvice</a>,
+          Facebook "Auto Repair Shop Owners" 그룹 (18K+),
+          <a href="https://www.asashop.org/" target="_blank">ASA</a> 지역 챕터
+        </span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">1인 개발 시간</span>
+        <span class="opp-field-value">6~8주. SMS/이메일로 수리 상태 알림 + 견적 승인 링크 + 정비 이력 조회. Twilio 기반.</span>
+      </div>
+    </div>
+    <div class="opp-risk">Twilio SMS 비용이 고객당 월 $5~15 발생. 가격 대비 마진 관리 필요. 정비소 오너의 IT 리터러시가 낮을 수 있음.</div>
+  </div>
+
+  <!-- ── #6 ── -->
+  <div class="opp-card">
+    <div class="opp-number">#6</div>
+    <div class="opp-title">소규모 운송업체(1~10대) 간편 배차 시스템</div>
+    <div class="opp-target">대상: 트럭 1~10대 운영하는 소규모 운송업체/오너 오퍼레이터</div>
+    <div class="opp-quote">
+      "Routes get planned on spreadsheets, dispatch happens over phone calls and texts, and driver performance goes unmeasured because there's no system in place."
+      <cite>— FreightWaves, Small Fleet Management 분석</cite>
+    </div>
+    <div class="opp-quote">
+      "Small carriers represent over 90% of trucking companies in the U.S. yet most operate without structured fleet management systems."
+      <cite>— Upper, Small Fleet Management 리포트</cite>
+    </div>
+    <div class="opp-grid">
+      <div class="opp-field">
+        <span class="opp-field-label">예상 가격</span>
+        <span class="opp-field-value price">$199/월</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">40명 모으는 현실 시간</span>
+        <span class="opp-field-value">10~14개월. 트럭 운송업은 입소문 중심. 트럭스탑에서의 대면 영업이 의외로 효과적.</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">고객이 모여 있는 장소</span>
+        <span class="opp-field-value">
+          <a href="https://www.reddit.com/r/Truckers/" target="_blank">r/Truckers</a>,
+          Facebook "Owner Operator Trucking" 그룹 (50K+),
+          <a href="https://www.thetruckersreport.com/" target="_blank">TheTruckersReport</a> 포럼
+        </span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">1인 개발 시간</span>
+        <span class="opp-field-value">10~14주. 배차 보드 + 경비 추적 + IFTA 연료세 계산 + 간단 인보이싱. 모바일 우선.</span>
+      </div>
+    </div>
+    <div class="opp-risk">규제(ELD, IFTA, DOT) 연동 범위가 넓어지면 1인 유지 불가. MVP에서 배차+경비 추적만 집중해야 함.</div>
+  </div>
+
+  <!-- ── #7 ── -->
+  <div class="opp-card">
+    <div class="opp-number">#7</div>
+    <div class="opp-title">동물병원 견적→인보이스 자동 변환 도구</div>
+    <div class="opp-target">대상: 수의사 1~3명 규모의 소규모 동물병원</div>
+    <div class="opp-quote">
+      "Covetrus Pulse requires excessive clicks for basic patient-to-checkout workflows — 15+ reviews mention this."
+      <cite>— G2, Covetrus Pulse 리뷰</cite>
+    </div>
+    <div class="opp-quote">
+      "ezyVet has no estimate-to-invoice conversion. Reminders have no search/filter capability."
+      <cite>— G2/Capterra, ezyVet 리뷰</cite>
+    </div>
+    <div class="opp-grid">
+      <div class="opp-field">
+        <span class="opp-field-label">예상 가격</span>
+        <span class="opp-field-value price">$149/월</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">40명 모으는 현실 시간</span>
+        <span class="opp-field-value">8~12개월. 수의사 커뮤니티는 작지만 밀접. VIN(Veterinary Information Network) 포럼 활용.</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">고객이 모여 있는 장소</span>
+        <span class="opp-field-value">
+          <a href="https://www.reddit.com/r/vettech/" target="_blank">r/vettech</a>,
+          <a href="https://www.vin.com/" target="_blank">VIN</a> 포럼,
+          Facebook "Veterinary Practice Managers" 그룹 (8K+)
+        </span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">1인 개발 시간</span>
+        <span class="opp-field-value">8~10주. 견적서 작성 → 보호자 승인 → 인보이스 자동 전환 + 정기 검진 리마인더.</span>
+      </div>
+    </div>
+    <div class="opp-risk">기존 PIMS(Practice Information Management System)와의 연동이 필수인데, 대부분 API가 폐쇄적. 독립형으로 시작 시 이중 입력 문제 발생.</div>
+  </div>
+
+  <!-- ── #8 ── -->
+  <div class="opp-card">
+    <div class="opp-number">#8</div>
+    <div class="opp-title">오토디테일링 예약 + 차량 CRM</div>
+    <div class="opp-target">대상: 1~3인 모바일/매장 오토디테일링 사업자</div>
+    <div class="opp-quote">
+      "Phone calls and text message scheduling create bottlenecks. When a potential customer has to call mid-detail and wait for a callback, many just go with whoever responds first."
+      <cite>— GetServicify, Auto Detailing 가이드</cite>
+    </div>
+    <div class="opp-quote">
+      "No-show rates of 15~25% for detailers without deposit requirements. A no-show for mobile detailers means wasted drive time and fuel."
+      <cite>— GoodCall, Auto Detailing Scheduling 분석</cite>
+    </div>
+    <div class="opp-grid">
+      <div class="opp-field">
+        <span class="opp-field-label">예상 가격</span>
+        <span class="opp-field-value price">$99/월</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">40명 모으는 현실 시간</span>
+        <span class="opp-field-value">4~7개월. r/AutoDetailing이 매우 활발(350K+). IDA(International Detailing Association) 활용.</span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">고객이 모여 있는 장소</span>
+        <span class="opp-field-value">
+          <a href="https://www.reddit.com/r/AutoDetailing/" target="_blank">r/AutoDetailing</a> (350K+),
+          Facebook "Auto Detailing Business" 그룹 (30K+),
+          <a href="https://www.the-ida.com/" target="_blank">IDA</a>
+        </span>
+      </div>
+      <div class="opp-field">
+        <span class="opp-field-label">1인 개발 시간</span>
+        <span class="opp-field-value">5~7주. 온라인 예약 + 보증금 결제 + 차량별 서비스 이력(차종, 코팅 보증) + SMS 리마인더.</span>
+      </div>
+    </div>
+    <div class="opp-risk">$99/월은 마진이 빠듯. 40명 전부 채워야 $3,960. Urable, DetailerBase 같은 신규 경쟁자가 등장 중.</div>
+  </div>
+
+
+  <!-- ═══════════ TOP 3 ═══════════ -->
+  <div class="top3-section">
+    <div class="section-label">최종 선별</div>
+    <h2 class="top3-header">"내가 접근 가능한 유통 채널이 있는가" 기준 상위 3개</h2>
+    <p class="top3-sub">
+      선별 기준: (1) 고객이 이미 모여 있는 온라인 커뮤니티의 활성도, (2) 콜드 아웃리치 없이 콘텐츠/커뮤니티 참여만으로 초기 고객 확보 가능 여부, (3) 1인 개발자가 도메인 지식 없이 진입 가능한 학습 곡선.
+    </p>
+
+    <div class="top3-card">
+      <span class="top3-rank">1</span>
+      <div class="top3-name">회계사/세무사 고객 서류 수집 포털</div>
+      <div class="top3-reason">
+        <strong>왜 1위인가:</strong> r/taxpros, r/bookkeeping, AccountingWeb가 극도로 활발하고, 세무사/회계사는 온라인에서 도구를 적극 탐색하는 집단. 매년 1~4월 세금 시즌이라는 자연적 구매 시점이 존재. "서류를 이메일로 요청하는 행위"는 누구나 이해할 수 있어 도메인 지식 진입 장벽이 낮음. 개발 6~8주로 가장 빠른 MVP 가능. 조건부 체크리스트(업종별 필요 서류가 다름)가 노션/구글폼으로는 안 되는 차별점.
+      </div>
+      <div class="top3-channels">
+        <span class="channel-tag">r/taxpros</span>
+        <span class="channel-tag">r/bookkeeping</span>
+        <span class="channel-tag">AccountingWeb 포럼</span>
+        <span class="channel-tag">FB Bookkeepers 그룹 45K+</span>
+        <span class="channel-tag">세금 시즌 자연 구매 시점</span>
+        <span class="channel-tag">CPA 디렉토리 콜드 이메일</span>
+      </div>
+    </div>
+
+    <div class="top3-card">
+      <span class="top3-rank">2</span>
+      <div class="top3-name">건설 하도급 변경주문 추적기</div>
+      <div class="top3-reason">
+        <strong>왜 2위인가:</strong> "변경주문 하나 누락되면 수천 달러 손실"이라는 명확한 ROI 스토리. r/Construction, r/electricians, LinkedIn 건설 그룹이 활발하고, "스프레드시트로 관리하다 돈 날린 경험"을 공유하는 글이 많음. $199/월이면 20명만 모아도 $3,980. 미국 소규모 하도급업체 수가 수십만 개로 시장 크기 충분. 진입 장벽은 건설 용어 학습(2~3주면 충분).
+      </div>
+      <div class="top3-channels">
+        <span class="channel-tag">r/Construction</span>
+        <span class="channel-tag">r/electricians</span>
+        <span class="channel-tag">LinkedIn 건설 그룹</span>
+        <span class="channel-tag">지역 Subcontractor Assoc.</span>
+        <span class="channel-tag">YouTube 건설 채널 스폰서</span>
+      </div>
+    </div>
+
+    <div class="top3-card">
+      <span class="top3-rank">3</span>
+      <div class="top3-name">오토디테일링 예약 + 차량 CRM</div>
+      <div class="top3-reason">
+        <strong>왜 3위인가:</strong> r/AutoDetailing (350K+ 구독자)이라는 초대형 니치 커뮤니티가 존재하고, 디테일러들은 기술과 도구에 관심이 높은 집단. 개발이 5~7주로 가장 빠르고, 예약+보증금+차량 이력이라는 조합은 Calendly/Square로 안 되는 명확한 차별점. $99/월로 가격이 낮아 전환 저항이 적음. IDA(International Detailing Association) 뉴스레터 스폰서십으로 초기 노출 가능.
+      </div>
+      <div class="top3-channels">
+        <span class="channel-tag">r/AutoDetailing 350K+</span>
+        <span class="channel-tag">FB Auto Detailing 30K+</span>
+        <span class="channel-tag">IDA 뉴스레터</span>
+        <span class="channel-tag">YouTube 디테일링 채널</span>
+        <span class="channel-tag">Instagram #autodetailing</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exclusion note -->
+  <div class="exclusion-note">
+    <h3>제외된 아이디어</h3>
+    <ul class="exclusion-list">
+      <li>인보이스 리마인더 (FreshBooks/QuickBooks 무료 기능과 겹침)</li>
+      <li>청소업체 스케줄링 (ZenMaid, Jobber 등 경쟁 과포화)</li>
+      <li>소규모 임대인 관리 (Stessa, TenantCloud 무료/저가 대안 다수)</li>
+      <li>살롱/스파 노쇼 관리 (Mindbody, Vagaro, Fresha — 레드오션)</li>
+      <li>직원 타임시트 (Homebase 무료 플랜으로 충분)</li>
+      <li>웨딩 플래너 벤더 관리 (규모가 작고 시즌성 극심)</li>
+      <li>소규모 제조업 MRP (기술적 복잡도가 1인 개발 범위 초과)</li>
+    </ul>
+  </div>
+
+  <footer class="report-footer">
+    데이터 출처: G2, Capterra, Reddit, TeamBlind, BiggerPockets, FreightWaves, Upwork, Fiverr, 업계 블로그 &middot; 2026.07.29 기준
+  </footer>
+
+</div>
