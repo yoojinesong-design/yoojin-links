@@ -1,0 +1,818 @@
+<title>B2B Micro-SaaS: Job Posting Reverse Research</title>
+<style>
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #F0EBE3; --bg-card: #FFFFFF; --bg-card-alt: #F7F4EF;
+      --ink: #0B1222; --ink-2: #334155; --ink-3: #64748B;
+      --border: #D6CFC4; --border-light: #E8E2D9;
+      --red: #C43D3D; --red-bg: #FDF2F2; --red-border: #F5DBDB;
+      --green: #2E7D5B; --green-bg: #F0FAF5; --green-border: #C6E7D8;
+      --gold: #B8964E; --gold-bg: #FBF7EF; --gold-border: #E8DCC4;
+      --blue: #3B6FA0; --blue-bg: #EFF5FB;
+      --tag-bg: #E8E2D9; --tag-text: #5A5247;
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0B1222; --bg-card: #131C2E; --bg-card-alt: #182338;
+      --ink: #E2DED6; --ink-2: #A0998E; --ink-3: #6B6560;
+      --border: #1E2A40; --border-light: #1A2538;
+      --red: #E06060; --red-bg: #1E1418; --red-border: #3A1C1C;
+      --green: #4CAF82; --green-bg: #0E1E18; --green-border: #1A3828;
+      --gold: #D4AD5E; --gold-bg: #1A1810; --gold-border: #2E2818;
+      --blue: #5A9FD4; --blue-bg: #101A28;
+      --tag-bg: #1E2A40; --tag-text: #A0998E;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #F0EBE3; --bg-card: #FFFFFF; --bg-card-alt: #F7F4EF;
+    --ink: #0B1222; --ink-2: #334155; --ink-3: #64748B;
+    --border: #D6CFC4; --border-light: #E8E2D9;
+    --red: #C43D3D; --red-bg: #FDF2F2; --red-border: #F5DBDB;
+    --green: #2E7D5B; --green-bg: #F0FAF5; --green-border: #C6E7D8;
+    --gold: #B8964E; --gold-bg: #FBF7EF; --gold-border: #E8DCC4;
+    --blue: #3B6FA0; --blue-bg: #EFF5FB;
+    --tag-bg: #E8E2D9; --tag-text: #5A5247;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B1222; --bg-card: #131C2E; --bg-card-alt: #182338;
+    --ink: #E2DED6; --ink-2: #A0998E; --ink-3: #6B6560;
+    --border: #1E2A40; --border-light: #1A2538;
+    --red: #E06060; --red-bg: #1E1418; --red-border: #3A1C1C;
+    --green: #4CAF82; --green-bg: #0E1E18; --green-border: #1A3828;
+    --gold: #D4AD5E; --gold-bg: #1A1810; --gold-border: #2E2818;
+    --blue: #5A9FD4; --blue-bg: #101A28;
+    --tag-bg: #1E2A40; --tag-text: #A0998E;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace; }
+
+  /* ── HEADER ── */
+  .header {
+    max-width: 960px; margin: 0 auto; padding: 48px 24px 0;
+  }
+  .header-method {
+    font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-3); margin-bottom: 12px;
+  }
+  .header h1 {
+    font-size: clamp(24px, 4vw, 34px); font-weight: 800;
+    letter-spacing: -.03em; line-height: 1.15; text-wrap: balance;
+    margin-bottom: 8px;
+  }
+  .header-sub {
+    font-size: 15px; color: var(--ink-2); max-width: 600px; margin-bottom: 32px;
+  }
+
+  /* ── PRIORITY NAV ── */
+  .pri-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px; max-width: 960px; margin: 0 auto 40px; padding: 0 24px;
+  }
+  .pri-card {
+    padding: 16px 18px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .pri-card.p1 { border-left: 3px solid var(--green); }
+  .pri-card.p2 { border-left: 3px solid var(--red); }
+  .pri-card.p3 { border-left: 3px solid var(--gold); }
+  .pri-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .pri-card.p1 .pri-label { color: var(--green); }
+  .pri-card.p2 .pri-label { color: var(--red); }
+  .pri-card.p3 .pri-label { color: var(--gold); }
+  .pri-card h3 { font-size: 14px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 4px; }
+  .pri-card p { font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+
+  /* ── SECTION ── */
+  .section {
+    max-width: 960px; margin: 0 auto; padding: 0 24px 48px;
+  }
+  .section-head {
+    display: flex; align-items: baseline; gap: 10px;
+    border-bottom: 2px solid var(--border); padding-bottom: 10px;
+    margin-bottom: 24px;
+  }
+  .section-num {
+    font-size: 12px; font-weight: 800; color: var(--green);
+    padding: 2px 8px; border-radius: 3px; background: var(--green-bg);
+    border: 1px solid var(--green-border);
+  }
+  .section-head.s2 .section-num { color: var(--red); background: var(--red-bg); border-color: var(--red-border); }
+  .section-head.s3 .section-num { color: var(--gold); background: var(--gold-bg); border-color: var(--gold-border); }
+  .section-head h2 {
+    font-size: clamp(18px, 3vw, 22px); font-weight: 800;
+    letter-spacing: -.02em;
+  }
+
+  /* ── OPPORTUNITY CARD ── */
+  .opp {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 20px; overflow: hidden;
+  }
+  .opp-header {
+    padding: 18px 20px 14px; border-bottom: 1px solid var(--border-light);
+    display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;
+  }
+  .opp-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; padding: 3px 8px; border-radius: 3px;
+    background: var(--tag-bg); color: var(--tag-text); flex-shrink: 0;
+  }
+  .opp-header h3 {
+    font-size: 17px; font-weight: 700; letter-spacing: -.015em;
+    flex: 1; min-width: 200px;
+  }
+  .opp-body { padding: 18px 20px; }
+  .opp-body p { font-size: 14px; color: var(--ink-2); margin-bottom: 12px; line-height: 1.65; }
+  .opp-body p:last-child { margin-bottom: 0; }
+
+  /* ── DATA ROW ── */
+  .data-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px; margin: 16px 0;
+  }
+  .data-cell {
+    padding: 12px 14px; border-radius: 5px; background: var(--bg-card-alt);
+    border: 1px solid var(--border-light);
+  }
+  .data-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 2px;
+  }
+  .data-val {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 18px; font-weight: 800; letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .data-val.green { color: var(--green); }
+  .data-val.red { color: var(--red); }
+  .data-val.gold { color: var(--gold); }
+  .data-val.blue { color: var(--blue); }
+  .data-note { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+
+  /* ── WHO DOES THIS / WHERE ── */
+  .who-box {
+    margin: 16px 0; padding: 14px 16px; border-radius: 5px;
+    border: 1px solid var(--green-border); background: var(--green-bg);
+  }
+  .who-box h4 {
+    font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--green); margin-bottom: 6px;
+  }
+  .who-box p { font-size: 13px; color: var(--ink-2); line-height: 1.6; margin-bottom: 4px; }
+  .who-box a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ── 40-CUSTOMER SCENARIO ── */
+  .scenario {
+    margin: 16px 0 0; padding: 14px 16px; border-radius: 5px;
+    border: 1px solid var(--gold-border); background: var(--gold-bg);
+  }
+  .scenario h4 {
+    font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 6px;
+  }
+  .scenario p { font-size: 13px; color: var(--ink-2); line-height: 1.6; margin-bottom: 4px; }
+
+  /* ── REGULATION CARD ── */
+  .reg-deadline {
+    display: inline-block; font-family: ui-monospace, monospace;
+    font-size: 11px; font-weight: 700; color: var(--red);
+    background: var(--red-bg); border: 1px solid var(--red-border);
+    padding: 2px 8px; border-radius: 3px; margin-bottom: 8px;
+  }
+
+  /* ── FEATURE REQ ── */
+  .vote-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 700; color: var(--gold);
+    background: var(--gold-bg); border: 1px solid var(--gold-border);
+    padding: 2px 8px; border-radius: 3px;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    max-width: 960px; margin: 0 auto; padding: 24px 24px 48px;
+    border-top: 1px solid var(--border); font-size: 12px; color: var(--ink-3);
+  }
+
+  @media (max-width: 640px) {
+    .data-grid { grid-template-columns: 1fr; }
+    .pri-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="header">
+  <div class="header-method">Research Method: Job Posting Reverse Engineering + Regulation Scan + Feature Request Mining</div>
+  <h1>B2B Micro-SaaS Opportunity Map</h1>
+  <p class="header-sub">G2/Capterra 리뷰 대신 구인공고 역추적, 신규 규제 마감일, 미구현 feature request 3축으로 조사. 각 후보에 현재 누가 얼마 받고 하는지, 그 사람들이 모이는 URL, 40명 확보 시나리오 포함.</p>
+</div>
+
+<div class="pri-grid">
+  <div class="pri-card p1">
+    <div class="pri-label">1순위 &mdash; 구인공고 역추적</div>
+    <h3>반복작업에 사람을 쓰는 업종</h3>
+    <p>Indeed/LinkedIn에서 "manual", "data entry", "spreadsheet", "reconcile" 키워드 역추적 &rarr; 5개 기회 발굴</p>
+  </div>
+  <div class="pri-card p2">
+    <div class="pri-label">2순위 &mdash; 신규 규제/보고 의무</div>
+    <h3>마감일 = 강제 수요</h3>
+    <p>최근 12개월 내 시행된 규제 중 반복 보고 의무가 있고 마감일이 있는 것 &rarr; 4개 규제 발굴</p>
+  </div>
+  <div class="pri-card p3">
+    <div class="pri-label">3순위 &mdash; Feature Request 보드</div>
+    <h3>2년+ 미구현 고투표 요청</h3>
+    <p>QuickBooks, Procore, AppFolio 등 공개 피드백 보드에서 투표 많지만 미구현인 기능 &rarr; 3개 기회 발굴</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 1순위: 구인공고 역추적                         -->
+<!-- ═══════════════════════════════════════════ -->
+
+<div class="section">
+  <div class="section-head">
+    <span class="section-num">1순위</span>
+    <h2>구인공고 역추적: 반복작업에 사람을 쓰는 업종</h2>
+  </div>
+
+  <!-- OPP 1: Freight BOL Reconciliation -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Freight / Logistics</span>
+      <h3>화물 브로커 BOL-인보이스 대조 자동화</h3>
+    </div>
+    <div class="opp-body">
+      <p>소규모 화물 브로커리지에서 운송건별 캐리어 인보이스를 Rate Confirmation, BOL, POD와 수작업 대조. 한 건당 4-5개 화면을 클릭해야 하고, 오류로 인해 월 $500-$2,000 과다청구 손실 발생.</p>
+      <p>구인공고 키워드: <strong>"freight invoice reconciliation", "manual BOL entry", "carrier payment processing"</strong>. 빌링 코디네이터가 주 11-12시간을 이 작업에 투입.</p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">현재 담당자 연봉</div>
+          <div class="data-val green">$38-48K</div>
+          <div class="data-note">Billing Coordinator / Ops Admin</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">작업 비용 (연간)</div>
+          <div class="data-val red">$12,500-17,800</div>
+          <div class="data-note">주 11-12시간 × $22-28/hr</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">시장 규모</div>
+          <div class="data-val blue">77,700+</div>
+          <div class="data-note">미국 freight broker/forwarder 수</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">청구 가능 가격</div>
+          <div class="data-val gold">$199/mo</div>
+          <div class="data-note">연 $17.8K 인건비의 13%</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>Billing Coordinator / Operations Admin</strong> &mdash; $38-48K/yr. 소규모 브로커리지(10-50 loads/week)에서 1명이 전담. TMS에 수작업 입력하거나 Excel 대조표 사용.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.reddit.com/r/FreightBrokers/" target="_blank">r/FreightBrokers</a> (47K+ members) &bull; <a href="https://www.linkedin.com/groups/3732639/" target="_blank">LinkedIn: Freight Brokers Network</a> &bull; <a href="https://www.tia.org/" target="_blank">TIA (Transportation Intermediaries Association)</a> &mdash; 회원 1,700+ 브로커리지</p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>TAM:</strong> 77,700 브로커 중 소규모(주 10-100 loads) = ~50,000. 이 중 TMS 없이 스프레드시트 사용 = ~60% = 30,000.</p>
+        <p><strong>채널:</strong> r/FreightBrokers 에서 "invoice reconciliation" 관련 글에 댓글 + TIA 지역 챕터 미팅 참석 + LinkedIn 콜드 아웃리치 (freight broker operations manager 타겟)</p>
+        <p><strong>전환율:</strong> 30,000 잠재고객 중 0.13% = 40명. $199/mo × 40 = <strong>$7,960/mo MRR</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPP 2: Construction Lien Waiver -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Construction</span>
+      <h3>건설 Lien Waiver 수집/추적 자동화</h3>
+    </div>
+    <div class="opp-body">
+      <p>GC(General Contractor)가 매 지급주기마다 하도급업체 수십 곳의 lien waiver(유치권 포기서)를 수집, 분류, 추적. Conditional/Unconditional, Partial/Final 4가지 유형 × 하도급업체 수. 수작업 Excel 추적 시 결제 지연, 컴플라이언스 갭, 유치권 리스크 발생.</p>
+      <p>구인공고 키워드: <strong>"lien waiver tracking", "subcontractor compliance", "AP reconciliation construction"</strong></p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">현재 담당자 연봉</div>
+          <div class="data-val green">$42-56K</div>
+          <div class="data-note">Construction AP Clerk / Project Admin</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">자동화 시 효과</div>
+          <div class="data-val red">37% DSO 감소</div>
+          <div class="data-note">+ 수작업 70% 감소</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">시장 규모</div>
+          <div class="data-val blue">919,000+</div>
+          <div class="data-note">미국 건설 사업체 수</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">기존 솔루션 가격</div>
+          <div class="data-val gold">$49-1,000/mo</div>
+          <div class="data-note">LienDone $49 ~ Built $1,000</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>Project Administrator / AP Clerk</strong> &mdash; $42-56K/yr. 중소 GC(연매출 $5-50M)에서 1-2명이 Excel로 추적. 주(州)마다 양식이 다르고(텍사스 Property Code Ch.53 등), 마감일 하나 놓치면 유치권 전체 무효.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.reddit.com/r/Construction/" target="_blank">r/Construction</a> &bull; <a href="https://www.agc.org/" target="_blank">AGC (Associated General Contractors)</a> &bull; <a href="https://www.levelset.com/blog/" target="_blank">Levelset Community Blog</a> &bull; <a href="https://www.procore.com/community" target="_blank">Procore Community Forum</a></p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>틈새:</strong> 기존 솔루션(Built $1,000/mo, Rabbet 엔터프라이즈)은 대형 GC 타겟. LienDone($49)은 기본 생성만. $149/mo에 자동 수집 + 주별 양식 + 마감 알림 = 미들마켓 공백.</p>
+        <p><strong>TAM:</strong> 연매출 $2-20M GC = ~120,000. 하도급 10개+ 관리 = ~40,000. 이 중 소프트웨어 미사용 = ~70% = 28,000.</p>
+        <p><strong>전환율:</strong> 28,000 × 0.14% = 40명. $149/mo × 40 = <strong>$5,960/mo MRR</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPP 3: Dental Insurance Verification -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Dental</span>
+      <h3>치과 보험 검증 + 클레임 거부 재작업 자동화</h3>
+    </div>
+    <div class="opp-body">
+      <p>치과 접수직원이 환자 방문 전 보험사에 전화해서 보장범위 확인 &rarr; 하루 4-6시간 소요. 클레임 거부율 14%, 거부 건당 재작업 비용 $25-30. 월 200건 제출 시 28건 거부 = $700-840/월 재작업 비용.</p>
+      <p>구인공고 키워드: <strong>"dental insurance verification", "dental billing specialist", "claim denial management"</strong></p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">현재 담당자 연봉</div>
+          <div class="data-val green">$38-57K</div>
+          <div class="data-note">Dental Billing Specialist / Denials Specialist</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">거부 재작업 비용</div>
+          <div class="data-val red">$700-840/mo</div>
+          <div class="data-note">14% 거부율 × $25-30/건</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">시장 규모</div>
+          <div class="data-val blue">178,000+</div>
+          <div class="data-note">미국 치과 프랙티스 수</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">기존 솔루션 가격</div>
+          <div class="data-val gold">$2,000-3,000/mo</div>
+          <div class="data-note">AI 검증 플랫폼 (대형 DSO 타겟)</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>Front Desk / Insurance Coordinator</strong> &mdash; $38-50K/yr (검증), <strong>Denials Specialist</strong> &mdash; $38-51K/yr (거부 재작업). 독립 치과(1-3 doctor)에서는 접수직원이 겸임.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.reddit.com/r/DentalAssistant/" target="_blank">r/DentalAssistant</a> &bull; <a href="https://www.reddit.com/r/dentistry/" target="_blank">r/dentistry</a> &bull; <a href="https://www.adcaonline.org/" target="_blank">ADCA (American Dental Coders Association)</a> &bull; <a href="https://www.dentaltown.com/" target="_blank">Dentaltown Forum</a> (270K+ members)</p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>틈새:</strong> AI 검증 플랫폼(Ventus, Milo, DoctorConnect)은 월 $2,000-3,000으로 DSO(50+ 지점) 타겟. 독립 치과 1-3명 의사 프랙티스는 가격 장벽. $249/mo에 보험 검증 자동화 + 거부 예방 체크리스트 = 공백.</p>
+        <p><strong>TAM:</strong> 178,000 치과 중 독립(1-3 의사) = ~60% = ~107,000. 이 중 자동화 미도입 = ~80% = 85,000.</p>
+        <p><strong>전환율:</strong> 85,000 × 0.05% = 40명. $249/mo × 40 = <strong>$9,960/mo MRR</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPP 4: Property Management Rent Reconciliation -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Property Management</span>
+      <h3>임대료 수납 대조 + 입주자 데이터 입력 자동화</h3>
+    </div>
+    <div class="opp-body">
+      <p>소규모 프로퍼티 매니저(20-200 유닛)가 렌트 체크 수령, 기록, 매칭을 수작업으로 처리. 이중 장부 확인이 필요하지만 스프레드시트에는 자동 체크 없음. 숫자 전치, 거래 누락 빈발.</p>
+      <p>구인공고 키워드: <strong>"rental property data entry", "rent reconciliation", "lease administration spreadsheet"</strong></p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">현재 담당자 연봉</div>
+          <div class="data-val green">$35-45K</div>
+          <div class="data-note">Rental Property Data Entry Clerk</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">시장 규모</div>
+          <div class="data-val blue">320,000+</div>
+          <div class="data-note">미국 property management 사업체 추정</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">기존 솔루션 가격</div>
+          <div class="data-val gold">$50-400/mo</div>
+          <div class="data-note">Buildium $50 ~ AppFolio $280+</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>Property Admin / Data Entry Clerk</strong> &mdash; $35-45K/yr (ZipRecruiter 2026). 20-100 유닛 관리 개인 매니저가 Excel/Google Sheets로 렌트 추적, 지출 기록, 리스 관리.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.reddit.com/r/propertymanagement/" target="_blank">r/propertymanagement</a> &bull; <a href="https://www.reddit.com/r/realestateinvesting/" target="_blank">r/realestateinvesting</a> &bull; <a href="https://www.narpm.org/" target="_blank">NARPM (National Association of Residential Property Managers)</a> &bull; <a href="https://www.biggerpockets.com/forums" target="_blank">BiggerPockets Forum</a></p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>주의:</strong> 이 시장은 Buildium, TenantCloud 등 기존 솔루션이 강력. 단독 신규 진입보다는 <strong>특화 틈새</strong>(예: 상업용 프로퍼티 CAM/NNN 정산 자동화)에 집중 필요.</p>
+        <p>CAM(Common Area Maintenance) 정산 전문 툴은 거의 없음. 상업용 PM ~40,000 중 스프레드시트 사용 ~50% = 20,000.</p>
+        <p>$149/mo × 40 = <strong>$5,960/mo MRR</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPP 5: Auto Repair Shop -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Auto Repair</span>
+      <h3>독립 정비소 부품 재고 + 수리 오더 회계 연동</h3>
+    </div>
+    <div class="opp-body">
+      <p>독립 정비소가 하루 2-3시간을 부품 재고 추적, 수리 오더 데이터 입력, QuickBooks 수동 대조에 소비. 코어 리턴, 부품 인보이스, 수리 오더 간 정산이 QuickBooks와 맞지 않아 별도 스프레드시트 운영.</p>
+      <p>구인공고 키워드: <strong>"auto repair data entry", "parts inventory tracking", "service advisor"</strong></p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">서비스 어드바이저 연봉</div>
+          <div class="data-val green">$34-76K</div>
+          <div class="data-note">중앙값 $57K (데이터 입력 포함)</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">낭비 시간</div>
+          <div class="data-val red">2-3시간/일</div>
+          <div class="data-note">수작업 재고+입력+대조</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">시장 규모</div>
+          <div class="data-val blue">207,000+</div>
+          <div class="data-note">미국 독립 정비소 (전체 253K의 82%)</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">연 매출 평균</div>
+          <div class="data-val gold">$1.2M</div>
+          <div class="data-note">독립 정비소 평균</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>Service Advisor / Shop Admin</strong> &mdash; $34-76K/yr. 소규모 정비소(1-5 bay)에서 오너가 직접 하거나, 서비스 어드바이저가 접수 + 데이터 입력 겸임. QuickBooks + Etsy에서 산 Excel 템플릿 조합으로 운영.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.reddit.com/r/MechanicAdvice/" target="_blank">r/MechanicAdvice</a> &bull; <a href="https://www.reddit.com/r/AutoMechanic/" target="_blank">r/AutoMechanic</a> &bull; <a href="https://www.hvac-talk.com/" target="_blank">HVAC-Talk (정비 포럼)</a> &bull; <a href="https://www.aborhq.com/" target="_blank">ABOR (Auto Body Repair)</a></p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>틈새:</strong> Shop-Ware, Tekmetric 등 shop management 소프트웨어는 $199-399/mo지만 QuickBooks 연동이 불완전하고 재고 자동화 약함. "$99/mo QuickBooks 브릿지 + 부품 재고 자동 추적" 포지셔닝.</p>
+        <p><strong>TAM:</strong> 207,000 독립 정비소 중 shop SW 미사용 = ~60% = 124,000. 그 중 QuickBooks 사용 = ~50% = 62,000.</p>
+        <p><strong>전환율:</strong> 62,000 × 0.06% = 40명. $99/mo × 40 = <strong>$3,960/mo MRR</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 2순위: 신규 규제/보고 의무                      -->
+<!-- ═══════════════════════════════════════════ -->
+
+<div class="section">
+  <div class="section-head s2">
+    <span class="section-num">2순위</span>
+    <h2>신규 규제/보고 의무: 마감일 = 강제 수요</h2>
+  </div>
+
+  <!-- REG 1: FMCSA Clearinghouse -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Trucking / Fleet</span>
+      <h3>FMCSA Drug &amp; Alcohol Clearinghouse 연간 쿼리 컴플라이언스</h3>
+    </div>
+    <div class="opp-body">
+      <div class="reg-deadline">마감: 매년 1월 31일 (연간 쿼리) &bull; 위반 시 $6,386-16,000/건</div>
+      <p>CDL 드라이버를 고용하는 모든 사업체는 매 12개월마다 FMCSA Clearinghouse에 각 드라이버별 쿼리를 수행해야 함. 신규 채용 시에도 안전민감 업무 배치 전 쿼리 필수. 전자 동의(electronic consent)도 별도 수집 필요 &mdash; 종이 동의 불인정.</p>
+      <p>2026년 Clearinghouse II 업데이트로 의무 강화: 연간 약물검사 50%, 알코올 10% 비율 유지 필요.</p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">영향 받는 사업체</div>
+          <div class="data-val blue">500,000+</div>
+          <div class="data-note">CDL 드라이버 고용 사업체</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">기존 솔루션 가격</div>
+          <div class="data-val gold">$29-499/mo</div>
+          <div class="data-note">HRForge $49 ~ DQM Connect $499</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">드라이버당 비용</div>
+          <div class="data-val green">~$200/yr</div>
+          <div class="data-note">약물/알코올 프로그램 전체</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>Safety Manager / Fleet Compliance Officer</strong> &mdash; $45-65K/yr. 소형 캐리어(1-20 trucks)에서는 오너 또는 디스패처가 겸임. FMCSA ITA 사이트에 수동 로그인하여 드라이버별 쿼리 + 결과 PDF 저장 + Excel 추적.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.reddit.com/r/Truckers/" target="_blank">r/Truckers</a> &bull; <a href="https://www.reddit.com/r/FreightBrokers/" target="_blank">r/FreightBrokers</a> &bull; <a href="https://www.ooida.com/" target="_blank">OOIDA (Owner-Operator Independent Drivers Association)</a> &bull; <a href="https://www.truckinginfo.com/" target="_blank">TruckingInfo Forum</a></p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>틈새:</strong> 대형 플랫폼(DQM Connect $299-499/mo)은 50+ 트럭 타겟. 소형 캐리어(1-20 trucks)용 $79/mo 올인원(쿼리 자동화 + 동의서 수집 + 검사 스케줄링 + DQF 보관).</p>
+        <p><strong>TAM:</strong> FMCSA 등록 캐리어 ~500,000 중 1-20 trucks = ~85% = 425,000. SW 미사용 추정 ~60% = 255,000.</p>
+        <p><strong>전환율:</strong> 255,000 × 0.016% = 40명. $79/mo × 40 = <strong>$3,160/mo MRR</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REG 2: State Privacy Laws -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Cross-Industry</span>
+      <h3>주(州)별 개인정보 보호법 컴플라이언스 (2025-2026 신규 시행)</h3>
+    </div>
+    <div class="opp-body">
+      <div class="reg-deadline">2026년 1월 1일: Indiana, Kentucky, Rhode Island 시행 &bull; 위반 시 $7,500-10,000/건</div>
+      <p>2025-2026년에 3개 주 신규 시행 + 기존 주 cure period 만료 (Delaware 12/2025, Montana 4/2026, New Jersey 중순 2026). 소비자에게 데이터 접근/삭제/수정/이동 권리 부여, 민감 데이터 opt-in 동의 필수.</p>
+      <p>Texas TDPSA는 SBA 소기업 면제가 있지만 민감 정보 판매 시 소기업도 동의 필수. 텍사스 AG가 2025년 초 첫 TDPSA 집행 조치 착수.</p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">시행 중인 주 수</div>
+          <div class="data-val red">20개 주</div>
+          <div class="data-note">2026년 기준 포괄적 프라이버시법</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">위반 벌금</div>
+          <div class="data-val red">$7,500-10,000</div>
+          <div class="data-note">건당, AG 집행</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">기존 솔루션 가격</div>
+          <div class="data-val gold">$49-500/mo</div>
+          <div class="data-note">OneTrust 소기업 ~ Osano 등</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>아무도 안 하고 있음.</strong> 소기업 대부분이 이 규제를 인지하지 못하거나 무시. 인지하는 곳은 로펌에 $2,000-5,000 일회성 컨설팅 비용 지불 후 수동 프라이버시 정책 작성.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.reddit.com/r/smallbusiness/" target="_blank">r/smallbusiness</a> &bull; <a href="https://www.reddit.com/r/ecommerce/" target="_blank">r/ecommerce</a> &bull; <a href="https://www.sba.gov/" target="_blank">SBA.gov</a> &bull; 각 주 상공회의소</p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>주의:</strong> OneTrust, Termly, Osano 등 이미 경쟁 심함. 단독 신규 진입보다는 <strong>특정 업종 + 주 조합</strong>에 특화 필요 (예: "텍사스 치과 TDPSA 컴플라이언스" 또는 "인디애나 이커머스 프라이버시").</p>
+        <p>경쟁 과다로 인해 <strong>단독 추천하지 않음</strong> &mdash; 다른 기회와 번들 가능성만 참고.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REG 3: FTC Safeguards Rule for Auto Dealers -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Auto Dealership</span>
+      <h3>FTC Safeguards Rule &mdash; 자동차 딜러십 정보보안 컴플라이언스</h3>
+    </div>
+    <div class="opp-body">
+      <div class="reg-deadline">집행 강화 진행 중 (2023 시행) &bull; 위반 시 $50,120/일</div>
+      <p>소비자 신용정보를 다루는 자동차 딜러십은 포괄적 정보보안 프로그램 구축 의무. 2023년 시행됐지만 FTC가 2026년부터 소규모 딜러에 대한 집행을 본격화. MFA, 암호화, 리스크 평가, 사고 대응 계획, 벤더 관리 모두 필요.</p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">영향 받는 사업체</div>
+          <div class="data-val blue">~69,000</div>
+          <div class="data-note">미국 자동차 딜러십 (신차+중고)</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">위반 벌금</div>
+          <div class="data-val red">$50,120/일</div>
+          <div class="data-note">2026년 기준 상향 조정</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">독립 중고차 딜러 수</div>
+          <div class="data-val blue">~52,000</div>
+          <div class="data-note">대부분 IT 전담 인력 없음</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>외부 IT 컨설턴트 / MSSP</strong> &mdash; 초기 구축 $5,000-15,000 + 월 $500-2,000 관리. 독립 중고차 딜러 대부분은 비용 부담으로 <strong>아무것도 안 하고 있음</strong>. 벌금 뉴스 나올 때까지 무시.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.niada.com/" target="_blank">NIADA (National Independent Automobile Dealers Association)</a> &bull; <a href="https://www.nada.org/" target="_blank">NADA</a> &bull; <a href="https://www.reddit.com/r/askcarsales/" target="_blank">r/askcarsales</a> &bull; <a href="https://www.dealerrefresh.com/" target="_blank">DealerRefresh Forum</a></p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>포지셔닝:</strong> "$199/mo Safeguards Rule 올인원" &mdash; 리스크 평가 체크리스트 자동 생성, MFA 설정 가이드, 벤더 계약 검토 템플릿, 사고 대응 계획 생성기, 연간 감사 리포트. IT 지식 불필요.</p>
+        <p><strong>TAM:</strong> 52,000 독립 중고차 딜러 + 17,000 신차 딜러 중 소규모 = ~60,000. 컴플라이언스 미달 추정 = ~70% = 42,000.</p>
+        <p><strong>전환율:</strong> 42,000 × 0.10% = 42명. $199/mo × 40 = <strong>$7,960/mo MRR</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REG 4: EPA PFAS Reporting -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Manufacturing</span>
+      <h3>EPA TSCA PFAS 보고 &mdash; 제조/수입업체 의무 보고</h3>
+    </div>
+    <div class="opp-body">
+      <div class="reg-deadline">마감: 2026년 10월 13일 (대부분) &bull; 소기업 수입업체: 2027년 4월 13일</div>
+      <p>2011년 이후 PFAS를 제조하거나 수입한 모든 사업체가 EPA의 Central Data Exchange를 통해 보고 의무. "제조"에는 부산물로 PFAS를 생성하는 것도 포함. 보고 양식이 복잡하고 EPA 시스템 개발 지연으로 혼란 가중.</p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">마감일</div>
+          <div class="data-val red">2026-10-13</div>
+          <div class="data-note">일반 / 2027-04-13 소기업</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">영향 범위</div>
+          <div class="data-val blue">수만 사업체</div>
+          <div class="data-note">PFAS 제조/수입/사용</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>Environmental Compliance Manager</strong> &mdash; $60-85K/yr. 또는 외부 환경 컨설팅 ($5,000-20,000 일회성). 중소 제조업체는 보고 의무 자체를 인지하지 못하는 경우 다수.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.reddit.com/r/environmental_science/" target="_blank">r/environmental_science</a> &bull; <a href="https://www.epa.gov/assessing-and-managing-chemicals-under-tsca" target="_blank">EPA TSCA 공식 페이지</a></p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>주의:</strong> 일회성 보고 의무 (반복 아님). SaaS 모델보다는 일회성 서비스($500-2,000)에 적합. <strong>반복 수익 모델로는 부적합</strong> &mdash; 참고용으로만 기재.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 3순위: Feature Request 보드                   -->
+<!-- ═══════════════════════════════════════════ -->
+
+<div class="section">
+  <div class="section-head s3">
+    <span class="section-num">3순위</span>
+    <h2>Feature Request 보드: 2년+ 미구현 고투표 요청</h2>
+  </div>
+
+  <!-- FR 1: QuickBooks Job Costing -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">QuickBooks Online</span>
+      <h3>QBO 잡 코스팅 / 프로젝트별 수익성 분석</h3>
+    </div>
+    <div class="opp-body">
+      <span class="vote-badge">&#9650; 8,680+ ideas on feedback forum &bull; 8년+ 미해결 버그 리포트</span>
+      <p>QuickBooks Online의 프로젝트/잡 코스팅 기능은 Desktop 버전 대비 극도로 제한적. 건설, 조경, 수리 업종에서 "프로젝트별 수익성을 QBO에서 볼 수 없다"는 불만 수년째 지속. Intuit은 피드백 포럼에서 50표 이상 아이디어를 Product 팀 리뷰한다고 하지만, 핵심 잡 코스팅 기능은 미구현 상태 유지.</p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">QBO 사용 소기업</div>
+          <div class="data-val blue">7M+</div>
+          <div class="data-note">전 세계 QBO 구독자</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">잡 코스팅 필요 업종</div>
+          <div class="data-val gold">건설/조경/수리</div>
+          <div class="data-note">프로젝트 기반 서비스업</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>Bookkeeper / Owner</strong> &mdash; 별도 스프레드시트에서 프로젝트별 비용/수익 수동 추적. QBO 데이터 다운로드 &rarr; Excel에서 피봇 테이블 &rarr; 프로젝트 매칭. 주 2-4시간 소요.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://feedback.qbo.intuit.com/forums/168199-quickbooks-online-feature-requests" target="_blank">QBO Feature Request Forum</a> &bull; <a href="https://www.reddit.com/r/bookkeeping/" target="_blank">r/bookkeeping</a> &bull; <a href="https://www.reddit.com/r/QuickBooks/" target="_blank">r/QuickBooks</a> &bull; <a href="https://quickbooks.intuit.com/community/" target="_blank">QuickBooks Community</a></p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>포지셔닝:</strong> "QBO 연동 잡 코스팅 대시보드" &mdash; QBO API로 거래 데이터 풀링, 프로젝트별 자동 매칭, 실시간 수익성 대시보드. QBO를 교체하지 않고 위에 얹는 형태.</p>
+        <p><strong>TAM:</strong> QBO 사용 건설/조경/수리 사업체 (미국) 추정 ~300,000. 잡 코스팅 스프레드시트 운영 = ~50% = 150,000.</p>
+        <p><strong>전환율:</strong> 150,000 × 0.03% = 45명. $99/mo × 40 = <strong>$3,960/mo MRR</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FR 2: Construction Payment Application -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Procore / Buildertrend</span>
+      <h3>하도급업체 Pay App(기성청구) 자동 수집 + 정산</h3>
+    </div>
+    <div class="opp-body">
+      <span class="vote-badge">&#9650; Procore Community 반복 요청 &bull; Siteline 등 스타트업이 이 갭 공략 중</span>
+      <p>Procore, Buildertrend 등 대형 건설 SW에서 하도급업체 기성청구(Pay Application) 수집 및 자동 정산 기능이 부족하거나 미구현. 하도급업체가 PDF/Excel로 제출 &rarr; GC 담당자가 수작업 검토 &rarr; 오너에게 보고. Siteline이 이 갭을 공략하지만 대형 상업건설 타겟.</p>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>Project Accountant / AP Specialist</strong> &mdash; $48-65K/yr. 중형 GC에서 1-2명 전담, 소형 GC에서는 오너/PM이 겸임.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.procore.com/community" target="_blank">Procore Community</a> &bull; <a href="https://www.reddit.com/r/ConstructionManagers/" target="_blank">r/ConstructionManagers</a> &bull; <a href="https://www.siteline.com/" target="_blank">Siteline Blog (경쟁사 분석용)</a></p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>주의:</strong> Siteline, GCPay 등 VC-funded 경쟁자 존재. 하지만 이들은 대형 상업건설 ($10M+ 프로젝트) 타겟. <strong>주거건설(residential) GC용 간소화 버전</strong>($129/mo)으로 포지셔닝 가능.</p>
+        <p>주거건설 GC ~200,000 중 하도급 5개+ 관리 = ~80,000. $129/mo × 40 = <strong>$5,160/mo MRR</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FR 3: Veterinary Inventory -->
+  <div class="opp">
+    <div class="opp-header">
+      <span class="opp-tag">Veterinary</span>
+      <h3>동물병원 약품 재고 + 유효기한 추적 자동화</h3>
+    </div>
+    <div class="opp-body">
+      <span class="vote-badge">&#9650; eVetPractice / Cornerstone 커뮤니티 반복 요청</span>
+      <p>동물병원 PMS(Practice Management Software)의 재고 관리 기능이 기본적이거나 불완전. dvm360에서 제공하는 "재고 감사 계획 스프레드시트"가 업계 표준 워크어라운드. 약품별 수량, 단가, 유효기한, 배치번호, 부서 추적이 필요하지만 수작업.</p>
+
+      <div class="data-grid">
+        <div class="data-cell">
+          <div class="data-label">시장 규모</div>
+          <div class="data-val blue">57,920</div>
+          <div class="data-note">미국 동물병원/클리닉</div>
+        </div>
+        <div class="data-cell">
+          <div class="data-label">독립 클리닉 비율</div>
+          <div class="data-val green">70-75%</div>
+          <div class="data-note">= ~41,000 독립 클리닉</div>
+        </div>
+      </div>
+
+      <div class="who-box">
+        <h4>이 일을 지금 누가 얼마 받고 하는가</h4>
+        <p><strong>Vet Tech / Inventory Manager</strong> &mdash; $32-42K/yr. 주 2-4시간 수작업 재고 카운트 + 유효기한 체크. dvm360 Excel 템플릿 또는 ClickUp 템플릿 사용.</p>
+        <p><strong>이 사람들이 모이는 곳:</strong></p>
+        <p><a href="https://www.reddit.com/r/VetTech/" target="_blank">r/VetTech</a> &bull; <a href="https://www.dvm360.com/" target="_blank">dvm360 Community</a> &bull; <a href="https://www.avma.org/" target="_blank">AVMA</a> &bull; <a href="https://www.vettechlife.com/" target="_blank">Vet Tech Life Forum</a></p>
+      </div>
+
+      <div class="scenario">
+        <h4>40명 확보 시나리오</h4>
+        <p><strong>포지셔닝:</strong> "$79/mo 동물병원 약품 재고 + 유효기한 알림 + 자동 발주 알림". PMS와 별도로 운영, 바코드 스캔(스마트폰) + 유효기한 만료 7/14/30일 전 알림 + 리오더 포인트 자동 알림.</p>
+        <p><strong>TAM:</strong> 41,000 독립 클리닉 중 재고 자동화 미도입 = ~70% = 28,700.</p>
+        <p><strong>전환율:</strong> 28,700 × 0.14% = 40명. $79/mo × 40 = <strong>$3,160/mo MRR</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOP 3 PICK                                  -->
+<!-- ═══════════════════════════════════════════ -->
+
+<div class="section">
+  <div class="section-head" style="border-bottom-color: var(--green);">
+    <span class="section-num">종합</span>
+    <h2>Top 3 추천</h2>
+  </div>
+
+  <div class="data-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 24px;">
+    <div class="data-cell" style="border-left: 3px solid var(--green);">
+      <div class="data-label">1위: 치과 보험 검증 자동화</div>
+      <div class="data-val green">$9,960/mo</div>
+      <div class="data-note">$249/mo × 40명 &bull; 178K 치과 &bull; 기존 솔루션 $2K+/mo</div>
+      <p style="font-size:12px; color:var(--ink-2); margin-top:8px; line-height:1.5;">가격 갭이 가장 큼 (기존 $2,000+ vs 우리 $249). 독립 치과 107K곳이 자동화 미도입. 거부 재작업 비용($700-840/mo)만으로도 ROI 즉시 증명.</p>
+    </div>
+    <div class="data-cell" style="border-left: 3px solid var(--green);">
+      <div class="data-label">2위: 화물 브로커 BOL 대조 자동화</div>
+      <div class="data-val green">$7,960/mo</div>
+      <div class="data-note">$199/mo × 40명 &bull; 77K 브로커 &bull; 연 $17.8K 인건비 대체</div>
+      <p style="font-size:12px; color:var(--ink-2); margin-top:8px; line-height:1.5;">명확한 ROI (연 $17.8K 인건비 → 연 $2.4K SW). 오버빌링 방지로 추가 절약 $6-24K/yr. 커뮤니티(r/FreightBrokers, TIA) 집중도 높음.</p>
+    </div>
+    <div class="data-cell" style="border-left: 3px solid var(--green);">
+      <div class="data-label">3위: 자동차 딜러 FTC 컴플라이언스</div>
+      <div class="data-val green">$7,960/mo</div>
+      <div class="data-note">$199/mo × 40명 &bull; 52K 독립 딜러 &bull; $50K/일 벌금 공포</div>
+      <p style="font-size:12px; color:var(--ink-2); margin-top:8px; line-height:1.5;">규제 마감일 + 벌금 공포 = 강제 수요. 기존 솔루션은 IT 컨설팅($5K-15K 초기) → "$199/mo 셀프서비스"로 공백. 2026년 FTC 집행 강화가 판매 촉매.</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>Research date: July 2026 &bull; Method: Job posting reverse-engineering (Indeed/LinkedIn), regulation scanning (FinCEN, FMCSA, FTC, EPA, state privacy), feature request board mining (QBO, Procore, dvm360)</p>
+</div>
