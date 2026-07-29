@@ -1,901 +1,309 @@
-<title>MenuPulse</title>
+<title>MenuPulse — Restaurant Market Intelligence for Independent Owners</title>
 <style>
-  /* ===== TOKENS ===== */
   :root {
-    --bg: #FAF8F5;
-    --bg-alt: #F0EDE7;
-    --text: #3D3D3B;
-    --text-light: #5C5955;
-    --heading: #1B4332;
-    --heading-light: #2D6A4F;
-    --accent: #C2410C;
-    --accent-hover: #9A3412;
-    --rule: #D4CFC8;
-    --muted: #7A756E;
-    --card-bg: #FFFFFF;
-    --card-border: #E0DCD6;
-    --input-bg: #FFFFFF;
-    --input-border: #D4CFC8;
-    --input-focus: #1B4332;
-    --dark-bg: #1A1A1C;
-    --dark-text: #E0DCD6;
-    --dark-muted: #9A9590;
-    --dark-accent: #E8733A;
-    --quote-mark: rgba(27, 67, 50, 0.10);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #18181A;
-      --bg-alt: #222224;
-      --text: #CCCAC5;
-      --text-light: #A8A49E;
-      --heading: #6DB88F;
-      --heading-light: #52B788;
-      --accent: #E8733A;
-      --accent-hover: #F08C57;
-      --rule: #3A3A3C;
-      --muted: #8A857E;
-      --card-bg: #242426;
-      --card-border: #3A3A3C;
-      --input-bg: #2A2A2C;
-      --input-border: #4A4A4C;
-      --input-focus: #6DB88F;
-      --dark-bg: #111113;
-      --dark-text: #E0DCD6;
-      --dark-muted: #8A857E;
-      --dark-accent: #E8733A;
-      --quote-mark: rgba(109, 184, 143, 0.12);
-    }
-  }
-
-  :root[data-theme="dark"] {
-    --bg: #18181A;
-    --bg-alt: #222224;
-    --text: #CCCAC5;
-    --text-light: #A8A49E;
-    --heading: #6DB88F;
-    --heading-light: #52B788;
-    --accent: #E8733A;
-    --accent-hover: #F08C57;
-    --rule: #3A3A3C;
-    --muted: #8A857E;
-    --card-bg: #242426;
-    --card-border: #3A3A3C;
-    --input-bg: #2A2A2C;
-    --input-border: #4A4A4C;
-    --input-focus: #6DB88F;
-    --dark-bg: #111113;
-    --dark-text: #E0DCD6;
-    --dark-muted: #8A857E;
-    --dark-accent: #E8733A;
-    --quote-mark: rgba(109, 184, 143, 0.12);
-  }
-
-  :root[data-theme="light"] {
-    --bg: #FAF8F5;
-    --bg-alt: #F0EDE7;
-    --text: #3D3D3B;
-    --text-light: #5C5955;
-    --heading: #1B4332;
-    --heading-light: #2D6A4F;
-    --accent: #C2410C;
-    --accent-hover: #9A3412;
-    --rule: #D4CFC8;
-    --muted: #7A756E;
-    --card-bg: #FFFFFF;
-    --card-border: #E0DCD6;
-    --input-bg: #FFFFFF;
-    --input-border: #D4CFC8;
-    --input-focus: #1B4332;
-    --dark-bg: #1A1A1C;
-    --dark-text: #E0DCD6;
-    --dark-muted: #9A9590;
-    --dark-accent: #E8733A;
-    --quote-mark: rgba(27, 67, 50, 0.10);
-  }
-
-  /* ===== BASE ===== */
-  *, *::before, *::after { box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    font-size: 1.125rem;
-    line-height: 1.65;
-    margin: 0;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* ===== TYPOGRAPHY ===== */
-  h1, h2, h3 {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-weight: normal;
-    color: var(--heading);
-    text-wrap: balance;
-    margin: 0;
-  }
-
-  h1 {
-    font-size: clamp(2.25rem, 5vw, 3.375rem);
-    line-height: 1.08;
-    letter-spacing: -0.01em;
-  }
-
-  h2 {
-    font-size: clamp(1.625rem, 3.5vw, 2.25rem);
-    line-height: 1.15;
-  }
-
-  h3 {
-    font-size: clamp(1.25rem, 2.5vw, 1.5rem);
-    line-height: 1.25;
-  }
-
-  p { margin: 0 0 1rem; }
-  p:last-child { margin-bottom: 0; }
-
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { color: var(--accent-hover); }
-  a:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-    border-radius: 2px;
-  }
-
-  /* ===== LAYOUT ===== */
-  .container {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-  }
-
-  .container--wide {
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-  }
-
-  section {
-    padding: 5.5rem 0;
-  }
-
-  /* ===== NAV ===== */
-  .site-nav {
-    padding: 0 1.5rem;
-    border-bottom: 1px solid var(--rule);
-    background: var(--bg);
-  }
-
-  .nav-inner {
-    max-width: 880px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 3.75rem;
-  }
-
-  .wordmark {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 1.25rem;
-    color: var(--heading);
-    text-decoration: none;
-    letter-spacing: 0.01em;
-  }
-  .wordmark:hover { color: var(--heading); }
-
-  .nav-link {
-    font-size: 0.9375rem;
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-  }
-  .nav-link:hover { color: var(--accent-hover); }
-
-  /* ===== HERO ===== */
-  .hero {
-    padding: 6rem 0 5rem;
-    background: var(--bg);
-  }
-
-  .hero h1 {
-    max-width: 620px;
-  }
-
-  .hero-rule {
-    width: 48px;
-    height: 2px;
-    background: var(--heading);
-    margin: 2rem 0;
-    border: none;
-  }
-
-  .subheadline {
-    font-size: clamp(1.0625rem, 2vw, 1.1875rem);
-    color: var(--text-light);
-    max-width: 560px;
-    line-height: 1.6;
-    margin-bottom: 2.5rem;
-  }
-
-  /* ===== FORMS ===== */
-  .signup-form {
-    display: flex;
-    gap: 0.75rem;
-    max-width: 440px;
-  }
-
-  .signup-form input[type="email"] {
-    flex: 1;
-    min-width: 0;
-    padding: 0.8125rem 1rem;
-    font-size: 1rem;
-    font-family: inherit;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 4px;
-    color: var(--text);
-    transition: border-color 0.15s;
-  }
-
-  .signup-form input[type="email"]::placeholder {
-    color: var(--muted);
-  }
-
-  .signup-form input[type="email"]:focus {
-    outline: none;
-    border-color: var(--input-focus);
-    box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.08);
-  }
-
-  .signup-form button {
-    padding: 0.8125rem 1.75rem;
-    font-size: 1rem;
-    font-family: inherit;
-    font-weight: 600;
-    background: var(--accent);
-    color: #FFFFFF;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s, box-shadow 0.15s;
-  }
-
-  .signup-form button:hover {
-    background: var(--accent-hover);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  }
-
-  .signup-form button:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  /* Dark-band form overrides */
-  .dark-band .signup-form input[type="email"] {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.18);
-    color: var(--dark-text);
-  }
-  .dark-band .signup-form input[type="email"]::placeholder {
-    color: var(--dark-muted);
-  }
-  .dark-band .signup-form input[type="email"]:focus {
-    border-color: var(--dark-accent);
-    box-shadow: 0 0 0 3px rgba(232, 115, 58, 0.15);
-  }
-  .dark-band .signup-form button {
-    background: var(--dark-accent);
-  }
-  .dark-band .signup-form button:hover {
-    background: #F08C57;
-  }
-
-  /* ===== PROBLEM SECTION ===== */
-  .problem {
-    background: var(--bg-alt);
-  }
-
-  .problem-quote {
-    position: relative;
-    padding-left: 2.5rem;
-    margin-bottom: 3rem;
-  }
-
-  .problem-quote::before {
-    content: '\201C';
-    position: absolute;
-    left: -0.15rem;
-    top: -0.6rem;
-    font-family: Georgia, serif;
-    font-size: 5rem;
-    line-height: 1;
-    color: var(--quote-mark);
-    pointer-events: none;
-  }
-
-  .problem-quote p {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: clamp(1.25rem, 2.5vw, 1.5rem);
-    font-style: italic;
-    line-height: 1.45;
-    color: var(--heading);
-    margin: 0;
-  }
-
-  .pain-points {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .pain-point {
-    padding-left: 1.5rem;
-    position: relative;
-    color: var(--text);
-    margin: 0;
-    font-size: 1.0625rem;
-    line-height: 1.6;
-  }
-
-  .pain-point::before {
-    content: '\2014';
-    position: absolute;
-    left: 0;
-    color: var(--heading-light);
-    font-weight: 700;
-  }
-
-  /* ===== FEATURES ===== */
-  .features {
-    background: var(--bg);
-  }
-
-  .features-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .feature {
-    padding: 2.5rem 0;
-  }
-
-  .feature:first-child {
-    padding-top: 0;
-  }
-
-  .feature:last-child {
-    padding-bottom: 0;
-  }
-
-  .feature-label {
-    display: block;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--heading-light);
-    margin-bottom: 0.75rem;
-  }
-
-  .feature h3 {
-    margin-bottom: 0.875rem;
-  }
-
-  .feature p {
-    color: var(--text-light);
-    font-size: 1.0625rem;
-    line-height: 1.65;
-    margin: 0;
-  }
-
-  .feature-divider {
-    border: none;
-    border-top: 1px solid var(--rule);
-    margin: 0;
-  }
-
-  /* ===== STATS ===== */
-  .stats {
-    background: var(--bg-alt);
-  }
-
-  .stats-heading {
-    text-align: center;
-    margin-bottom: 3.5rem;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2.5rem;
-  }
-
-  .stat {
-    text-align: center;
-  }
-
-  .stat-number {
-    display: block;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: clamp(2rem, 4.5vw, 2.75rem);
-    line-height: 1;
-    color: var(--heading);
-    margin-bottom: 1rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .stat p {
-    font-size: 0.9375rem;
-    line-height: 1.55;
-    color: var(--text-light);
-    margin: 0;
-  }
-
-  /* ===== WEEKLY ===== */
-  .weekly {
-    background: var(--bg);
-  }
-
-  .weekly-heading {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  .menu-card {
-    max-width: 520px;
-    margin: 0 auto;
-    border: 1px solid var(--card-border);
-    border-radius: 3px;
-    background: var(--card-bg);
-    padding: 2.5rem 2rem;
-  }
-
-  .menu-item {
-    text-align: center;
-  }
-
-  .menu-day {
-    display: block;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 0.5rem;
-  }
-
-  .menu-title {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 1.125rem;
-    color: var(--heading);
-    line-height: 1.3;
-    margin-bottom: 0.375rem;
-  }
-
-  .menu-desc {
-    font-size: 0.9375rem;
-    color: var(--text-light);
-    line-height: 1.5;
-    margin: 0;
-  }
-
-  .menu-separator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem 0;
-  }
-
-  .menu-separator::before {
-    content: '';
-    display: block;
-    width: 32px;
-    height: 1px;
-    background: var(--rule);
-  }
-
-  /* ===== PRICING ===== */
-  .pricing {
-    background: var(--dark-bg);
-    color: var(--dark-text);
-  }
-
-  .pricing-inner {
-    text-align: center;
-  }
-
-  .pricing h2 {
-    color: var(--dark-text);
-    margin-bottom: 2rem;
-  }
-
-  .price {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: clamp(2.5rem, 6vw, 3.75rem);
-    color: #FFFFFF;
-    line-height: 1;
-    margin-bottom: 0.375rem;
-  }
-
-  .price-period {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    font-size: 1.125rem;
-    color: var(--dark-muted);
-    margin-bottom: 2rem;
-  }
-
-  .price-features {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .price-features li {
-    font-size: 1rem;
-    color: var(--dark-text);
-  }
-
-  .price-note {
-    font-size: 0.9375rem;
-    color: var(--dark-muted);
-    margin-top: 1.5rem;
-    margin-bottom: 2.5rem;
-  }
-
-  .pricing .signup-form {
-    margin: 0 auto;
-    justify-content: center;
-  }
-
-  /* ===== FAQ ===== */
-  .faq {
-    background: var(--bg);
-  }
-
-  .faq-heading {
-    margin-bottom: 3rem;
-  }
-
-  .faq-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .faq-item {
-    padding: 1.75rem 0;
-    border-top: 1px solid var(--rule);
-  }
-
-  .faq-item:last-child {
-    border-bottom: 1px solid var(--rule);
-  }
-
-  .faq-q {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 1.125rem;
-    color: var(--heading);
-    margin-bottom: 0.625rem;
-    line-height: 1.35;
-  }
-
-  .faq-a {
-    font-size: 1rem;
-    line-height: 1.6;
-    color: var(--text-light);
-    margin: 0;
-  }
-
-  /* ===== FINAL CTA ===== */
-  .final-cta {
-    background: var(--dark-bg);
-    color: var(--dark-text);
-    text-align: center;
-  }
-
-  .final-cta h2 {
-    color: var(--dark-text);
-    max-width: 540px;
-    margin: 0 auto 1rem;
-  }
-
-  .final-cta .cta-sub {
-    color: var(--dark-muted);
-    font-size: 1rem;
-    margin-bottom: 2.5rem;
-  }
-
-  .final-cta .signup-form {
-    margin: 0 auto;
-    justify-content: center;
-  }
-
-  /* ===== FOOTER ===== */
-  .site-footer {
-    background: var(--dark-bg);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    padding: 2rem 1.5rem;
-    text-align: center;
-  }
-
-  .site-footer p {
-    font-size: 0.8125rem;
-    color: var(--dark-muted);
-    margin: 0;
-  }
-
-  /* ===== RESPONSIVE ===== */
-  @media (max-width: 680px) {
-    section {
-      padding: 3.5rem 0;
-    }
-
-    .hero {
-      padding: 4rem 0 3.5rem;
-    }
-
-    .signup-form {
-      flex-direction: column;
-    }
-
-    .signup-form button {
-      width: 100%;
-    }
-
-    .stats-grid {
-      grid-template-columns: 1fr;
-      gap: 2.5rem;
-    }
-
-    .stat {
-      text-align: left;
-      display: flex;
-      gap: 1.25rem;
-      align-items: flex-start;
-    }
-
-    .stat-number {
-      flex-shrink: 0;
-      min-width: 80px;
-      text-align: right;
-      margin-bottom: 0;
-      font-size: 1.75rem;
-    }
-
-    .stat p {
-      font-size: 0.9375rem;
-    }
-
-    .menu-card {
-      padding: 2rem 1.5rem;
-    }
-
-    .problem-quote {
-      padding-left: 1.75rem;
-    }
-
-    .problem-quote::before {
-      font-size: 3.5rem;
-      left: -0.25rem;
-      top: -0.3rem;
-    }
-  }
-
-  @media (max-width: 400px) {
-    .container, .container--wide {
-      padding: 0 1.25rem;
-    }
-
-    .site-nav {
-      padding: 0 1.25rem;
-    }
-  }
-
-  /* ===== REDUCED MOTION ===== */
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      transition-duration: 0.01ms !important;
-    }
+    --ink:#0C0C0E; --white:#FAFAFA; --grey-1:#F4F4F6; --grey-2:#E4E4E8;
+    --grey-3:#8A8A92; --grey-4:#5A5A62; --green:#2D9F6F; --green-dim:#258A5E;
+    --orange:#E8783A; --orange-hover:#D46A2F;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);-webkit-font-smoothing:antialiased;color:var(--ink);overflow-x:hidden}
+
+  /* ── NAV ── */
+  .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(12,12,14,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06)}
+  .nav-inner{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;justify-content:space-between;align-items:center}
+  .logo{color:#fff;font-size:15px;font-weight:700;letter-spacing:-.02em;text-decoration:none}
+  .logo-accent{color:var(--green)}
+  .nav-cta{font-size:12px;font-weight:600;color:var(--orange);padding:7px 18px;border:1px solid rgba(232,120,58,.4);border-radius:4px;text-decoration:none;letter-spacing:.02em;transition:all .15s}
+  .nav-cta:hover{background:var(--orange);color:#fff}
+
+  /* ── HERO ── */
+  .hero{background:var(--ink);min-height:100vh;min-height:100dvh;display:flex;align-items:center;padding:120px 24px 100px;position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;left:-8%;top:20%;width:520px;height:520px;border-radius:50%;border:1px solid rgba(45,159,111,.06);pointer-events:none}
+  .hero::after{content:'';position:absolute;right:-5%;bottom:15%;width:380px;height:380px;border-radius:50%;border:1px solid rgba(232,120,58,.05);pointer-events:none}
+  .hero-w{max-width:1100px;margin:0 auto;width:100%;position:relative;z-index:1}
+  .hero-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:20px}
+  .hero h1{color:#fff;font-size:clamp(32px,6vw,54px);font-weight:800;line-height:1.08;letter-spacing:-.035em;max-width:740px;margin-bottom:20px;text-wrap:balance}
+  .hero-sub{color:#9A9AA2;font-size:clamp(15px,1.6vw,17px);line-height:1.7;max-width:540px;margin-bottom:36px}
+  .hero-stats{display:flex;gap:32px;flex-wrap:wrap;margin-bottom:40px}
+  .hero-stat{border-left:2px solid var(--green);padding-left:14px}
+  .hero-stat strong{display:block;color:#fff;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+  .hero-stat span{font-size:12px;color:#6A6A72;margin-top:2px;display:block}
+  .form-row{display:flex;max-width:420px;gap:0}
+  .form-input{flex:1;min-width:0;padding:14px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-right:none;border-radius:5px 0 0 5px;color:#fff;font-size:15px;font-family:var(--sans);outline:none}
+  .form-input::placeholder{color:#4A4A52}
+  .form-input:focus{border-color:rgba(45,159,111,.4);background:rgba(255,255,255,.08)}
+  .form-btn{padding:14px 24px;background:var(--orange);border:none;border-radius:0 5px 5px 0;color:#fff;font-size:14px;font-weight:700;font-family:var(--sans);cursor:pointer;white-space:nowrap}
+  .form-btn:hover{background:var(--orange-hover)}
+  .form-note{color:#4A4A52;font-size:12px;margin-top:10px}
+
+  /* ── SECTIONS ── */
+  .section{padding:88px 24px}
+  .section-w{max-width:1100px;margin:0 auto}
+  .section--alt{background:var(--grey-1)}
+  .section--dark{background:var(--ink);color:#fff}
+  .section-tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:14px}
+  .section--dark .section-tag{color:var(--green)}
+  .section h2{font-size:clamp(24px,3.5vw,36px);font-weight:800;letter-spacing:-.03em;line-height:1.15;max-width:640px;margin-bottom:16px;text-wrap:balance}
+  .section p.lead{font-size:16px;line-height:1.7;color:var(--grey-4);max-width:560px;margin-bottom:40px}
+  .section--dark p.lead{color:#8A8A92}
+
+  /* ── PROBLEM ── */
+  .pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:40px}
+  .pain-card{padding:20px;border:1px solid var(--grey-2);border-radius:6px;background:#fff}
+  .pain-card strong{display:block;font-size:14px;margin-bottom:4px}
+  .pain-card span{font-size:13px;color:var(--grey-4);line-height:1.5}
+  .pain-stat{font-family:var(--mono);font-size:11px;color:var(--green);margin-top:6px;display:block}
+  .pain-callout{background:var(--ink);border-radius:6px;padding:28px 32px;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+  .pain-callout-num{font-size:44px;font-weight:800;color:var(--orange);font-variant-numeric:tabular-nums;line-height:1;flex-shrink:0}
+  .pain-callout p{color:#ccc;font-size:15px;line-height:1.6;max-width:500px}
+
+  /* ── FEATURES ── */
+  .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+  .feat-card{padding:28px 24px;border:1px solid var(--grey-2);border-radius:6px;background:#fff}
+  .feat-icon{font-size:24px;margin-bottom:12px;display:block}
+  .feat-card h3{font-size:16px;font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
+  .feat-card p{font-size:14px;line-height:1.7;color:var(--grey-4)}
+  .feat-card .stat-inline{font-family:var(--mono);font-size:12px;color:var(--green);margin-top:8px;display:block}
+
+  /* ── HOW IT WORKS ── */
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;counter-reset:step}
+  .step{position:relative;padding:28px 24px 24px;border:1px solid rgba(255,255,255,.08);border-radius:6px;background:rgba(255,255,255,.03)}
+  .step::before{counter-increment:step;content:counter(step);font-size:48px;font-weight:800;color:rgba(45,159,111,.2);font-variant-numeric:tabular-nums;line-height:1;display:block;margin-bottom:12px}
+  .step h3{font-size:15px;font-weight:700;color:#fff;margin-bottom:6px}
+  .step p{font-size:13px;line-height:1.6;color:#8A8A92}
+
+  /* ── COMPARE ── */
+  .compare-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:24px}
+  .compare-table{width:100%;border-collapse:collapse;font-size:13px;min-width:600px}
+  .compare-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--grey-2);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--grey-3);font-weight:600}
+  .compare-table td{padding:12px 14px;border-bottom:1px solid var(--grey-2);vertical-align:top;line-height:1.5}
+  .compare-table tr.hl td{background:rgba(45,159,111,.06);font-weight:600}
+  .compare-table .yes{color:var(--green);font-weight:700}
+  .compare-table .no{color:var(--grey-3)}
+
+  /* ── PRICING ── */
+  .price-card{text-align:center;max-width:480px;margin:0 auto;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:48px 40px}
+  .price-amount{font-size:72px;font-weight:800;color:#fff;letter-spacing:-.04em;line-height:1}
+  .price-per{font-size:20px;font-weight:400;color:#6A6A72}
+  .price-desc{color:#8A8A92;font-size:15px;margin:16px 0 28px;line-height:1.6}
+  .price-facts{list-style:none;display:flex;flex-direction:column;gap:10px;text-align:left;margin-bottom:28px}
+  .price-facts li{font-size:14px;color:#ccc;padding-left:20px;position:relative}
+  .price-facts li::before{content:'';position:absolute;left:0;top:7px;width:8px;height:8px;border-radius:50%;background:var(--green)}
+  .price-cta{display:inline-block;padding:14px 40px;background:var(--orange);color:#fff;font-size:15px;font-weight:700;border-radius:5px;text-decoration:none;border:none;cursor:pointer;font-family:var(--sans)}
+  .price-cta:hover{background:var(--orange-hover)}
+  .price-note{color:#4A4A52;font-size:12px;margin-top:14px}
+  .price-save{display:inline-block;background:rgba(45,159,111,.12);color:var(--green);font-size:12px;font-weight:700;padding:4px 10px;border-radius:3px;margin-top:12px}
+
+  /* ── FAQ ── */
+  .faq-list{max-width:680px}
+  .faq-item{border-bottom:1px solid var(--grey-2)}
+  .faq-item summary{list-style:none;padding:18px 0;cursor:pointer;font-size:15px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .faq-item summary::-webkit-details-marker{display:none}
+  .faq-item summary::after{content:'+';font-size:20px;font-weight:300;color:var(--grey-3);flex-shrink:0;transition:transform .2s}
+  .faq-item[open] summary::after{transform:rotate(45deg)}
+  .faq-answer{padding:0 0 18px;font-size:14px;line-height:1.7;color:var(--grey-4);max-width:560px}
+
+  /* ── CLOSER ── */
+  .closer{background:var(--ink);padding:100px 24px;text-align:center}
+  .closer-w{max-width:600px;margin:0 auto}
+  .closer h2{color:#fff;font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:12px;text-wrap:balance}
+  .closer p{color:#8A8A92;font-size:16px;margin-bottom:32px}
+  .closer .form-row{margin:0 auto}
+
+  /* ── FOOTER ── */
+  .foot{background:var(--ink);padding:28px 24px;border-top:1px solid rgba(255,255,255,.04)}
+  .foot-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .foot span{font-size:12px;color:#4A4A52}
+
+  @media(max-width:640px){
+    .hero-stats{gap:20px}
+    .feat-grid{grid-template-columns:1fr}
+    .form-row{flex-direction:column}
+    .form-input{border-right:1px solid rgba(255,255,255,.1);border-radius:5px 5px 0 0;border-bottom:none}
+    .form-btn{border-radius:0 0 5px 5px}
+    .pain-callout{flex-direction:column;text-align:center}
+    .steps{grid-template-columns:1fr}
   }
 </style>
 
-<!-- Nav -->
-<nav class="site-nav">
-  <div class="nav-inner">
-    <a href="#" class="wordmark">MenuPulse</a>
-    <a href="#hero-signup" class="nav-link">Start Free Trial</a>
-  </div>
-</nav>
+<nav class="nav"><div class="nav-inner"><a class="logo" href="#">Menu<span class="logo-accent">Pulse</span></a><a class="nav-cta" href="#signup">Get Early Access</a></div></nav>
 
-<!-- Hero -->
-<section class="hero">
-  <div class="container">
-    <h1>Know what's trending before it hits your competitor's menu.</h1>
-    <div class="hero-rule"></div>
-    <p class="subheadline">MenuPulse tracks food trends, monitors your competitors' menus, and catches price hikes from your suppliers — so you can make smarter menu decisions without the spreadsheet marathon.</p>
-    <form class="signup-form" id="hero-signup" onsubmit="return false;">
-      <input type="email" placeholder="Enter your email" aria-label="Email address" required>
-      <button type="submit">Start Free Trial</button>
+<section class="hero" id="signup">
+  <div class="hero-w">
+    <div class="hero-tag">Market intelligence for independent restaurants</div>
+    <h1>Your competitors update menus monthly. You find out quarterly.</h1>
+    <p class="hero-sub">Track competitor pricing, discover trending recipes before they peak, and find where you're overpaying suppliers. Market intelligence that used to cost $1,500/month &mdash; now $149.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><strong>412K</strong><span>independent restaurants in the US</span></div>
+      <div class="hero-stat"><strong>$162B</strong><span>annual food waste in the US</span></div>
+      <div class="hero-stat"><strong>$37-42K</strong><span>avg annual overpayment on food costs</span></div>
+    </div>
+    <form class="form-row" action="#" method="post">
+      <input type="email" class="form-input" placeholder="you@email.com" aria-label="Email" required>
+      <button type="submit" class="form-btn">Get Early Access</button>
     </form>
+    <p class="form-note">Free 30 days. No credit card.</p>
   </div>
 </section>
 
-<!-- Problem -->
-<section class="problem">
-  <div class="container">
-    <div class="problem-quote">
-      <p>Running a restaurant means making a hundred decisions a day with almost no data.</p>
+<section class="section">
+  <div class="section-w">
+    <div class="section-tag">The Problem</div>
+    <h2>You're making $500K decisions with $0 data.</h2>
+    <p class="lead">Big chains have analytics teams. You have a gut feeling and a stack of invoices you haven't looked at since last month.</p>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <strong>Blind to competitor moves</strong>
+        <span>The restaurant across the street raised their burger price $2 last week. You won't notice until a regular mentions it.</span>
+        <span class="pain-stat">Menu prices change 3-4x per year on average</span>
+      </div>
+      <div class="pain-card">
+        <strong>Ingredient cost creep</strong>
+        <span>Egg prices rose 96% in a single year. Your supplier didn't email you about it &mdash; they just raised the invoice.</span>
+        <span class="pain-stat">Food costs = 28-35% of revenue for most restaurants</span>
+      </div>
+      <div class="pain-card">
+        <strong>Trend lag</strong>
+        <span>By the time a food trend hits your TikTok feed, early-adopter restaurants already own it. Nashville hot chicken was a 2-year trend &mdash; most independents caught it 18 months late.</span>
+      </div>
+      <div class="pain-card">
+        <strong>Enterprise tools, enterprise prices</strong>
+        <span>"We can't afford Technomic or Datassential." &mdash; Every independent restaurant owner. Those tools start at $1,500/month and target chains.</span>
+      </div>
     </div>
-    <div class="pain-points">
-      <p class="pain-point">Your Sysco rep raised chicken thigh prices 12% last month. You noticed this month.</p>
-      <p class="pain-point">That birria trend? Your competitor added birria tacos three months before you did.</p>
-      <p class="pain-point">Your Caesar salad costs more to make than it earns. You've never run the numbers.</p>
-      <p class="pain-point">You check competitors' menus by... driving there and reading the board.</p>
-    </div>
-  </div>
-</section>
-
-<!-- Features -->
-<section class="features">
-  <div class="container">
-    <div class="features-list">
-      <div class="feature">
-        <span class="feature-label">Trends</span>
-        <h3>Trending Menu Ideas</h3>
-        <p>We track what's blowing up on TikTok, Google, and food media — then translate it into actionable menu ideas with estimated food costs and margins. Weekly digest, zero research required.</p>
-      </div>
-      <hr class="feature-divider">
-      <div class="feature">
-        <span class="feature-label">Costs</span>
-        <h3>Food Cost Tracker</h3>
-        <p>Upload your invoices (PDF or CSV). We parse them automatically, track every ingredient's price over time, and alert you when something spikes. "Chicken thighs up 15% this month" — before your P&amp;L tells you.</p>
-      </div>
-      <hr class="feature-divider">
-      <div class="feature">
-        <span class="feature-label">Competition</span>
-        <h3>Competitor Monitor</h3>
-        <p>Add up to 10 competitors. We watch their online menus for changes — new items, price adjustments, removed dishes. Know what they're doing without leaving your kitchen.</p>
-      </div>
+    <div class="pain-callout">
+      <div class="pain-callout-num">60%</div>
+      <p>of restaurants fail within their first year. Lack of market awareness &mdash; not food quality &mdash; is the #1 reason. The ones that survive know their numbers.</p>
     </div>
   </div>
 </section>
 
-<!-- Stats -->
-<section class="stats">
-  <div class="container--wide">
-    <h2 class="stats-heading">Why this matters</h2>
-    <div class="stats-grid">
-      <div class="stat">
-        <span class="stat-number">$4,000</span>
-        <p>Food cost is 28-35% of your revenue. A 5% price increase you don't catch for 3 months costs a $1M restaurant about $4,000.</p>
+<section class="section section--alt">
+  <div class="section-w">
+    <div class="section-tag">The Solution</div>
+    <h2>Market intelligence, not another POS dashboard.</h2>
+    <p class="lead">Three modules that answer the questions you're Googling at midnight between dinner and prep.</p>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <span class="feat-icon">&darr;</span>
+        <h3>Invoice Intelligence</h3>
+        <p>Upload invoices (photo, PDF, or CSV). We parse line items automatically, track unit prices over time, and flag spikes before they eat your margin. See exactly what you're paying vs. market benchmarks.</p>
+        <span class="stat-inline">Avg restaurant overpays suppliers by 8-12% without price tracking</span>
       </div>
-      <div class="stat">
-        <span class="stat-number">3x</span>
-        <p>The average menu item that follows a trend within the first 30 days generates 3x more orders than a late adopter.</p>
+      <div class="feat-card">
+        <span class="feat-icon">&oplus;</span>
+        <h3>Competitor Menu Watch</h3>
+        <p>Add competitor restaurants. We monitor their online menus weekly &mdash; price changes, new items, removed items, all tracked. Get alerts when a competitor undercuts you or adds a trending category.</p>
+        <span class="stat-inline">Avg 15-min setup, then fully automated tracking</span>
       </div>
-      <div class="stat">
-        <span class="stat-number">$2K-$8K</span>
-        <p>Restaurants that actively manage food costs save $2,000-$8,000 per month vs. those using spreadsheets.</p>
+      <div class="feat-card">
+        <span class="feat-icon">&uarr;</span>
+        <h3>Trend Radar</h3>
+        <p>Trending ingredients, dishes, and cuisines surfaced from Google Trends, social media velocity, and search volume data. Know what's rising 2-3 months before it peaks &mdash; early enough to test on a special.</p>
+        <span class="stat-inline">Data from 8B+ daily Google searches, refreshed weekly</span>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">&bull;</span>
+        <h3>Cost Savings Alerts</h3>
+        <p>When an ingredient you buy spikes in price, we suggest substitutions used by other restaurants in your category. When a supplier raises prices above market rate, we flag it so you can negotiate &mdash; or switch.</p>
+        <span class="stat-inline">Top 20% of restaurants renegotiate supplier terms quarterly</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Weekly -->
-<section class="weekly">
-  <div class="container">
-    <h2 class="weekly-heading">What you get each week</h2>
-    <div class="menu-card">
-
-      <div class="menu-item">
-        <span class="menu-day">Monday</span>
-        <div class="menu-title">Trending Menu Ideas Report</div>
-        <p class="menu-desc">Top 5 trends with recipes and cost estimates</p>
+<section class="section section--dark">
+  <div class="section-w">
+    <div class="section-tag">How It Works</div>
+    <h2>Setup in 15 minutes. Intelligence by morning.</h2>
+    <p class="lead">No integrations with your POS. No hardware. Just upload and watch.</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Upload your invoices</h3>
+        <p>Snap a photo or drag a PDF. Our parser handles Sysco, US Foods, Restaurant Depot, and 50+ distributor formats.</p>
       </div>
-
-      <div class="menu-separator" aria-hidden="true"></div>
-
-      <div class="menu-item">
-        <span class="menu-day">Wednesday</span>
-        <div class="menu-title">Food Cost Alert Digest</div>
-        <p class="menu-desc">Any price changes greater than 5%</p>
+      <div class="step">
+        <h3>Add competitors</h3>
+        <p>Enter 3-5 nearby restaurants. We find their menus online and start tracking prices, items, and changes automatically.</p>
       </div>
-
-      <div class="menu-separator" aria-hidden="true"></div>
-
-      <div class="menu-item">
-        <span class="menu-day">Friday</span>
-        <div class="menu-title">Competitor Update</div>
-        <p class="menu-desc">Menu changes detected this week</p>
+      <div class="step">
+        <h3>Set your alerts</h3>
+        <p>Price spike thresholds, competitor price changes, trending ingredients in your cuisine category. You choose what matters.</p>
       </div>
-
-      <div class="menu-separator" aria-hidden="true"></div>
-
-      <div class="menu-item">
-        <span class="menu-day">Anytime</span>
-        <div class="menu-title">Full Dashboard Access</div>
-        <p class="menu-desc">Real-time data at your fingertips</p>
+      <div class="step">
+        <h3>Get smarter weekly</h3>
+        <p>Every Monday: a digest with cost savings found, competitor moves, and trending items worth testing. Data, not noise.</p>
       </div>
-
     </div>
   </div>
 </section>
 
-<!-- Pricing -->
-<section class="pricing dark-band">
-  <div class="container">
-    <div class="pricing-inner">
-      <h2>Simple pricing, no surprises</h2>
-      <div class="price">$149<span style="font-size: 0.45em; color: var(--dark-muted);">/mo</span></div>
-      <div class="price-period">Everything included</div>
-      <ul class="price-features">
-        <li>Unlimited invoice uploads</li>
-        <li>10 competitor monitoring slots</li>
-        <li>Weekly trend reports</li>
+<section class="section">
+  <div class="section-w">
+    <div class="section-tag">Comparison</div>
+    <h2>Enterprise intelligence at an independent price.</h2>
+    <p class="lead">You shouldn't need a 50-location chain to afford market data.</p>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead><tr><th>Capability</th><th>MenuPulse</th><th>Technomic</th><th>Datassential</th><th>Doing it yourself</th></tr></thead>
+        <tbody>
+          <tr class="hl"><td>Competitor menu tracking</td><td class="yes">Automated</td><td class="yes">Reports</td><td class="yes">Reports</td><td class="no">Manual</td></tr>
+          <tr><td>Invoice cost tracking</td><td class="yes">AI-parsed</td><td class="no">No</td><td class="no">No</td><td class="no">Spreadsheet</td></tr>
+          <tr class="hl"><td>Trending recipes/ingredients</td><td class="yes">Weekly</td><td class="yes">Quarterly</td><td class="yes">Monthly</td><td class="no">TikTok</td></tr>
+          <tr><td>Price spike alerts</td><td class="yes">Real-time</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+          <tr class="hl"><td>Substitution suggestions</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">Trial &amp; error</td></tr>
+          <tr><td>Built for independents</td><td class="yes">Yes</td><td class="no">Chains</td><td class="no">Chains</td><td>&mdash;</td></tr>
+          <tr class="hl"><td>Price</td><td><strong>$149/mo</strong></td><td>$1,500+/mo</td><td>$239-500+/mo</td><td>Free + your time</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section section--dark">
+  <div class="section-w" style="text-align:center">
+    <div class="section-tag">Pricing</div>
+    <div class="price-card">
+      <div class="price-amount">$149<span class="price-per">/mo</span></div>
+      <p class="price-desc">All modules included. No per-location fees. No annual lock-in.</p>
+      <ul class="price-facts">
+        <li>Invoice parsing &mdash; unlimited uploads</li>
+        <li>Track up to 10 competitor restaurants</li>
+        <li>Weekly trend reports for your cuisine category</li>
+        <li>Price spike &amp; savings alerts</li>
+        <li>Weekly email digest + dashboard access</li>
       </ul>
-      <p class="price-note">No setup fee. No contracts. 30-day free trial.</p>
-      <form class="signup-form" onsubmit="return false;">
-        <input type="email" placeholder="Enter your email" aria-label="Email address" required>
-        <button type="submit">Start Free Trial</button>
-      </form>
+      <a href="#signup" class="price-cta">Start Free Trial</a>
+      <p class="price-note">30 days free. Cancel anytime. No POS integration required.</p>
+      <div class="price-save">Avg user finds $3,100-3,500/mo in savings &rarr; 20x ROI</div>
     </div>
   </div>
 </section>
 
-<!-- FAQ -->
-<section class="faq">
-  <div class="container">
-    <h2 class="faq-heading">Common questions</h2>
+<section class="section">
+  <div class="section-w">
+    <div class="section-tag">FAQ</div>
     <div class="faq-list">
-
-      <div class="faq-item">
-        <div class="faq-q">How do you track trends?</div>
-        <p class="faq-a">We aggregate data from Google Trends, social media food hashtags, and food media. Our algorithm filters noise and surfaces what's actually relevant to independent restaurants.</p>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">Which suppliers do you support?</div>
-        <p class="faq-a">We parse invoices from Sysco, US Foods, Performance Food Group, and Restaurant Depot out of the box. For others, upload a CSV.</p>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">Can I track my menu items' profitability?</div>
-        <p class="faq-a">Yes. Enter your menu with ingredients and we calculate real-time food cost, margin, and rank your items by profitability.</p>
-      </div>
-
-      <div class="faq-item">
-        <div class="faq-q">Is my data secure?</div>
-        <p class="faq-a">Your supplier data and menu information are encrypted and never shared. We don't sell data to suppliers or competitors.</p>
-      </div>
-
+      <details class="faq-item"><summary>Do I need to connect my POS system?</summary><p class="faq-answer">No. MenuPulse works independently. Upload invoices manually (photo or PDF) and we handle the rest. No IT setup, no integrations to break.</p></details>
+      <details class="faq-item"><summary>How do you track competitor menus?</summary><p class="faq-answer">We monitor their online presence &mdash; website menus, delivery platform listings (DoorDash, UberEats, Grubhub), and Google Business profiles. Changes are detected weekly and you get alerts for price changes and new items.</p></details>
+      <details class="faq-item"><summary>What kinds of restaurants is this for?</summary><p class="faq-answer">Any independent restaurant doing $500K-$3M in annual revenue. Cuisine doesn't matter &mdash; trend data and invoice tracking work for Italian, Mexican, Asian, American, and everything between. Multi-location groups under 10 units work great too.</p></details>
+      <details class="faq-item"><summary>How accurate is the invoice parsing?</summary><p class="faq-answer">95%+ accuracy on major distributors (Sysco, US Foods, Restaurant Depot, Performance Food Group). For other suppliers, accuracy improves as you upload more invoices. You can always correct line items with one click.</p></details>
+      <details class="faq-item"><summary>What's the difference between this and just reading industry news?</summary><p class="faq-answer">Industry news tells you national trends 3 months late. MenuPulse shows you what's trending in your local market, what your specific competitors are doing, and exactly how much you're overpaying on every ingredient. It's the difference between reading about inflation and seeing your egg prices charted against the USDA benchmark.</p></details>
     </div>
   </div>
 </section>
 
-<!-- Final CTA -->
-<section class="final-cta dark-band">
-  <div class="container">
-    <h2>Your competitors are already watching trends. Start watching back.</h2>
-    <p class="cta-sub">30-day free trial. Cancel anytime.</p>
-    <form class="signup-form" onsubmit="return false;">
-      <input type="email" placeholder="Enter your email" aria-label="Email address" required>
-      <button type="submit">Get Early Access</button>
+<section class="closer">
+  <div class="closer-w">
+    <h2>Your competitors have data teams. Now you have MenuPulse.</h2>
+    <p>Market intelligence that pays for itself in the first week.</p>
+    <form class="form-row" action="#" method="post">
+      <input type="email" class="form-input" placeholder="you@email.com" aria-label="Email" required>
+      <button type="submit" class="form-btn">Get Early Access</button>
     </form>
   </div>
 </section>
 
-<!-- Footer -->
-<footer class="site-footer">
-  <p>MenuPulse &mdash; Restaurant market intelligence for independent operators.</p>
-</footer>
+<footer class="foot"><div class="foot-inner"><span>MenuPulse</span><span>&copy; 2026</span></div></footer>
