@@ -1,0 +1,1147 @@
+<title>B2B Micro-SaaS: 최종 랭킹 리포트</title>
+<style>
+  @font-face {
+    font-family: 'Disp';
+    src: local('Georgia'), local('Noto Serif KR'), local('Batang');
+    font-weight: 400 700;
+  }
+
+  :root {
+    --ground: #F5F2ED;
+    --surface: #FFFFFF;
+    --surface-alt: #EDEAE4;
+    --ink: #1B2A1F;
+    --ink-2: #4A5650;
+    --ink-3: #7A847E;
+    --ink-4: #A3ABA6;
+    --accent: #0D7C66;
+    --accent-soft: #E6F3F0;
+    --accent-border: #B0D9D0;
+    --gold: #8B6914;
+    --gold-soft: #FBF5E3;
+    --gold-border: #E0CFA0;
+    --red: #A4443A;
+    --red-soft: #FBEEED;
+    --red-border: #E0BAB5;
+    --blue: #2A6BAA;
+    --blue-soft: #EAF1F8;
+    --border: #D8D4CC;
+    --border-light: #E8E5DE;
+    --shadow: 0 1px 3px rgba(27,42,31,0.06);
+    --shadow-md: 0 3px 12px rgba(27,42,31,0.08);
+    --sans: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
+    --serif: 'Disp', Georgia, 'Noto Serif KR', serif;
+    --mono: 'SF Mono', 'Cascadia Code', Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      --ground: #111714;
+      --surface: #1A201D;
+      --surface-alt: #222A26;
+      --ink: #E0E4E1;
+      --ink-2: #A8B0AB;
+      --ink-3: #6E786F;
+      --ink-4: #4A5450;
+      --accent: #3DB898;
+      --accent-soft: #142A24;
+      --accent-border: #1C3E34;
+      --gold: #D4AA30;
+      --gold-soft: #2A2410;
+      --gold-border: #3A3018;
+      --red: #D06858;
+      --red-soft: #2A1816;
+      --red-border: #3E2420;
+      --blue: #5A9FD4;
+      --blue-soft: #142030;
+      --border: #2E3830;
+      --border-light: #263028;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-md: 0 3px 12px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #111714;
+    --surface: #1A201D;
+    --surface-alt: #222A26;
+    --ink: #E0E4E1;
+    --ink-2: #A8B0AB;
+    --ink-3: #6E786F;
+    --ink-4: #4A5450;
+    --accent: #3DB898;
+    --accent-soft: #142A24;
+    --accent-border: #1C3E34;
+    --gold: #D4AA30;
+    --gold-soft: #2A2410;
+    --gold-border: #3A3018;
+    --red: #D06858;
+    --red-soft: #2A1816;
+    --red-border: #3E2420;
+    --blue: #5A9FD4;
+    --blue-soft: #142030;
+    --border: #2E3830;
+    --border-light: #263028;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md: 0 3px 12px rgba(0,0,0,0.4);
+  }
+  :root[data-theme="light"] {
+    --ground: #F5F2ED;
+    --surface: #FFFFFF;
+    --surface-alt: #EDEAE4;
+    --ink: #1B2A1F;
+    --ink-2: #4A5650;
+    --ink-3: #7A847E;
+    --ink-4: #A3ABA6;
+    --accent: #0D7C66;
+    --accent-soft: #E6F3F0;
+    --accent-border: #B0D9D0;
+    --gold: #8B6914;
+    --gold-soft: #FBF5E3;
+    --gold-border: #E0CFA0;
+    --red: #A4443A;
+    --red-soft: #FBEEED;
+    --red-border: #E0BAB5;
+    --blue: #2A6BAA;
+    --blue-soft: #EAF1F8;
+    --border: #D8D4CC;
+    --border-light: #E8E5DE;
+    --shadow: 0 1px 3px rgba(27,42,31,0.06);
+    --shadow-md: 0 3px 12px rgba(27,42,31,0.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--ground);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 840px; margin: 0 auto; padding: 0 24px; }
+
+  /* Header */
+  .page-header {
+    padding: 56px 24px 40px;
+    max-width: 840px;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .page-header h1 {
+    font-family: var(--serif);
+    font-size: clamp(1.65rem, 3.5vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.2;
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+  .page-header .subtitle {
+    font-size: 0.92rem;
+    color: var(--ink-2);
+    max-width: 620px;
+    line-height: 1.6;
+  }
+  .param-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .param {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: var(--surface-alt);
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+  }
+
+  /* Executive summary */
+  .exec {
+    padding: 32px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .exec h2 {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .exec p {
+    font-size: 0.88rem;
+    color: var(--ink-2);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+  .exec p:last-of-type { margin-bottom: 0; }
+
+  .verdict-hero {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-top: 20px;
+  }
+  .verdict-hero .vh-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .verdict-hero p {
+    font-size: 0.88rem;
+    color: var(--ink);
+    line-height: 1.65;
+  }
+  .verdict-hero p strong { font-weight: 700; }
+
+  /* Tier sections */
+  .tier-section {
+    padding: 36px 0 0;
+  }
+  .tier-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .tier-go { color: var(--accent); }
+  .tier-caution { color: var(--gold); }
+  .tier-pass { color: var(--red); }
+  .tier-section h2 {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .tier-desc {
+    font-size: 0.82rem;
+    color: var(--ink-3);
+    margin-bottom: 20px;
+    max-width: 600px;
+  }
+
+  /* Opportunity card */
+  .opp {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .opp-top {
+    padding: 20px 24px 16px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .opp-rank {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 2px;
+  }
+  .rank-go { background: var(--accent); }
+  .rank-caution { background: var(--gold); }
+  .rank-pass { background: var(--red); }
+  .opp-info { flex: 1; min-width: 0; }
+  .opp-info h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 3px;
+    text-wrap: balance;
+  }
+  .opp-oneliner {
+    font-size: 0.8rem;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+  }
+  .opp-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .otag {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .otag-must { background: var(--accent-soft); color: var(--accent); }
+  .otag-nice { background: var(--gold-soft); color: var(--gold); }
+  .otag-skip { background: var(--red-soft); color: var(--red); }
+  .otag-neutral { background: var(--surface-alt); color: var(--ink-3); }
+
+  /* Metrics row */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    background: var(--border-light);
+    border-top: 1px solid var(--border-light);
+  }
+  .metric {
+    background: var(--surface);
+    padding: 12px 16px;
+    text-align: center;
+  }
+  .metric .mv {
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .metric .ml {
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-4);
+    margin-top: 2px;
+  }
+
+  /* Body */
+  .opp-body {
+    padding: 0 24px 20px;
+  }
+  .opp-body p {
+    font-size: 0.84rem;
+    color: var(--ink-2);
+    line-height: 1.7;
+    margin-bottom: 8px;
+  }
+  .opp-body p:last-child { margin-bottom: 0; }
+  .opp-body strong { color: var(--ink); font-weight: 600; }
+  .opp-sub {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-4);
+    margin-bottom: 4px;
+    margin-top: 12px;
+  }
+  .opp-sub:first-child { margin-top: 0; }
+
+  /* Score bar */
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-light);
+  }
+  .score-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-4);
+    flex-shrink: 0;
+    width: 80px;
+  }
+  .score-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface-alt);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .score-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+  }
+  .score-fill.warn { background: var(--gold); }
+  .score-fill.bad { background: var(--red); }
+  .score-num {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ink-2);
+    width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Comparison table */
+  .cmp-section {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+  }
+  .cmp-section h2 {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    min-width: 700px;
+  }
+  thead th {
+    background: var(--surface-alt);
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--ink-2);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td strong { color: var(--ink); font-weight: 600; }
+  .cell-rank {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .cell-score {
+    font-family: var(--mono);
+    font-weight: 700;
+  }
+  .score-high { color: var(--accent); }
+  .score-mid { color: var(--gold); }
+  .score-low { color: var(--red); }
+
+  /* Bottom line */
+  .bottom {
+    padding: 40px 0 56px;
+    border-top: 1px solid var(--border);
+  }
+  .bottom h2 {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .bottom p {
+    font-size: 0.88rem;
+    color: var(--ink-2);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+  .roadmap {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .rm-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .rm-card.primary {
+    border-left: 4px solid var(--accent);
+  }
+  .rm-card.secondary {
+    border-left: 4px solid var(--gold);
+  }
+  .rm-card.tertiary {
+    border-left: 4px solid var(--ink-4);
+  }
+  .rm-phase {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .rm-card.primary .rm-phase { color: var(--accent); }
+  .rm-card.secondary .rm-phase { color: var(--gold); }
+  .rm-card.tertiary .rm-phase { color: var(--ink-4); }
+  .rm-card h3 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .rm-card p {
+    font-size: 0.78rem;
+    color: var(--ink-3);
+    line-height: 1.5;
+    margin-bottom: 0;
+  }
+
+  /* Killed list */
+  .killed {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-light);
+  }
+  .killed h3 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ink-3);
+    margin-bottom: 8px;
+  }
+  .kill-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .kill-item {
+    font-size: 0.72rem;
+    padding: 8px 12px;
+    background: var(--surface-alt);
+    border-radius: 4px;
+    color: var(--ink-3);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .kill-item .kn { font-weight: 500; color: var(--ink-2); }
+  .kill-item .kr { color: var(--red); font-weight: 600; font-size: 0.65rem; }
+
+  .footnote {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-light);
+    font-size: 0.72rem;
+    color: var(--ink-4);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 600px) {
+    .page-header { padding: 36px 20px 28px; }
+    .opp-top { padding: 16px 18px 12px; gap: 12px; }
+    .opp-body { padding: 0 18px 16px; }
+    .opp-rank { width: 28px; height: 28px; font-size: 0.7rem; }
+    .kill-grid { grid-template-columns: 1fr; }
+    .roadmap { grid-template-columns: 1fr; }
+  }
+</style>
+
+<header class="page-header">
+  <div class="eyebrow">B2B Micro-SaaS 최종 분석 / July 2026</div>
+  <h1>50+개 기회 분석 후 최종 랭킹: 솔로 파운더를 위한 $4K/mo 로드맵</h1>
+  <p class="subtitle">8개 리서치 리포트, 50개 이상의 기회를 분석한 결과를 5가지 기준으로 최종 랭킹. LVN + VA + 군 복무 + 20 페르소나 뮤지션 + 디자이너 배경 기반.</p>
+  <div class="param-row">
+    <span class="param">Stack: Next.js + Supabase + Stripe</span>
+    <span class="param">빌드: 8-12주</span>
+    <span class="param">가격: $99-299/mo</span>
+    <span class="param">목표: $4K+/mo 순이익</span>
+    <span class="param">리서치: 8개 리포트 통합</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- EXECUTIVE SUMMARY -->
+  <section class="exec">
+    <h2>결론부터</h2>
+    <p>50개 이상의 기회를 5가지 기준 — <strong>(1) must-have 강도</strong> (규제 벌금 vs. nice-to-have), <strong>(2) 경쟁 해자</strong> (흡수 리스크, 기존 솔루션), <strong>(3) 가격 결정력</strong> ($4K/mo 도달 고객 수), <strong>(4) unfair advantage</strong> (너의 도메인 경험), <strong>(5) 빌드 가능성</strong> (솔로 8-12주) — 으로 평가했다.</p>
+    <p>결과: <strong>규제 컴플라이언스 + B2B 구매자</strong>가 모든 다른 조합을 압도한다. "벌금이 무서워서 사야 하는 도구"를 "예산 있는 사업주"에게 파는 것이 유일하게 안정적인 $4K/mo 경로.</p>
+
+    <div class="verdict-hero">
+      <div class="vh-label">핵심 판단</div>
+      <p><strong>Nursing Compliance Hub</strong>이 압도적 1위. 자격증 만료 = CMS 벌금 $15,000+, Medicare 환급 정지 리스크. 20명 고객 × $199/mo = $3,980/mo. 너의 VA LVN 경험이 진짜 경쟁 우위. 다른 모든 기회는 "이것 먼저, 나머지는 나중에" 프레임으로 평가됨.</p>
+    </div>
+  </section>
+
+  <!-- TIER 1: STRONG GO -->
+  <section class="tier-section">
+    <div class="tier-label tier-go">Tier 1 — Strong Go</div>
+    <h2>지금 바로 빌드할 가치가 있는 기회</h2>
+    <p class="tier-desc">규제 필수, 높은 가격 결정력, 도메인 우위가 모두 맞는 경우만 여기 들어감.</p>
+
+    <!-- #1 -->
+    <article class="opp">
+      <div class="opp-top">
+        <div class="opp-rank rank-go">1</div>
+        <div class="opp-info">
+          <h3>Nursing Compliance Hub — 자격/CE + OSHA 통합 트래커</h3>
+          <p class="opp-oneliner">소규모 클리닉, 스태핑 에이전시, SNF를 위한 간호사 자격증 + OSHA 컴플라이언스 원스톱 대시보드</p>
+          <div class="opp-tags">
+            <span class="otag otag-must">Must-Have</span>
+            <span class="otag otag-neutral">규제 벌금 $15K+</span>
+            <span class="otag otag-neutral">LVN 도메인</span>
+            <span class="otag otag-neutral">8-10주 빌드</span>
+          </div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="mv">$199/mo</div><div class="ml">가격</div></div>
+        <div class="metric"><div class="mv">20명</div><div class="ml">$4K 도달 고객</div></div>
+        <div class="metric"><div class="mv">43,000+</div><div class="ml">타겟 시설</div></div>
+        <div class="metric"><div class="mv">$15K+</div><div class="ml">위반당 벌금</div></div>
+      </div>
+      <div class="opp-body">
+        <div class="opp-sub">왜 1위인가</div>
+        <p><strong>규제 의무 — 2026년 더 강화.</strong> CMS, Joint Commission, 주 면허위원회 모두 만료된 자격증으로 환자 진료 시 시설에 제재 가능. <strong>2026.1 Joint Commission NPG 12 업데이트</strong>로 인력 배치가 측정 가능한 인증 요건이 됨 — 자격증 추적이 감사 항목에서 인증 요건으로 격상. 서베이에서 만료 면허 하나 걸리면 즉시 citation + 벌금 + Medicare/Medicaid 환급 위험. 모든 임상 시설이 추적해야 하는 항목: 주 면허, BLS/ACLS/PALS, CE 크레딧, TB 검사, N95 핏테스트, 연간 범죄기록 조회, 예방접종 기록.</p>
+        <p><strong>현재 해결책 = 스프레드시트 + 마닐라 폴더.</strong> 기존 솔루션(Bullhorn $99-165/user, MedTrainer 엔터프라이즈, Modio Health 커스텀)은 100+ 규모 시설 타겟. 신규 진입자(CredExHealthcare, RenewOps, Varsh Health)도 등장하지만 아직 소규모 클리닉에 집중하는 $199/mo 솔루션은 사실상 없음. 새 경쟁자들이 등장한다는 것 자체가 시장 검증.</p>
+        <p><strong>Unfair Advantage: 매우 높음.</strong> VA 병원 LVN으로서 매일 이 문제를 직접 겪고 있음. CPRS super user. narcotics count, 자격증 갱신, survey prep 과정을 몸으로 아는 사람. 외부 개발자는 이 pain을 상상해야 하지만 너는 매일 살고 있음.</p>
+        <div class="opp-sub">OSHA 통합이 핵심 차별화</div>
+        <p>별도 OSHA 도구(Compliancy Group $399/mo, Patient Protect $39-99/mo)가 존재하지만, 자격증 트래킹과 OSHA를 하나로 묶는 도구는 없음. 소규모 클리닉은 bloodborne pathogen training, Exposure Control Plan, needlestick 보고, SDS 관리도 같이 해야 함. <strong>자격증 + OSHA 원스톱 = Compliancy Group($399)보다 싸고 별도 도구 2개보다 편리.</strong></p>
+
+        <div class="score-row">
+          <span class="score-label">Must-have</span>
+          <div class="score-track"><div class="score-fill" style="width:98%"></div></div>
+          <span class="score-num">9.8</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">경쟁 해자</span>
+          <div class="score-track"><div class="score-fill" style="width:85%"></div></div>
+          <span class="score-num">8.5</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">가격 결정력</span>
+          <div class="score-track"><div class="score-fill" style="width:92%"></div></div>
+          <span class="score-num">9.2</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">도메인 우위</span>
+          <div class="score-track"><div class="score-fill" style="width:97%"></div></div>
+          <span class="score-num">9.7</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">빌드 가능성</span>
+          <div class="score-track"><div class="score-fill" style="width:90%"></div></div>
+          <span class="score-num">9.0</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- #2 -->
+    <article class="opp">
+      <div class="opp-top">
+        <div class="opp-rank rank-go">2</div>
+        <div class="opp-info">
+          <h3>Controlled Substance Logger — 소규모 클리닉용 DEA 컴플라이언스</h3>
+          <p class="opp-oneliner">급성기 클리닉, ASC, 통증 클리닉을 위한 연방 DEA 규정 준수 디지털 마약류 기록 시스템</p>
+          <div class="opp-tags">
+            <span class="otag otag-must">Must-Have</span>
+            <span class="otag otag-neutral">DEA 벌금 $16K+/건</span>
+            <span class="otag otag-neutral">LVN 도메인</span>
+            <span class="otag otag-neutral">10-12주 빌드</span>
+          </div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="mv">$249/mo</div><div class="ml">가격</div></div>
+        <div class="metric"><div class="mv">17명</div><div class="ml">$4K 도달 고객</div></div>
+        <div class="metric"><div class="mv">24,000+</div><div class="ml">타겟 시설</div></div>
+        <div class="metric"><div class="mv">$16K+</div><div class="ml">위반당 벌금</div></div>
+      </div>
+      <div class="opp-body">
+        <div class="opp-sub">왜 2위인가</div>
+        <p><strong>연방법 의무 (21 CFR 1304).</strong> 모든 DEA 등록 시설은 controlled substance의 상세 기록을 2년 이상 보관해야 함. DEA 위반 벌금 $16,205/건. 내부 데이터에 따르면 루틴 검사의 ~40%에서 기록 위반 발견. DEA 등록 취소 = 진료 불가능.</p>
+        <p><strong>시장이 지금 태어나는 중.</strong> LogButler, PreferredMD(2026.1 런칭, VetSnap 창업자가 인간 의학용으로 피벗) 모두 진입 중. VetSnap이 수의 쪽에서 스마트 락커 하드웨어까지 출시하며 모델 검증 완료. 인간 의학 쪽은 더 크고 더 규제가 복잡하지만 여전히 소규모 클리닉용 전용 소프트웨어는 거의 공백 상태.</p>
+        <p><strong>Unfair Advantage: 매우 높음.</strong> 매일 narcotic count를 직접 수행. dual-sign-off, waste documentation, shift-change reconciliation, discrepancy reporting을 수백 번 해본 경험. 이 워크플로우를 코드로 변환하는 데 최적화된 사람.</p>
+        <p><strong>1위 대신 2위인 이유:</strong> 빌드 복잡도가 더 높고(dual-signature, reconciliation 로직), LogButler/PreferredMD가 이미 움직이고 있어 speed가 중요. 1위 제품의 자연스러운 확장 모듈로도 가능.</p>
+
+        <div class="score-row">
+          <span class="score-label">Must-have</span>
+          <div class="score-track"><div class="score-fill" style="width:96%"></div></div>
+          <span class="score-num">9.6</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">경쟁 해자</span>
+          <div class="score-track"><div class="score-fill" style="width:72%"></div></div>
+          <span class="score-num">7.2</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">가격 결정력</span>
+          <div class="score-track"><div class="score-fill" style="width:94%"></div></div>
+          <span class="score-num">9.4</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">도메인 우위</span>
+          <div class="score-track"><div class="score-fill" style="width:95%"></div></div>
+          <span class="score-num">9.5</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">빌드 가능성</span>
+          <div class="score-track"><div class="score-fill" style="width:78%"></div></div>
+          <span class="score-num">7.8</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- #3 -->
+    <article class="opp">
+      <div class="opp-top">
+        <div class="opp-rank rank-go">3</div>
+        <div class="opp-info">
+          <h3>Reg S-P Compliance Hub — 소규모 RIA(투자자문사) 사이버보안 컴플라이언스</h3>
+          <p class="opp-oneliner">SEC 규정 S-P 개정안(2026.6 시행) 준수를 위한 인시던트 대응, 벤더 감독, 기록보관 도구</p>
+          <div class="opp-tags">
+            <span class="otag otag-must">Must-Have</span>
+            <span class="otag otag-neutral">SEC 검사 우선순위</span>
+            <span class="otag otag-neutral">거의 공백 시장</span>
+            <span class="otag otag-neutral">8주 빌드</span>
+          </div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="mv">$249/mo</div><div class="ml">가격</div></div>
+        <div class="metric"><div class="mv">17명</div><div class="ml">$4K 도달 고객</div></div>
+        <div class="metric"><div class="mv">15,000</div><div class="ml">$1.5B 이하 RIA</div></div>
+        <div class="metric"><div class="mv">SEC</div><div class="ml">집행 리스크</div></div>
+      </div>
+      <div class="opp-body">
+        <div class="opp-sub">왜 3위인가</div>
+        <p><strong>하드 데드라인 (2026.6.3).</strong> $1.5B AUM 이하 모든 SEC 등록 RIA가 개정된 Reg S-P를 준수해야 함. 인시던트 대응 프로그램, 30일 고객 통지, 72시간 벤더 보고, 5년 기록보관 의무. SEC가 2026 검사 우선순위로 명시.</p>
+        <p><strong>경쟁이 거의 없음.</strong> 유일한 전용 솔루션은 BlackSheep($249/mo)뿐. 나머지는 컨설턴트($10K-50K/프로젝트)나 로펌($300-800/시간). 평균 8명 RIA에게 이런 비용은 감당 불가.</p>
+        <p><strong>도메인 우위는 없지만 빌드가 쉬움.</strong> 금융 규제 경험은 없으나, 핵심은 가이드 워크플로우 + 템플릿 + 벤더 트래킹 + PDF 감사보고서. 복잡한 API 연동 불필요, PHI 없음. XYPN(1,900+ RIA) 같은 집중 커뮤니티로 고객 획득 가능.</p>
+
+        <div class="score-row">
+          <span class="score-label">Must-have</span>
+          <div class="score-track"><div class="score-fill" style="width:95%"></div></div>
+          <span class="score-num">9.5</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">경쟁 해자</span>
+          <div class="score-track"><div class="score-fill" style="width:90%"></div></div>
+          <span class="score-num">9.0</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">가격 결정력</span>
+          <div class="score-track"><div class="score-fill" style="width:92%"></div></div>
+          <span class="score-num">9.2</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">도메인 우위</span>
+          <div class="score-track"><div class="score-fill" style="width:35%"></div></div>
+          <span class="score-num">3.5</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">빌드 가능성</span>
+          <div class="score-track"><div class="score-fill" style="width:92%"></div></div>
+          <span class="score-num">9.2</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- TIER 2: CONDITIONAL GO -->
+  <section class="tier-section">
+    <div class="tier-label tier-caution">Tier 2 — Conditional Go</div>
+    <h2>조건부 추천: 강점은 있지만 주의점 존재</h2>
+    <p class="tier-desc">단독 첫 제품으로는 리스크가 있지만, 2번째 제품이나 특정 조건에서는 가치 있는 기회.</p>
+
+    <!-- #4 -->
+    <article class="opp">
+      <div class="opp-top">
+        <div class="opp-rank rank-caution">4</div>
+        <div class="opp-info">
+          <h3>Vet DEA Controlled Substance Logger</h3>
+          <p class="opp-oneliner">수의 클리닉용 DEA 마약류 기록 시스템 — 96%가 감사 탈락, $172K+ 잠재 벌금</p>
+          <div class="opp-tags">
+            <span class="otag otag-must">Must-Have</span>
+            <span class="otag otag-neutral">57,000 클리닉</span>
+            <span class="otag otag-nice">도메인 간접</span>
+          </div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="mv">$129/mo</div><div class="ml">가격</div></div>
+        <div class="metric"><div class="mv">32명</div><div class="ml">$4K 도달</div></div>
+        <div class="metric"><div class="mv">57,000</div><div class="ml">미국 수의 클리닉</div></div>
+        <div class="metric"><div class="mv">96%</div><div class="ml">감사 탈락률</div></div>
+      </div>
+      <div class="opp-body">
+        <p><strong>인간 의학 쪽(#2)과 같은 DEA 규정이지만 수의 쪽이 더 큰 시장(57K vs 24K).</strong> VetSnap이 모델 검증 완료. 96% 감사 탈락이라는 공포 마케팅 가능. 단, 수의 도메인 경험이 없어 unfair advantage 약함. #2의 인간 의학 쪽에 집중하는 게 더 자연스러움. 다만 수의 시장이 더 크고 덜 경쟁적이라 제품 확장 시 고려 가치 있음.</p>
+        <div class="score-row">
+          <span class="score-label">종합</span>
+          <div class="score-track"><div class="score-fill warn" style="width:82%"></div></div>
+          <span class="score-num">8.2</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- #5 -->
+    <article class="opp">
+      <div class="opp-top">
+        <div class="opp-rank rank-caution">5</div>
+        <div class="opp-info">
+          <h3>Certified Payroll / Prevailing Wage Reporter</h3>
+          <p class="opp-oneliner">건설 하청업체용 Davis-Bacon WH-347 자동 생성, 9개 주 전자 제출 의무</p>
+          <div class="opp-tags">
+            <span class="otag otag-must">Must-Have</span>
+            <span class="otag otag-neutral">200K+ 하청업체</span>
+            <span class="otag otag-nice">도메인 없음</span>
+          </div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="mv">$149/mo</div><div class="ml">가격</div></div>
+        <div class="metric"><div class="mv">27명</div><div class="ml">$4K 도달</div></div>
+        <div class="metric"><div class="mv">200K+</div><div class="ml">소규모 하청</div></div>
+        <div class="metric"><div class="mv">$72K</div><div class="ml">위반당 벌금</div></div>
+      </div>
+      <div class="opp-body">
+        <p><strong>거대한 TAM(200K+)과 심각한 벌금($72,876/건).</strong> 2025년 새 WH-347 양식, 9개 주 전자 제출 의무화. LCPtracker($175+, $995 셋업)가 대기업 타겟이라 소규모 하청에 공백. 하지만 prevailing wage rate DB 유지가 복잡하고, 건설 도메인 경험 전무. 두 번째 제품으로는 매력적이나 첫 제품 리스크 높음.</p>
+        <div class="score-row">
+          <span class="score-label">종합</span>
+          <div class="score-track"><div class="score-fill warn" style="width:80%"></div></div>
+          <span class="score-num">8.0</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- #6 -->
+    <article class="opp">
+      <div class="opp-top">
+        <div class="opp-rank rank-caution">6</div>
+        <div class="opp-info">
+          <h3>eMAR for Assisted Living / Group Homes</h3>
+          <p class="opp-oneliner">소규모 요양시설(5-33 베드)용 전자 투약 기록 시스템</p>
+          <div class="opp-tags">
+            <span class="otag otag-must">Must-Have</span>
+            <span class="otag otag-neutral">41K 시설</span>
+            <span class="otag otag-nice">가격 압박</span>
+          </div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="mv">$149/mo</div><div class="ml">가격</div></div>
+        <div class="metric"><div class="mv">28명</div><div class="ml">$4K 도달</div></div>
+        <div class="metric"><div class="mv">41,465</div><div class="ml">AL 커뮤니티</div></div>
+        <div class="metric"><div class="mv">$3.99</div><div class="ml">AL CloudCare/bed</div></div>
+      </div>
+      <div class="opp-body">
+        <p>규제 의무이고 시장이 크지만, <strong>AL CloudCare가 $3.99/bed/mo로 바닥 가격 형성.</strong> 20베드 시설 = $80/mo. $149/mo 프리미엄을 정당화하려면 eMAR + PRN + 의사 지시 추적 + 인시던트 리포트를 묶어야 함. LVN 배경으로 투약 워크플로우를 알지만, VA가 아닌 AL 도메인이라 핏이 덜 정확. 1위 제품 안정 후 확장 모듈로 적합.</p>
+        <div class="score-row">
+          <span class="score-label">종합</span>
+          <div class="score-track"><div class="score-fill warn" style="width:76%"></div></div>
+          <span class="score-num">7.6</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- #7 -->
+    <article class="opp">
+      <div class="opp-top">
+        <div class="opp-rank rank-caution">7</div>
+        <div class="opp-info">
+          <h3>Pay Transparency Compliance Tool</h3>
+          <p class="opp-oneliner">16개 주 + DC 급여 공개법 대응 — 원격근무 트리거로 모든 고용주가 잠재 타겟</p>
+          <div class="opp-tags">
+            <span class="otag otag-must">규제 의무</span>
+            <span class="otag otag-neutral">16개 주 + DC</span>
+            <span class="otag otag-nice">ATS 연동 필요</span>
+          </div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="mv">$199/mo</div><div class="ml">가격</div></div>
+        <div class="metric"><div class="mv">20명</div><div class="ml">$4K 도달</div></div>
+        <div class="metric"><div class="mv">6M+</div><div class="ml">영향받는 사업체</div></div>
+        <div class="metric"><div class="mv">$10K</div><div class="ml">CO 위반당 벌금</div></div>
+      </div>
+      <div class="opp-body">
+        <p><strong>시장은 엄청나지만 복잡도도 높음.</strong> ATS(Greenhouse, Lever, Indeed) 연동이 핵심 가치인데 이건 소규모 빌더에게 큰 부담. 16개 주 + DC의 서로 다른 규칙을 정확히 추적하려면 법률 전문성 필요. HR/법률 도메인 경험 없이 시작하면 정확성 리스크가 큼. 하지만 원격 근무 확산으로 수요는 폭발적.</p>
+        <div class="score-row">
+          <span class="score-label">종합</span>
+          <div class="score-track"><div class="score-fill warn" style="width:74%"></div></div>
+          <span class="score-num">7.4</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- TIER 3: PASS -->
+  <section class="tier-section">
+    <div class="tier-label tier-pass">Tier 3 — Nice-to-Have / 구조적 문제</div>
+    <h2>피해야 할 기회들</h2>
+    <p class="tier-desc">시장은 있지만 "must-have"가 아니거나, 가격 결정력이 약하거나, 흡수 리스크가 높은 경우.</p>
+
+    <!-- #8 -->
+    <article class="opp">
+      <div class="opp-top">
+        <div class="opp-rank rank-pass">8</div>
+        <div class="opp-info">
+          <h3>Solo Auto Detailing SaaS (DetailBook)</h3>
+          <p class="opp-oneliner">솔로 모바일 디테일러용 예약 + 보증금 + 결제 올인원</p>
+          <div class="opp-tags">
+            <span class="otag otag-nice">Nice-to-Have</span>
+            <span class="otag otag-skip">$39/mo 천장</span>
+            <span class="otag otag-neutral">25K 디테일러</span>
+          </div>
+        </div>
+      </div>
+      <div class="opp-body">
+        <p><strong>진짜 pain(노쇼, 문자 지옥)은 있지만 $39/mo 가격 천장이 문제.</strong> $4K/mo = 103명 필요. 경쟁사(Urable $39-79, Mobile Tech RX $30-39, Detail Bookie $29)가 이미 여럿. 무료(Square + Calendar)가 진짜 경쟁자. Housecall Pro, Jobber 같은 범용 도구도 대안. "대안이 너무 많고, 가격이 너무 낮다." 날씨 연동, 보증금 자동화가 차별점이지만 이걸로 $39 이상 받기 어려움.</p>
+        <div class="score-row">
+          <span class="score-label">종합</span>
+          <div class="score-track"><div class="score-fill bad" style="width:55%"></div></div>
+          <span class="score-num">5.5</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- #9 -->
+    <article class="opp">
+      <div class="opp-top">
+        <div class="opp-rank rank-pass">9</div>
+        <div class="opp-info">
+          <h3>AI Music Metadata Compliance / Multi-Persona Dashboard</h3>
+          <p class="opp-oneliner">EU AI Act, DDEX 5.0, 플랫폼별 AI 공개 규정 대응 + 20 페르소나 운영 대시보드</p>
+          <div class="opp-tags">
+            <span class="otag otag-nice">Nice-to-Have</span>
+            <span class="otag otag-skip">디스트리뷰터 흡수</span>
+            <span class="otag otag-neutral">개인 크리에이터</span>
+          </div>
+        </div>
+      </div>
+      <div class="opp-body">
+        <p><strong>EU AI Act Article 50 (2026.8.2 시행)과 DDEX 5.0(AI 공개 필드 공식 채택)이 실제 규제이지만, 핵심 문제는 구매자가 개인 크리에이터라는 것.</strong> 월 도구 예산 $30-60/mo, 추가 도구에 $29-49/mo 저항 큼. DistroKid이 이미 AI 공개 체크박스 내장 → 6-18개월 내 모든 디스트리뷰터가 흡수할 리스크. 20 페르소나 경험이 unfair advantage지만, $4K/mo 도달에 80-140명 필요. 뮤지션은 역사적으로 최악의 SaaS 고객(가격 민감, 높은 이탈률). <strong>간호 쪽이 안정되면 passion project로 고려.</strong></p>
+        <div class="score-row">
+          <span class="score-label">종합</span>
+          <div class="score-track"><div class="score-fill bad" style="width:48%"></div></div>
+          <span class="score-num">4.8</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- #10 -->
+    <article class="opp">
+      <div class="opp-top">
+        <div class="opp-rank rank-pass">10</div>
+        <div class="opp-info">
+          <h3>Brand Guidelines Portal / Client Content Collection</h3>
+          <p class="opp-oneliner">에이전시용 브랜드 가이드라인 포털 또는 웹디자이너용 콘텐츠 수집 도구</p>
+          <div class="opp-tags">
+            <span class="otag otag-nice">Nice-to-Have</span>
+            <span class="otag otag-skip">$39-49/mo</span>
+            <span class="otag otag-neutral">디자이너 도메인</span>
+          </div>
+        </div>
+      </div>
+      <div class="opp-body">
+        <p><strong>디자이너 배경에 맞지만 가격 결정력이 낮음.</strong> Brand portal = $39-49/mo per project (80-100개 포털 필요). Content collection = Content Snare가 ~$990K ARR로 검증했지만 $29-99/mo 범위. 디자이너 경험이 moat이긴 하나 $4K/mo 도달에 60-100명 필요. Figma, Canva가 계속 이 영역 잠식 중. Corebook이 $119-266/mo(브랜드 오너) + $69/mo(에이전시)로 가격 리포지셔닝 — 구독 모델로 전환하면서 시장 기준 설정 중. 간호 쪽보다 10배 더 많은 고객이 필요.</p>
+        <div class="score-row">
+          <span class="score-label">종합</span>
+          <div class="score-track"><div class="score-fill bad" style="width:45%"></div></div>
+          <span class="score-num">4.5</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- COMPARISON TABLE -->
+  <section class="cmp-section">
+    <h2>전체 비교: 한눈에 보기</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>기회</th>
+            <th>구매자</th>
+            <th>가격</th>
+            <th>$4K 고객수</th>
+            <th>벌금/리스크</th>
+            <th>도메인 핏</th>
+            <th>종합</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="cell-rank">1</td>
+            <td><strong>Nursing Compliance Hub</strong></td>
+            <td>클리닉 B2B</td>
+            <td>$199/mo</td>
+            <td>20명</td>
+            <td>$15K+ CMS</td>
+            <td>LVN 직접</td>
+            <td class="cell-score score-high">9.4</td>
+          </tr>
+          <tr>
+            <td class="cell-rank">2</td>
+            <td><strong>DEA Substance Logger</strong></td>
+            <td>클리닉 B2B</td>
+            <td>$249/mo</td>
+            <td>17명</td>
+            <td>$16K+ DEA</td>
+            <td>LVN 직접</td>
+            <td class="cell-score score-high">8.7</td>
+          </tr>
+          <tr>
+            <td class="cell-rank">3</td>
+            <td><strong>Reg S-P RIA Hub</strong></td>
+            <td>RIA B2B</td>
+            <td>$249/mo</td>
+            <td>17명</td>
+            <td>SEC 집행</td>
+            <td>없음</td>
+            <td class="cell-score score-high">8.1</td>
+          </tr>
+          <tr>
+            <td class="cell-rank">4</td>
+            <td>Vet DEA Logger</td>
+            <td>수의 B2B</td>
+            <td>$129/mo</td>
+            <td>32명</td>
+            <td>$16K+ DEA</td>
+            <td>간접</td>
+            <td class="cell-score score-mid">8.2</td>
+          </tr>
+          <tr>
+            <td class="cell-rank">5</td>
+            <td>Certified Payroll</td>
+            <td>건설 B2B</td>
+            <td>$149/mo</td>
+            <td>27명</td>
+            <td>$72K DB</td>
+            <td>없음</td>
+            <td class="cell-score score-mid">8.0</td>
+          </tr>
+          <tr>
+            <td class="cell-rank">6</td>
+            <td>eMAR 요양시설</td>
+            <td>AL B2B</td>
+            <td>$149/mo</td>
+            <td>28명</td>
+            <td>면허 위험</td>
+            <td>LVN 간접</td>
+            <td class="cell-score score-mid">7.6</td>
+          </tr>
+          <tr>
+            <td class="cell-rank">7</td>
+            <td>Pay Transparency</td>
+            <td>HR B2B</td>
+            <td>$199/mo</td>
+            <td>20명</td>
+            <td>$10K CO</td>
+            <td>없음</td>
+            <td class="cell-score score-mid">7.4</td>
+          </tr>
+          <tr style="opacity: 0.7;">
+            <td class="cell-rank">8</td>
+            <td>DetailBook</td>
+            <td>개인 B2C</td>
+            <td>$39/mo</td>
+            <td>103명</td>
+            <td>없음</td>
+            <td>없음</td>
+            <td class="cell-score score-low">5.5</td>
+          </tr>
+          <tr style="opacity: 0.7;">
+            <td class="cell-rank">9</td>
+            <td>AI Music</td>
+            <td>개인 B2C</td>
+            <td>$29-49/mo</td>
+            <td>80-140명</td>
+            <td>EU AI Act</td>
+            <td>페르소나</td>
+            <td class="cell-score score-low">4.8</td>
+          </tr>
+          <tr style="opacity: 0.7;">
+            <td class="cell-rank">10</td>
+            <td>Brand Portal</td>
+            <td>에이전시 B2B</td>
+            <td>$39-49/mo</td>
+            <td>80-100명</td>
+            <td>없음</td>
+            <td>디자인</td>
+            <td class="cell-score score-low">4.5</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- BOTTOM LINE -->
+  <section class="bottom">
+    <h2>최종 추천: 3단계 로드맵</h2>
+    <p>하나의 제품에 올인하되, 확장 경로를 미리 설계하는 전략. 핵심은 <strong>"같은 구매자에게 두 번째 제품 팔기."</strong></p>
+
+    <div class="roadmap">
+      <div class="rm-card primary">
+        <div class="rm-phase">Phase 1 — 즉시 시작 (8-10주)</div>
+        <h3>Nursing Compliance Hub</h3>
+        <p>자격증/CE 트래킹 + OSHA 컴플라이언스 통합. $199/mo. 20 고객 = $4K/mo. 스태핑 에이전시와 소규모 클리닉 타겟. r/nursing, Home Care Owners Community, 주 간호 협회에서 고객 획득.</p>
+      </div>
+      <div class="rm-card secondary">
+        <div class="rm-phase">Phase 2 — $4K 달성 후 (10-12주)</div>
+        <h3>DEA Substance Logger 모듈 추가</h3>
+        <p>같은 고객(클리닉)에게 두 번째 모듈로 판매. narcotic count, dual-sign-off, 재고 조정, DEA 감사 보고서. 기존 고객 upsell + 신규 확장. $249/mo 추가 → 고객당 $448/mo 가능.</p>
+      </div>
+      <div class="rm-card tertiary">
+        <div class="rm-phase">Phase 3 — 안정화 후 탐색</div>
+        <h3>수의 DEA 또는 AI Music (Passion)</h3>
+        <p>수의 시장(57K 클리닉)으로 DEA Logger 확장, 또는 AI Music 페르소나 대시보드를 사이드 프로젝트로. Phase 1-2가 안정적 수입 제공 후에만.</p>
+      </div>
+    </div>
+
+    <div class="killed">
+      <h3>분석했지만 Kill한 기회들 (25개+)</h3>
+      <div class="kill-grid">
+        <div class="kill-item"><span class="kn">Dental Insurance Verification</span><span class="kr">Vyne, Dentrix 장악</span></div>
+        <div class="kill-item"><span class="kn">NP Preceptor Matching</span><span class="kr">네트워크 효과 불가</span></div>
+        <div class="kill-item"><span class="kn">Military Readiness/SFRG</span><span class="kr">DoD 조달 장벽</span></div>
+        <div class="kill-item"><span class="kn">Restaurant Allergen SaaS</span><span class="kr">POS 흡수 중</span></div>
+        <div class="kill-item"><span class="kn">Veteran Claims Prep</span><span class="kr">VA 무료 제공</span></div>
+        <div class="kill-item"><span class="kn">Clinical Rotation Placement</span><span class="kr">학교 내부 해결</span></div>
+        <div class="kill-item"><span class="kn">Home Health Documentation</span><span class="kr">EMR 통합 필수</span></div>
+        <div class="kill-item"><span class="kn">Trades Invoice Reminder</span><span class="kr">Jobber/HCP 흡수</span></div>
+        <div class="kill-item"><span class="kn">Amazon FBA Fee Auditor</span><span class="kr">자동화 불가</span></div>
+        <div class="kill-item"><span class="kn">AI-in-Hiring Compliance</span><span class="kr">ATS에서 내장</span></div>
+        <div class="kill-item"><span class="kn">MenuPulse 레스토랑</span><span class="kr">POS 경쟁 불가</span></div>
+        <div class="kill-item"><span class="kn">State Privacy Compliance</span><span class="kr">OneTrust 등 장악</span></div>
+      </div>
+    </div>
+
+    <div class="verdict-hero" style="margin-top: 24px;">
+      <div class="vh-label">솔직한 한 줄 요약</div>
+      <p><strong>"벌금이 무서워서 사야 하는 도구"를 "예산 있는 사업주"에게 파는 것이 유일하게 신뢰할 수 있는 $4K/mo 경로.</strong> 디테일링, 음악, 브랜드 포털은 모두 "있으면 좋은" 도구를 "돈 없는 개인"에게 파는 구조 — 이 조합으로 $4K/mo는 거의 불가능하다. Nursing Compliance Hub부터 시작하고, 같은 고객에게 DEA Logger를 upsell하는 것이 가장 현실적인 경로.</p>
+    </div>
+  </section>
+
+  <div class="footnote">
+    <p><strong>방법론:</strong> 8개 리서치 리포트에서 50개+ 기회를 수집. Reddit (30+ subreddits), Indie Hackers, Capterra, G2 리뷰, 구인공고 역추적, 규제 데이터베이스, 시장 보고서 분석. 각 기회를 5가지 기준(must-have 강도, 경쟁 해자, 가격 결정력, unfair advantage, 빌드 가능성)으로 1-10 점수 부여. 종합 점수는 가중 평균(must-have 30%, 경쟁해자 20%, 가격결정력 20%, 도메인 우위 20%, 빌드 가능성 10%).</p>
+    <p>리서치 일자: 2026년 7월 29-30일. 가격 데이터는 공개 웹사이트 기준. 최종 업데이트: Joint Commission NPG 12 (2026.1), PreferredMD 런칭 (2026.1), EU AI Act Art.50 시행 (2026.8.2), DDEX 5.0 AI 필드 채택, Corebook 가격 리포지셔닝, 16개 주 + DC 급여 공개법 현황.</p>
+  </div>
+
+</div>
