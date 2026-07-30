@@ -1,0 +1,603 @@
+<title>Solo Auto Detailing SaaS — 경쟁력 전략</title>
+<style>
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #F4F2ED; --bg-card: #FFFFFF; --bg-card-alt: #FAF9F6;
+      --bg-hero: #111318; --hero-ink: #E6E2DA; --hero-ink-2: #8A8880;
+      --ink: #111318; --ink-2: #40403C; --ink-3: #6E6D68;
+      --border: #D6D3CC; --border-light: #E6E2DA;
+      --blue: #2E6BB5; --blue-bg: #EDF2FA; --blue-border: #B5CCE8;
+      --amber: #B8862B; --amber-bg: #FDF8EE; --amber-border: #E8D8B0;
+      --teal: #1A7A6A; --teal-bg: #EDF7F5; --teal-border: #B0DDD5;
+      --red: #B5443A; --red-bg: #FDF0EE; --red-border: #E8C2BC;
+      --purple: #6B55A8; --purple-bg: #F3F0FA; --purple-border: #C8BEE8;
+      --tag-bg: #E6E2DA; --tag-text: #5A5850;
+      --shadow: 0 1px 3px rgba(17,19,24,0.05);
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111318; --bg-card: #1A1C22; --bg-card-alt: #1E2028;
+      --bg-hero: #08090C; --hero-ink: #D4D0C8; --hero-ink-2: #6E6D68;
+      --ink: #D4D0C8; --ink-2: #9A9890; --ink-3: #5E5D58;
+      --border: #2A2C32; --border-light: #222428;
+      --blue: #5A9AD4; --blue-bg: #12182A; --blue-border: #1E2E48;
+      --amber: #D4A842; --amber-bg: #1E1A10; --amber-border: #3A3018;
+      --teal: #3EBAA5; --teal-bg: #0E1E1C; --teal-border: #1A3832;
+      --red: #D46860; --red-bg: #1E1214; --red-border: #3A1C1C;
+      --purple: #9488CC; --purple-bg: #18142E; --purple-border: #2A2448;
+      --tag-bg: #2A2C32; --tag-text: #9A9890;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #F4F2ED; --bg-card: #FFFFFF; --bg-card-alt: #FAF9F6;
+    --bg-hero: #111318; --hero-ink: #E6E2DA; --hero-ink-2: #8A8880;
+    --ink: #111318; --ink-2: #40403C; --ink-3: #6E6D68;
+    --border: #D6D3CC; --border-light: #E6E2DA;
+    --blue: #2E6BB5; --blue-bg: #EDF2FA; --blue-border: #B5CCE8;
+    --amber: #B8862B; --amber-bg: #FDF8EE; --amber-border: #E8D8B0;
+    --teal: #1A7A6A; --teal-bg: #EDF7F5; --teal-border: #B0DDD5;
+    --red: #B5443A; --red-bg: #FDF0EE; --red-border: #E8C2BC;
+    --purple: #6B55A8; --purple-bg: #F3F0FA; --purple-border: #C8BEE8;
+    --tag-bg: #E6E2DA; --tag-text: #5A5850;
+    --shadow: 0 1px 3px rgba(17,19,24,0.05);
+  }
+  :root[data-theme="dark"] {
+    --bg: #111318; --bg-card: #1A1C22; --bg-card-alt: #1E2028;
+    --bg-hero: #08090C; --hero-ink: #D4D0C8; --hero-ink-2: #6E6D68;
+    --ink: #D4D0C8; --ink-2: #9A9890; --ink-3: #5E5D58;
+    --border: #2A2C32; --border-light: #222428;
+    --blue: #5A9AD4; --blue-bg: #12182A; --blue-border: #1E2E48;
+    --amber: #D4A842; --amber-bg: #1E1A10; --amber-border: #3A3018;
+    --teal: #3EBAA5; --teal-bg: #0E1E1C; --teal-border: #1A3832;
+    --red: #D46860; --red-bg: #1E1214; --red-border: #3A1C1C;
+    --purple: #9488CC; --purple-bg: #18142E; --purple-border: #2A2448;
+    --tag-bg: #2A2C32; --tag-text: #9A9890;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--ink);
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    background: var(--bg-hero); color: var(--hero-ink);
+    padding: 60px 24px 52px; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: -100px; right: -60px;
+    width: 360px; height: 360px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(46,107,181,0.1) 0%, transparent 70%);
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero-tag {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase; color: var(--blue);
+    border: 1px solid rgba(46,107,181,0.3); border-radius: 3px;
+    padding: 4px 10px; margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: clamp(26px, 4vw, 38px); font-weight: 700;
+    line-height: 1.2; margin-bottom: 14px; text-wrap: balance;
+    letter-spacing: -0.5px;
+  }
+  .hero h1 em { font-style: normal; color: var(--blue); }
+  .hero-sub { font-size: 16px; color: var(--hero-ink-2); max-width: 580px; line-height: 1.6; }
+
+  .section { padding: 44px 0; }
+  .section + .section { border-top: 1px solid var(--border-light); }
+  .s-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--blue); margin-bottom: 6px;
+  }
+  .s-title {
+    font-size: 22px; font-weight: 700; line-height: 1.3;
+    margin-bottom: 6px; letter-spacing: -0.3px;
+  }
+  .s-desc {
+    font-size: 14px; color: var(--ink-2); max-width: 600px;
+    margin-bottom: 28px; line-height: 1.6;
+  }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 24px; margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card-t {
+    font-size: 16px; font-weight: 700; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .card p, .card li { font-size: 13px; color: var(--ink-2); line-height: 1.65; }
+  .card ul { padding-left: 16px; }
+  .card li { margin-bottom: 5px; }
+  .card li strong { color: var(--ink); }
+
+  .dr {
+    display: grid; grid-template-columns: 140px 1fr;
+    border-bottom: 1px solid var(--border-light);
+    padding: 9px 0; font-size: 13px; gap: 10px;
+  }
+  .dr:last-child { border-bottom: none; }
+  .dr-l { font-weight: 600; color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .dr-v { color: var(--ink); }
+
+  .sb {
+    border-radius: 8px; padding: 22px; margin-bottom: 14px;
+    border-left: 4px solid;
+  }
+  .sb.blue { background: var(--blue-bg); border-color: var(--blue); }
+  .sb.amber { background: var(--amber-bg); border-color: var(--amber); }
+  .sb.teal { background: var(--teal-bg); border-color: var(--teal); }
+  .sb.red { background: var(--red-bg); border-color: var(--red); }
+  .sb.purple { background: var(--purple-bg); border-color: var(--purple); }
+  .sb h3 { font-size: 14px; font-weight: 700; margin-bottom: 7px; }
+  .sb.blue h3 { color: var(--blue); }
+  .sb.amber h3 { color: var(--amber); }
+  .sb.teal h3 { color: var(--teal); }
+  .sb.red h3 { color: var(--red); }
+  .sb.purple h3 { color: var(--purple); }
+  .sb p, .sb li { font-size: 13px; color: var(--ink-2); line-height: 1.65; }
+  .sb ul { padding-left: 16px; margin-top: 6px; }
+  .sb li { margin-bottom: 4px; }
+  .sb li strong { color: var(--ink); }
+
+  .quote {
+    background: var(--bg-card-alt); border-left: 3px solid var(--border);
+    padding: 14px 18px; margin: 14px 0; border-radius: 0 6px 6px 0;
+    font-size: 13px; font-style: italic; color: var(--ink-2); line-height: 1.6;
+  }
+  .quote cite {
+    display: block; font-style: normal; font-size: 11px;
+    color: var(--ink-3); margin-top: 6px; font-weight: 600;
+  }
+
+  .table-wrap { overflow-x: auto; margin: 20px 0; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+  th {
+    background: var(--bg-card-alt); font-weight: 700; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-3);
+    padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border-light); color: var(--ink-2); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td strong { color: var(--ink); }
+  .hl td { background: var(--blue-bg); }
+  .hl td:first-child { font-weight: 700; color: var(--blue); }
+
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .stat {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px; text-align: center;
+  }
+  .stat-n { font-size: 26px; font-weight: 700; color: var(--blue); letter-spacing: -0.5px; }
+  .stat-l { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .verdict {
+    background: var(--bg-hero); color: var(--hero-ink);
+    padding: 44px 24px; margin-top: 44px; border-top: 3px solid var(--blue);
+  }
+  .verdict h2 { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+  .v-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px; margin-bottom: 20px;
+  }
+  .v-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 18px;
+  }
+  .v-card .vl { font-size: 10px; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+  .v-card .vv { font-size: 18px; font-weight: 700; color: var(--hero-ink); }
+  .v-card .vd { font-size: 11px; color: var(--hero-ink-2); margin-top: 3px; }
+  .v-note { font-size: 13px; color: var(--hero-ink-2); line-height: 1.7; max-width: 600px; }
+  .v-note strong { color: var(--hero-ink); }
+
+  @media (max-width: 600px) {
+    .hero { padding: 36px 16px 32px; }
+    .dr { grid-template-columns: 1fr; gap: 2px; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .v-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+
+<div class="hero">
+  <div class="wrap">
+    <span class="hero-tag">Competitive Strategy</span>
+    <h1>Solo Auto Detailing SaaS<br><em>$39/mo로 100명 잡기</em></h1>
+    <p class="hero-sub">$18.7B 시장, 25,000+ 솔로 디테일러, 63%가 아직 문자+캘린더+벤모로 운영 — 병목 없이 Claude로 만들 수 있는 제품</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- PART 1: Market -->
+  <div class="section">
+    <div class="s-label">Part 1</div>
+    <div class="s-title">시장: 솔로 모바일 디테일러</div>
+    <div class="s-desc">미국 오토 디테일링 시장 $18.7B. 모바일/온디맨드가 연 16.5% 성장 중. 핵심 타겟은 혼자 일하는 모바일 디테일러.</div>
+
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-n">25K-35K</div><div class="stat-l">미국 솔로 디테일러</div></div>
+      <div class="stat"><div class="stat-n">63%</div><div class="stat-l">DIY 도구 사용</div></div>
+      <div class="stat"><div class="stat-n">15-25%</div><div class="stat-l">노쇼율</div></div>
+      <div class="stat"><div class="stat-n">5-6.5h</div><div class="stat-l">10시간 중 실제 작업</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-t"><span class="dot" style="background:var(--blue)"></span>솔로 디테일러 프로필</div>
+      <div class="dr"><div class="dr-l">연 매출</div><div class="dr-v"><strong>$80K-180K</strong> (순수익 $48K-90K, 마진 60-80%)</div></div>
+      <div class="dr"><div class="dr-l">일과</div><div class="dr-v">10시간 일하는데 실제 돈 버는 시간은 5-6.5시간. 나머지는 이동, 세팅, 문자, 견적, 결제 추적</div></div>
+      <div class="dr"><div class="dr-l">현재 도구</div><div class="dr-v">문자 + Google Calendar + Venmo/CashApp + Instagram DM + 머릿속 기억</div></div>
+      <div class="dr"><div class="dr-l">고객 확보</div><div class="dr-v">입소문 #1, Google Business Profile, Instagram (전후 사진), Facebook, Nextdoor</div></div>
+      <div class="dr"><div class="dr-l">가격 천장</div><div class="dr-v"><strong>$30-40/mo 편안함, $100/mo 절대 상한</strong>. 무료(Square+캘린더)가 진짜 경쟁자</div></div>
+    </div>
+  </div>
+
+  <!-- PART 2: Pain Points -->
+  <div class="section">
+    <div class="s-label">Part 2</div>
+    <div class="s-title">진짜 고통: 커뮤니티에서 나온 목소리</div>
+    <div class="s-desc">Reddit, Facebook, YouTube, 포럼에서 수집한 솔로 디테일러의 실제 불만.</div>
+
+    <div class="sb red">
+      <h3>고통 #1: 노쇼 — 감정적으로 가장 큰 스트레스</h3>
+      <div class="quote">"80% of clients don't stick to appointments. I drove 30 minutes, set up all my gear, and they just weren't home. No text, nothing."<cite>— Auto Geek Forum 디테일러</cite></div>
+      <ul>
+        <li>보증금($25-100)이 해결책인 건 아는데, <strong>요구하기가 심리적으로 어렵다</strong></li>
+        <li>"단골 관계 깨질까봐" — 소개 기반 비즈니스라서 갈등 회피</li>
+        <li>해결: <strong>시스템이 자동으로 보증금을 받으면</strong> 디테일러가 "미안한 사람" 안 됨</li>
+      </ul>
+    </div>
+
+    <div class="sb amber">
+      <h3>고통 #2: 문자 지옥 — 하루 종일 폰 잡고 있기</h3>
+      <div class="quote">"Text-only booking is killing your detailing business. You're detailing a car with wet hands and a customer texts asking for availability. You can't reply for 2 hours. By then they booked someone else."<cite>— CurbCar Blog</cite></div>
+      <ul>
+        <li>작업 중 전화/문자 응답 불가 → 고객 이탈</li>
+        <li>Instagram DM, Facebook 메시지, 문자, 전화 — 4개 채널에서 예약 요청</li>
+        <li>해결: <strong>셀프 예약 링크</strong> 하나로 통합. "내 링크로 예약하세요" 한 줄이면 끝</li>
+      </ul>
+    </div>
+
+    <div class="sb blue">
+      <h3>고통 #3: 결제 추적 — 누가 냈고 누가 안 냈는지</h3>
+      <ul>
+        <li>Venmo, CashApp, Zelle, 현금 — 4가지 결제 수단이 다 따로</li>
+        <li>월말에 누가 안 냈는지 파악하려면 대화 기록 뒤져야 함</li>
+        <li>Fleet 고객(매주 오는 차량 관리 회사)은 인보이스 필요 → 더 복잡</li>
+        <li>해결: <strong>작업 완료 → 탭 한 번 → 결제 요청</strong> 자동화</li>
+      </ul>
+    </div>
+
+    <div class="sb purple">
+      <h3>고통 #4: 비 오면 일정 폭탄</h3>
+      <ul>
+        <li>모바일 디테일링은 야외 작업 → 비/눈 오면 전부 리스케줄</li>
+        <li>고객 5명에게 각각 문자 보내서 일정 변경 = <strong>30분+ 소요</strong></li>
+        <li>CurbCar만 weather-aware 스케줄링 제공 중 (유일)</li>
+        <li>해결: <strong>날씨 API 연동 → 비 예보 시 자동 리스케줄 제안</strong></li>
+      </ul>
+    </div>
+
+    <div class="sb teal">
+      <h3>고통 #5: 번아웃 — 수요 부족이 아니라 체력 고갈</h3>
+      <ul>
+        <li>"Physical and motivational burnout ends more solo businesses than lack of demand"</li>
+        <li>하루 10시간 중 3.5-5시간이 비생산적 시간 (이동, 세팅, 행정)</li>
+        <li>행정 시간만 줄여도 하루 1-2건 더 할 수 있거나, 일찍 퇴근할 수 있음</li>
+        <li>해결: <strong>예약-확인-결제 자동화로 행정 시간 최소화</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PART 3: Competitors -->
+  <div class="section">
+    <div class="s-label">Part 3</div>
+    <div class="s-title">경쟁자 지도</div>
+    <div class="s-desc">디테일링 전용 vs 범용, 솔로 가격대 vs 팀 가격대로 나누면 빈 공간이 보인다.</div>
+
+    <div class="table-wrap">
+      <table>
+        <tr>
+          <th>제품</th>
+          <th>가격</th>
+          <th>유형</th>
+          <th>타겟</th>
+          <th>약점 (솔로 관점)</th>
+        </tr>
+        <tr>
+          <td><strong>Urable</strong></td>
+          <td>$39-79/mo</td>
+          <td>디테일링 전용</td>
+          <td>1-10인</td>
+          <td>셋업 복잡, 기능 과다, SMS 별도 과금</td>
+        </tr>
+        <tr>
+          <td><strong>Mobile Tech RX</strong></td>
+          <td>$30-39/mo</td>
+          <td>디테일링 전용</td>
+          <td>모바일</td>
+          <td>결제 통합 약함, UI 구식</td>
+        </tr>
+        <tr>
+          <td><strong>Detail Bookie</strong></td>
+          <td>$29/mo~</td>
+          <td>디테일링 전용</td>
+          <td>솔로-소규모</td>
+          <td>디테일러가 만들어 충성도 높음. 기능은 기본적</td>
+        </tr>
+        <tr>
+          <td><strong>QuoteIQ</strong></td>
+          <td>$30/mo</td>
+          <td>디테일링 전용</td>
+          <td>견적 특화</td>
+          <td>견적만 강하고 예약/결제 약함</td>
+        </tr>
+        <tr>
+          <td><strong>CurbCar</strong></td>
+          <td>비공개</td>
+          <td>모바일 특화</td>
+          <td>모바일</td>
+          <td>유일한 날씨 연동, 하지만 인지도 낮음</td>
+        </tr>
+        <tr>
+          <td><strong>Jobber</strong></td>
+          <td>$49-149/mo</td>
+          <td>범용 필드서비스</td>
+          <td>3-20인</td>
+          <td>디테일링에 맞지 않음, 비쌈, 과다 기능</td>
+        </tr>
+        <tr>
+          <td><strong>Housecall Pro</strong></td>
+          <td>$65-199/mo</td>
+          <td>범용 필드서비스</td>
+          <td>팀</td>
+          <td>"not purpose-built for detailing" — 커뮤니티 평</td>
+        </tr>
+        <tr>
+          <td><strong>Square + Calendar</strong></td>
+          <td>무료</td>
+          <td>DIY</td>
+          <td>모든 규모</td>
+          <td>연결 안 됨, 보증금 없음, 리마인더 없음, 수동</td>
+        </tr>
+        <tr class="hl">
+          <td>DetailBook (우리)</td>
+          <td><strong>$39/mo</strong></td>
+          <td>솔로 디테일링 전용</td>
+          <td><strong>1인 모바일</strong></td>
+          <td>—</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="sb teal">
+      <h3>빈 공간: "디테일링 전용 + 솔로 가격 + 올인원"</h3>
+      <ul>
+        <li>Urable/Jobber = 기능 과다 + 비쌈</li>
+        <li>Mobile Tech RX/QuoteIQ = 가격 맞지만 기능 불완전</li>
+        <li>Square+Calendar = 무료지만 연결 안 됨</li>
+        <li><strong>필요한 건 딱 5가지만 완벽히 하는 $39/mo 도구:</strong></li>
+        <li>셀프 예약 링크 + SMS 리마인더 포함 + 보증금 자동 수금 + 탭투페이 + 재방문 자동화</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PART 4: Our Strategy -->
+  <div class="section">
+    <div class="s-label">Part 4</div>
+    <div class="s-title">경쟁력: "5가지만 완벽히"</div>
+    <div class="s-desc">기능 많은 게 아니라, 솔로 디테일러의 하루를 바꾸는 5가지에 집중.</div>
+
+    <div class="card">
+      <div class="card-t"><span class="dot" style="background:var(--blue)"></span>1. 셀프 예약 링크 — "내 링크로 예약하세요"</div>
+      <ul>
+        <li>Instagram 프로필, Google Business, 문자에 링크 하나 공유</li>
+        <li>차종 선택 → 서비스 선택 → 날짜/시간 → 보증금 결제 → 예약 완료</li>
+        <li>디테일러가 <strong>작업 중 전화 안 받아도</strong> 예약이 들어옴</li>
+        <li>경쟁 우위: 차량 크기별 자동 가격 (SUV vs Sedan vs Truck)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-t"><span class="dot" style="background:var(--red)"></span>2. 보증금 자동 수금 — "시스템이 하니까 미안할 필요 없음"</div>
+      <ul>
+        <li>예약 시 $25-50 보증금 자동 결제 (Stripe)</li>
+        <li>디테일러가 직접 "보증금 내세요" 말할 필요 없음 → <strong>심리적 부담 제거</strong></li>
+        <li>노쇼 시 보증금 자동 차감, 취소 정책 자동 안내</li>
+        <li>효과: 노쇼율 15-25% → <strong>5% 이하</strong></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-t"><span class="dot" style="background:var(--amber)"></span>3. SMS 리마인더 — 비용 포함, 추가 과금 없음</div>
+      <ul>
+        <li>예약 24시간 전 + 2시간 전 자동 문자</li>
+        <li><strong>SMS 비용 월 $39에 포함</strong> (Urable은 별도 과금 — 디테일러들 불만 많음)</li>
+        <li>월 100건 SMS 포함 (솔로 디테일러 평균 60-80건/월)</li>
+        <li>리마인더 내용: "내일 2시 Tesla Model 3 외부세차 예약 확인. 변경: [링크]"</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-t"><span class="dot" style="background:var(--teal)"></span>4. 작업 완료 → 탭 한 번 → 결제</div>
+      <ul>
+        <li>작업 끝나면 앱에서 "완료" 탭 → 고객에게 결제 링크 자동 발송</li>
+        <li>잔금 = 총 비용 - 보증금, 자동 계산</li>
+        <li>Stripe 결제 → 다음날 입금 (Venmo/CashApp처럼 즉시는 아니지만 추적 가능)</li>
+        <li>월말 수입 리포트 자동 생성 → 세금 신고용</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-t"><span class="dot" style="background:var(--purple)"></span>5. 재방문 자동화 — "2개월 됐네요, 다시 예약하실래요?"</div>
+      <ul>
+        <li>고객별 마지막 서비스 날짜 추적</li>
+        <li>60일/90일 후 자동 리마인더: "지난 세라믹 코팅 유지 점검 시기입니다. [예약 링크]"</li>
+        <li>솔로 디테일러 매출의 <strong>60-70%가 재방문</strong> — 이걸 자동화하면 안정 수입</li>
+        <li>수동으로 하면 고객 50명 이상부터 추적 불가 → 돈이 새는 구멍</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PART 5: Tech -->
+  <div class="section">
+    <div class="s-label">Part 5</div>
+    <div class="s-title">기술: 병목 없는 스택</div>
+    <div class="s-desc">HIPAA도 NPI도 없다. 치과 대비 기술 장벽이 현저히 낮다.</div>
+
+    <div class="card">
+      <div class="dr"><div class="dr-l">프론트엔드</div><div class="dr-v"><strong>Next.js 14</strong> + Tailwind. 예약 페이지 + 디테일러 대시보드.</div></div>
+      <div class="dr"><div class="dr-l">백엔드/DB</div><div class="dr-v"><strong>Supabase</strong> — Auth, PostgreSQL, Realtime. Row Level Security로 다중 테넌트.</div></div>
+      <div class="dr"><div class="dr-l">결제</div><div class="dr-v"><strong>Stripe</strong> — 보증금 수금, 잔금 결제, 구독 관리. Stripe Connect로 각 디테일러 계정 분리.</div></div>
+      <div class="dr"><div class="dr-l">SMS</div><div class="dr-v"><strong>Twilio</strong> — 리마인더 발송. 건당 $0.0079. 월 100건 = $0.79/고객.</div></div>
+      <div class="dr"><div class="dr-l">날씨 (V2)</div><div class="dr-v"><strong>OpenWeather API</strong> — 무료 1,000콜/일. 비 예보 시 리스케줄 제안.</div></div>
+      <div class="dr"><div class="dr-l">배포</div><div class="dr-v"><strong>Vercel</strong> — 무료 시작, Pro $20/mo 시 충분.</div></div>
+      <div class="dr"><div class="dr-l">규제</div><div class="dr-v"><strong>없음.</strong> HIPAA 불필요, 특수 라이선스 불필요, BAA 불필요.</div></div>
+    </div>
+
+    <div class="sb blue">
+      <h3>치과 검증 vs 오토 디테일링 — 병목 비교</h3>
+      <ul>
+        <li><strong>보험사 포탈 스크래핑?</strong> → 없음. 외부 API 연동 자체가 없음</li>
+        <li><strong>HIPAA 컴플라이언스?</strong> → 없음. 개인 건강 정보 없음</li>
+        <li><strong>NPI 번호?</strong> → 없음. 누구나 바로 시작 가능</li>
+        <li><strong>PMS 연동?</strong> → 없음. 우리가 곧 PMS (예약 시스템 = 우리)</li>
+        <li><strong>Clearinghouse 계약?</strong> → 없음. Stripe만 있으면 됨</li>
+        <li><strong>결론: Claude로 8주 안에 MVP 가능</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PART 6: MVP Timeline -->
+  <div class="section">
+    <div class="s-label">Part 6</div>
+    <div class="s-title">MVP 로드맵: 8주</div>
+    <div class="s-desc">치과 12주 대비 8주. 외부 의존성이 없어서 빠르다.</div>
+
+    <div class="card">
+      <div class="card-t"><span class="dot" style="background:var(--blue)"></span>Week 1-2: 예약 페이지 + 인증</div>
+      <ul>
+        <li>Supabase Auth (이메일/Google 로그인)</li>
+        <li>디테일러 프로필: 서비스 메뉴, 가격, 영업 시간, 서비스 지역</li>
+        <li>공개 예약 페이지: 차종 → 서비스 → 날짜 → 예약</li>
+        <li>커스텀 URL: detailbook.app/[상호명]</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-t"><span class="dot" style="background:var(--amber)"></span>Week 3-4: 결제 + 보증금</div>
+      <ul>
+        <li>Stripe Connect 온보딩 (디테일러 계정 연결)</li>
+        <li>예약 시 보증금 자동 수금</li>
+        <li>작업 완료 → 잔금 결제 링크 발송</li>
+        <li>결제 내역 대시보드</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-t"><span class="dot" style="background:var(--teal)"></span>Week 5-6: SMS 리마인더 + 대시보드</div>
+      <ul>
+        <li>Twilio SMS 연동 — 24h전 + 2h전 자동 발송</li>
+        <li>오늘/이번주 일정 대시보드</li>
+        <li>고객 목록 + 서비스 이력</li>
+        <li>모바일 최적화 (디테일러는 폰으로 사용)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-t"><span class="dot" style="background:var(--purple)"></span>Week 7-8: 재방문 자동화 + 베타 출시</div>
+      <ul>
+        <li>재방문 리마인더 자동 발송 (60일/90일)</li>
+        <li>Stripe 구독 ($39/mo) 연동</li>
+        <li>14일 무료 체험 플로우</li>
+        <li>베타 사용자 10명 모집 (Reddit + Facebook)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PART 7: 100 Customers -->
+  <div class="section">
+    <div class="s-label">Part 7</div>
+    <div class="s-title">100명 확보 시나리오</div>
+    <div class="s-desc">$39/mo x 40명 = $1,560. 목표 $4,000 달성하려면 103명 필요. 커뮤니티가 집중되어 있어서 가능.</div>
+
+    <div class="sb blue">
+      <h3>채널 1: Reddit + Facebook 커뮤니티 (30명)</h3>
+      <ul>
+        <li><strong>r/AutoDetailing</strong> — 가장 큰 디테일링 서브레딧</li>
+        <li><strong>r/Entrepreneur, r/sweatystartup</strong> — 디테일링 사업 논의 활발</li>
+        <li><strong>Detail Mafia</strong> Facebook 그룹 — 가장 큰 디테일러 커뮤니티</li>
+        <li><strong>Detailers Roadmap, Auto Detailing Chat Group</strong></li>
+        <li>전략: "무료 예약 페이지 만들어줄게" → 베타 → 전환</li>
+      </ul>
+    </div>
+    <div class="sb amber">
+      <h3>채널 2: YouTube/Podcast 스폰서십 (25명)</h3>
+      <ul>
+        <li><strong>Wilson Auto Detailing</strong> (292K 구독자) — 비즈니스 운영 콘텐츠 다수</li>
+        <li><strong>IMJOSHV, Pan The Organizer</strong> — 디테일링 비즈니스 유튜버</li>
+        <li><strong>Calling All Detailers, Talkin' Paint</strong> — 팟캐스트</li>
+        <li>소규모 유튜버 스폰서: $200-500/영상. 1영상 → 5-10명 전환 가능</li>
+      </ul>
+    </div>
+    <div class="sb teal">
+      <h3>채널 3: Google 검색 + 콘텐츠 (25명)</h3>
+      <ul>
+        <li>"auto detailing booking software", "mobile detailing app" — SEO</li>
+        <li>블로그: "How to Stop No-Shows in Your Detailing Business" — 유입 퍼널</li>
+        <li>Google Business Profile에서 디테일러 직접 아웃리치</li>
+        <li>Product Hunt 런치 → 초기 관심</li>
+      </ul>
+    </div>
+    <div class="sb purple">
+      <h3>채널 4: 입소문 + 레퍼럴 (20명)</h3>
+      <ul>
+        <li>디테일러끼리 네트워크 강함 — 한 명이 쓰면 동료에게 추천</li>
+        <li>"친구 추천하면 다음 달 무료" 레퍼럴 프로그램</li>
+        <li>예약 페이지 하단: "Powered by DetailBook" — 자연 유입</li>
+        <li>커뮤니티 특성상 <strong>바이럴 계수 높음</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PART 8: Unit Economics -->
+  <div class="section">
+    <div class="s-label">Part 8</div>
+    <div class="s-title">유닛 이코노믹스</div>
+
+    <div class="card">
+      <div class="dr"><div class="dr-l">구독료</div><div class="dr-v"><strong>$39/mo</strong></div></div>
+      <div class="dr"><div class="dr-l">SMS 비용</div><div class="dr-v">월 100건 x $0.0079 = <strong>$0.79/고객</strong></div></div>
+      <div class="dr"><div class="dr-l">Stripe 수수료</div><div class="dr-v">구독 결제 2.9% + $0.30 = <strong>$1.43/고객</strong></div></div>
+      <div class="dr"><div class="dr-l">인프라 (총)</div><div class="dr-v">Supabase Pro $25 + Vercel $20 + Twilio 기본 $15 = <strong>$60/mo</strong></div></div>
+      <div class="dr"><div class="dr-l">고객당 비용</div><div class="dr-v">$60/100명 + $2.22 변동비 = <strong>~$2.82/고객/월</strong></div></div>
+      <div class="dr"><div class="dr-l">고객당 마진</div><div class="dr-v">$39 - $2.82 = <strong>$36.18 (92.8% 마진)</strong></div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="verdict">
+  <div class="wrap">
+    <h2>결론: 100명 달성 시 수치</h2>
+    <div class="v-grid">
+      <div class="v-card"><div class="vl">MRR</div><div class="vv">$3,900</div><div class="vd">100명 x $39/mo</div></div>
+      <div class="v-card"><div class="vl">월 비용</div><div class="vv">$342</div><div class="vd">인프라 $60 + 변동비 $282</div></div>
+      <div class="v-card"><div class="vl">월 순수익</div><div class="vv">$3,558</div><div class="vd">110명이면 $4,000+ 돌파</div></div>
+      <div class="v-card"><div class="vl">마진</div><div class="vv">92.8%</div><div class="vd">치과와 동일 수준</div></div>
+      <div class="v-card"><div class="vl">MVP 기간</div><div class="vv">8주</div><div class="vd">치과 12주 대비 33% 단축</div></div>
+      <div class="v-card"><div class="vl">병목</div><div class="vv">0개</div><div class="vd">HIPAA/NPI/스크래핑 없음</div></div>
+    </div>
+    <div class="v-note">
+      <strong>왜 이게 더 나은 선택인가:</strong> 치과 보험 검증은 기술적으로 매력적이지만 HIPAA, NPI, 포탈 스크래핑이라는 넘기 어려운 병목이 있다. 오토 디테일링은 <strong>병목이 0개</strong>다. Next.js + Supabase + Stripe + Twilio — 전부 Claude로 만들 수 있고, 8주 MVP가 현실적이다. 가격은 $39/mo로 낮지만 마진 93%에 변동비가 거의 없어서 100명이면 $3,558 순수익. <strong>110명이면 목표 $4,000 돌파.</strong> 커뮤니티가 Reddit/Facebook/YouTube에 집중되어 있어 40-100명 확보 경로도 명확하다.
+    </div>
+  </div>
+</div>
