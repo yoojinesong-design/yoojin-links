@@ -1,0 +1,718 @@
+<title>Yoojin Song — Life Trajectory Analysis</title>
+<style>
+  :root {
+    --ground: #F6F5F0;
+    --surface: #FFFFFF;
+    --surface-alt: #EFEEE8;
+    --ink: #1C2834;
+    --ink-2: #4A5968;
+    --ink-3: #7E8B96;
+    --border: #D8D6CF;
+    --border-light: #E8E6E0;
+    --teal: #147A68;
+    --teal-bg: #E8F5F1;
+    --teal-border: #B4DDD2;
+    --violet: #7251C4;
+    --violet-bg: #F0ECF9;
+    --violet-border: #C9BCE8;
+    --amber: #B8772A;
+    --amber-bg: #FDF5EA;
+    --amber-border: #E4D0AA;
+    --red: #B84A3E;
+    --red-bg: #FDF0EE;
+    --olive: #5A7A34;
+    --olive-bg: #F0F5EA;
+    --olive-border: #C4D8AA;
+    --shadow: 0 1px 4px rgba(28,40,52,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0E1318;
+      --surface: #171E26;
+      --surface-alt: #1C252F;
+      --ink: #DFE3E8;
+      --ink-2: #99A5B0;
+      --ink-3: #677480;
+      --border: #283440;
+      --border-light: #1F2A34;
+      --teal: #3CC4A8;
+      --teal-bg: #0E1F1C;
+      --teal-border: #1A3D34;
+      --violet: #A78BEA;
+      --violet-bg: #1A152E;
+      --violet-border: #2E2454;
+      --amber: #DCA04A;
+      --amber-bg: #1E1A10;
+      --amber-border: #3A3018;
+      --red: #E06A5E;
+      --red-bg: #1E1412;
+      --olive: #8ABF55;
+      --olive-bg: #141E10;
+      --olive-border: #2A3D1A;
+      --shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #F6F5F0;
+    --surface: #FFFFFF;
+    --surface-alt: #EFEEE8;
+    --ink: #1C2834;
+    --ink-2: #4A5968;
+    --ink-3: #7E8B96;
+    --border: #D8D6CF;
+    --border-light: #E8E6E0;
+    --teal: #147A68;
+    --teal-bg: #E8F5F1;
+    --teal-border: #B4DDD2;
+    --violet: #7251C4;
+    --violet-bg: #F0ECF9;
+    --violet-border: #C9BCE8;
+    --amber: #B8772A;
+    --amber-bg: #FDF5EA;
+    --amber-border: #E4D0AA;
+    --red: #B84A3E;
+    --red-bg: #FDF0EE;
+    --olive: #5A7A34;
+    --olive-bg: #F0F5EA;
+    --olive-border: #C4D8AA;
+    --shadow: 0 1px 4px rgba(28,40,52,0.06);
+  }
+  :root[data-theme="dark"] {
+    --ground: #0E1318;
+    --surface: #171E26;
+    --surface-alt: #1C252F;
+    --ink: #DFE3E8;
+    --ink-2: #99A5B0;
+    --ink-3: #677480;
+    --border: #283440;
+    --border-light: #1F2A34;
+    --teal: #3CC4A8;
+    --teal-bg: #0E1F1C;
+    --teal-border: #1A3D34;
+    --violet: #A78BEA;
+    --violet-bg: #1A152E;
+    --violet-border: #2E2454;
+    --amber: #DCA04A;
+    --amber-bg: #1E1A10;
+    --amber-border: #3A3018;
+    --red: #E06A5E;
+    --red-bg: #1E1412;
+    --olive: #8ABF55;
+    --olive-bg: #141E10;
+    --olive-border: #2A3D1A;
+    --shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--ground); color: var(--ink);
+    line-height: 1.72; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 740px; margin: 0 auto; padding: 0 24px; }
+  .serif { font-family: Georgia, 'Noto Serif KR', 'Batang', serif; }
+  .mono { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace; }
+
+  /* ── HEADER ── */
+  .hdr { padding: 56px 24px 0; }
+  .hdr-eyebrow { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 14px; }
+  .hdr h1 { font-size: clamp(26px, 4.5vw, 38px); font-weight: 400; line-height: 1.22; letter-spacing: -0.02em; margin-bottom: 20px; text-wrap: balance; }
+  .hdr-lead { font-size: 15px; color: var(--ink-2); max-width: 640px; line-height: 1.75; }
+
+  .div-line { border: none; border-top: 1px solid var(--border-light); margin: 44px 0; }
+
+  /* ── SECTION ── */
+  .sec { padding: 0 0 8px; }
+  .sec-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .sec-label.teal { color: var(--teal); }
+  .sec-label.violet { color: var(--violet); }
+  .sec-label.amber { color: var(--amber); }
+  .sec-label.red { color: var(--red); }
+  .sec-label.olive { color: var(--olive); }
+  .sec h2 { font-size: 22px; font-weight: 400; line-height: 1.35; letter-spacing: -0.01em; margin-bottom: 16px; }
+  .sec p { font-size: 15px; color: var(--ink-2); margin-bottom: 14px; line-height: 1.72; }
+  .sec p:last-child { margin-bottom: 0; }
+  .sec p strong { color: var(--ink); font-weight: 600; }
+
+  /* ── PREMISE BOX ── */
+  .premise {
+    background: var(--surface); border: 2px solid var(--teal);
+    border-radius: 8px; padding: 26px; margin: 24px 0;
+  }
+  .premise p { font-size: 15px; color: var(--ink); line-height: 1.7; margin-bottom: 10px; }
+  .premise p:last-child { margin-bottom: 0; }
+  .premise strong { color: var(--teal); }
+
+  /* ── TIMELINE ── */
+  .timeline { margin: 28px 0; position: relative; }
+  .tl-item {
+    display: grid; grid-template-columns: 90px 1fr;
+    gap: 20px; padding-bottom: 26px; position: relative;
+  }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item::before {
+    content: ''; position: absolute;
+    left: 99px; top: 8px; bottom: -8px;
+    width: 1px; background: var(--border);
+  }
+  .tl-item:last-child::before { display: none; }
+  .tl-item::after {
+    content: ''; position: absolute;
+    left: 95px; top: 6px;
+    width: 9px; height: 9px; border-radius: 50%;
+    border: 2px solid var(--teal); background: var(--ground);
+  }
+  .tl-item.now::after { background: var(--teal); box-shadow: 0 0 0 3px var(--teal-bg); }
+  .tl-item.violet-dot::after { border-color: var(--violet); }
+  .tl-when {
+    font-size: 11px; font-weight: 600; color: var(--ink-3);
+    text-align: right; padding-top: 2px; font-variant-numeric: tabular-nums;
+  }
+  .tl-item.now .tl-when { color: var(--teal); font-weight: 700; }
+  .tl-what { font-size: 14px; color: var(--ink-2); line-height: 1.6; padding-left: 16px; }
+  .tl-what strong { color: var(--ink); }
+  .tl-what em { font-style: normal; color: var(--ink-3); }
+
+  /* ── TRACKS ── */
+  .track-grid { display: flex; flex-direction: column; gap: 14px; margin: 24px 0; }
+  .trk {
+    border-radius: 6px; padding: 20px 22px; border-left: 3px solid;
+    display: grid; grid-template-columns: 1fr; gap: 8px;
+  }
+  .trk.clinical { background: var(--teal-bg); border-color: var(--teal); }
+  .trk.create { background: var(--violet-bg); border-color: var(--violet); }
+  .trk.family { background: var(--amber-bg); border-color: var(--amber); }
+  .trk.build { background: var(--olive-bg); border-color: var(--olive); }
+  .trk-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .trk.clinical .trk-label { color: var(--teal); }
+  .trk.create .trk-label { color: var(--violet); }
+  .trk.family .trk-label { color: var(--amber); }
+  .trk.build .trk-label { color: var(--olive); }
+  .trk h3 { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .trk p, .trk li { font-size: 13px; color: var(--ink-2); line-height: 1.6; }
+  .trk ul { padding-left: 16px; }
+  .trk li { margin-bottom: 4px; }
+  .trk li strong { color: var(--ink); }
+
+  /* ── INSIGHT CARDS ── */
+  .insights { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 24px 0; }
+  @media (max-width: 560px) { .insights { grid-template-columns: 1fr; } }
+  .insight { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 20px; box-shadow: var(--shadow); }
+  .insight h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .insight p { font-size: 13px; color: var(--ink-2); line-height: 1.6; margin: 0; }
+
+  /* ── WARN ── */
+  .warn { background: var(--amber-bg); border: 1px solid var(--amber-border); border-radius: 6px; padding: 22px; margin: 24px 0; }
+  .warn h3 { font-size: 15px; font-weight: 700; color: var(--amber); margin-bottom: 8px; }
+  .warn p { font-size: 14px; color: var(--ink-2); line-height: 1.65; margin-bottom: 10px; }
+  .warn p:last-child { margin-bottom: 0; }
+  .warn strong { color: var(--ink); }
+
+  /* ── AXIS (through-line) ── */
+  .axis {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 28px; margin: 24px 0;
+    box-shadow: var(--shadow);
+  }
+  .axis blockquote {
+    font-size: 20px; font-weight: 400; line-height: 1.45;
+    color: var(--ink); margin-bottom: 18px; letter-spacing: -0.01em;
+    border-left: 3px solid var(--teal); padding-left: 18px;
+  }
+  .axis p { font-size: 14px; color: var(--ink-2); line-height: 1.7; margin-bottom: 10px; }
+  .axis p:last-child { margin-bottom: 0; }
+  .axis strong { color: var(--ink); }
+
+  /* ── STRATEGY CARDS ── */
+  .strats { display: flex; flex-direction: column; gap: 18px; margin: 28px 0; }
+  .strat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); }
+  .strat.primary { border-color: var(--teal); border-width: 2px; }
+  .strat-head { padding: 22px 24px 18px; border-bottom: 1px solid var(--border-light); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .strat.primary .strat-head { background: var(--teal-bg); border-bottom-color: var(--teal-border); }
+  .strat-head h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.015em; }
+  .strat-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; flex-shrink: 0; }
+  .strat.primary .strat-badge { background: var(--teal); color: #fff; }
+  .strat:not(.primary) .strat-badge { background: var(--surface-alt); color: var(--ink-3); border: 1px solid var(--border); }
+  .strat-body { padding: 20px 24px; }
+  .strat-body p { font-size: 14px; color: var(--ink-2); line-height: 1.65; margin-bottom: 12px; }
+  .strat-body p:last-child { margin-bottom: 0; }
+  .strat-body strong { color: var(--ink); }
+  .strat-body ul { padding-left: 18px; margin: 8px 0 12px; }
+  .strat-body li { font-size: 13px; color: var(--ink-2); line-height: 1.6; margin-bottom: 4px; }
+  .strat-body li strong { color: var(--ink); }
+  .strat-meta { display: flex; gap: 18px; flex-wrap: wrap; padding: 14px 24px; background: var(--surface-alt); border-top: 1px solid var(--border-light); font-size: 12px; color: var(--ink-3); }
+  .strat-meta span { display: flex; align-items: center; gap: 5px; }
+  .strat-meta strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ── CALENDAR ── */
+  .cal { margin: 28px 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .cal-row { padding: 18px 24px; border-bottom: 1px solid var(--border-light); display: grid; grid-template-columns: 100px 1fr; gap: 16px; align-items: start; }
+  .cal-row:last-child { border-bottom: none; }
+  .cal-year { font-size: 13px; font-weight: 700; color: var(--teal); padding-top: 2px; font-variant-numeric: tabular-nums; }
+  .cal-year .sub { display: block; font-size: 11px; font-weight: 500; color: var(--ink-3); margin-top: 2px; }
+  .cal-desc { font-size: 14px; color: var(--ink-2); line-height: 1.6; }
+  .cal-desc strong { color: var(--ink); }
+  .cal-desc .tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 2px 7px; border-radius: 3px; margin-right: 4px; vertical-align: 1px;
+  }
+  .tag.cl { background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal-border); }
+  .tag.cr { background: var(--violet-bg); color: var(--violet); border: 1px solid var(--violet-border); }
+  .tag.bz { background: var(--olive-bg); color: var(--olive); border: 1px solid var(--olive-border); }
+  .tag.fm { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+
+  /* ── CLOSING ── */
+  .closing { background: var(--surface-alt); border-radius: 8px; padding: 28px; margin: 32px 0 0; }
+  .closing p { font-size: 17px; color: var(--ink); line-height: 1.7; font-style: italic; }
+  .foot { padding: 40px 0 56px; text-align: center; font-size: 11px; color: var(--ink-3); }
+
+  @media (max-width: 480px) {
+    .tl-item { grid-template-columns: 70px 1fr; gap: 14px; }
+    .tl-item::before { left: 79px; }
+    .tl-item::after { left: 75px; }
+    .cal-row { grid-template-columns: 1fr; gap: 4px; }
+    .strat-head { flex-direction: column; }
+    .insights { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-eyebrow mono">Trajectory Analysis &middot; 2026.07.30</div>
+    <h1 class="serif">Yoojin, 당신의 20년은 하나의 선 위에 있다</h1>
+    <p class="hdr-lead">
+      심리학에서 시작해서 군복무, 간호, VA, 코드, 음악까지 &mdash; 흩어져 보이는 경로가 사실은 하나의 축으로 수렴하고 있습니다.
+      "Be who you needed when you were younger."
+      이 문장이 이력서가 아니라 궤적 전체의 설계도라는 걸, 데이터가 보여줍니다.
+    </p>
+  </div>
+
+  <hr class="div-line">
+
+  <!-- ════ PREMISE ════ -->
+  <div class="sec">
+    <div class="sec-label teal mono">핵심 전제</div>
+    <h2 class="serif">제약은 '돈'이 아니라 시간과 에너지다</h2>
+  </div>
+
+  <div class="premise">
+    <p>
+      38세. 100% P&T VA disability로 <strong>베이스 소득이 깔려 있다</strong>.
+      아내는 자기 사업(giftsbysiot)을 운영하고. 따라서 "돈을 벌기 위해 무엇을 해야 하나"가 아니라,
+      <strong>"한정된 시간과 에너지를 어디에 쓸 것인가"</strong>가 진짜 질문이다.
+    </p>
+    <p>
+      그리고 결정적 충돌: <strong>딸이 4세</strong>. 육아 골든타임(앞으로 5~10년)과 LVN&rarr;BSN&rarr;PMHNP 학업 시기가 정면으로 겹친다.
+      MEB/IDES 진행 중이라 Reserve 상태도 유동적. 이 전제 위에서 모든 분석이 출발한다.
+    </p>
+  </div>
+
+  <hr class="div-line">
+
+  <!-- ════ FULL TRAJECTORY ════ -->
+  <div class="sec">
+    <div class="sec-label teal mono">궤적</div>
+    <h2 class="serif">심리학에서 정신간호까지, 20년의 수렴</h2>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-when mono">BA Psych</div>
+      <div class="tl-what">
+        <strong>심리학 학사.</strong> <em>[학교, 졸업연도]</em><br>
+        출발점이 심리학이라는 것 자체가 중요합니다. 기술이 아니라 '사람을 이해하는 것'에서 시작했습니다. 이 선택이 이후 모든 전환의 씨앗입니다.
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-when mono">Army</div>
+      <div class="tl-what">
+        <strong>미 육군 입대, 68C Practical Nursing Specialist.</strong> <em>[입대연도, 현역 기간, 파병/주요 보직]</em><br>
+        심리학 전공자가 군에서 간호 MOS를 선택합니다. "돌보는 사람"이 되겠다는 결심이 기관과 제도 안으로 들어간 순간. 68C 훈련이 LVN 자격의 기반이 됩니다.
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-when mono">LVN</div>
+      <div class="tl-what">
+        <strong>LVN 면허 취득.</strong> <em>[학교, 취득연도]</em> &mdash; CA(BVNPT) + TX(BON) 이중 면허 유지.<br>
+        텍사스 면허가 있다는 건 그곳에서 임상 경험을 쌓았다는 뜻입니다. <em>[TX 근무지 &mdash; 요양원? 병원?]</em>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-when mono">Loma Linda</div>
+      <div class="tl-what">
+        <strong>Loma Linda VA Medical Center LVN 입사.</strong> <em>[입사연도]</em> Station 605, VISN 22.<br>
+        veteran이 veteran을 돌보는 자리. 대상과 자신이 분리되지 않는 위치. 여기서 EHR/CPRS super user가 되고, 시스템의 비효율을 직접 코드로 풀기 시작합니다.
+      </div>
+    </div>
+    <div class="tl-item violet-dot">
+      <div class="tl-when mono">CPRS Tool</div>
+      <div class="tl-what">
+        <strong>cprs-translator.vercel.app 개발.</strong><br>
+        임상 현장의 문제를 코드로 해결한 첫 번째 사례. VHA Spark-Seed-Spread 채널로 공식 추진 중. synthetic data 전환 권고를 받았다는 건 VA가 이 도구를 <strong>진지하게 검토하고 있다</strong>는 의미입니다.
+      </div>
+    </div>
+    <div class="tl-item violet-dot">
+      <div class="tl-when mono">AI Music</div>
+      <div class="tl-what">
+        <strong>AI 음악 카탈로그 시작.</strong> Suno/Udio 제작, DistroKid Ultimate 유통, Logic Pro 마스터링.<br>
+        ~20개 페르소나(claude, YOOJIN, sinai., midsommar., Celeste...). 장르별 세계관. MLC/ASCAP/BMI/SoundExchange 등록 리서치 완료. beside./b-side 큐레이션 채널로 유입 퍼널까지 설계.
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-when mono">SaaS 리서치</div>
+      <div class="tl-what">
+        <strong>B2B Micro-SaaS 기회 탐색.</strong><br>
+        5개 산업 분석 (오토디테일링, 레스토랑, 치과, 건설, 물류). DetailBook + MenuPulse 제품 스펙, 랜딩 페이지, 경쟁 전략까지 완성. Job Posting Reverse Research라는 독자적 방법론 개발.
+      </div>
+    </div>
+    <div class="tl-item now">
+      <div class="tl-when mono">2026 Now</div>
+      <div class="tl-what">
+        <strong>MEB/IDES 진행 중. A&P prereq 수강 중. PMHNP를 향해 가는 중.</strong><br>
+        SGT/68C, 921st Field Hospital (Bell, CA). SFRG 공식 회의록 + Family Day 기획. 100% P&T 확정, CRSC 검토 중, PCAFC 진행 중. BSN prereq으로 Loma Linda University 목표, VANEEP 장학 검토.
+      </div>
+    </div>
+  </div>
+
+  <hr class="div-line">
+
+  <!-- ════ CONCURRENT TRACKS ════ -->
+  <div class="sec">
+    <div class="sec-label violet mono">동시 운행</div>
+    <h2 class="serif">지금 당신의 대역폭에 올라와 있는 것들</h2>
+    <p>단순히 "많다"는 게 아닙니다. 각각이 어떤 종류의 에너지를 소비하는지가 중요합니다.</p>
+  </div>
+
+  <div class="track-grid">
+    <div class="trk clinical">
+      <div class="trk-label mono">임상 + 학업 &mdash; 핵심 경로</div>
+      <h3>Loma Linda VA LVN &rarr; BSN &rarr; PMHNP</h3>
+      <ul>
+        <li>현재: VA 근무 + A&P prereq (SBVC)</li>
+        <li>목표: Loma Linda University BSN &rarr; PMHNP</li>
+        <li>"NP 커리큘럼을 넘어 psychiatrist 수준 정신과 깊이까지"</li>
+        <li>VANEEP 장학 검토 중</li>
+      </ul>
+    </div>
+    <div class="trk family">
+      <div class="trk-label mono">가정 + VA 베네핏</div>
+      <h3>딸 4세, MEB/IDES, 2029 주택 구입</h3>
+      <ul>
+        <li>MEB/IDES: permanent profile 패킷 제출, DA 7809 정정 중</li>
+        <li>DD-214 Block 30 "DISABILITY, PERMANENT" &mdash; VA 홈론 자격의 핵심 게이트</li>
+        <li>CRSC (tinnitus), PCAFC (아내 primary caregiver) 진행</li>
+        <li>Chapter 35 DEA로 딸 교육비 확보 완료</li>
+        <li>2029 Orange County/IE 멀티패밀리 하우스핵 검토</li>
+      </ul>
+    </div>
+    <div class="trk build">
+      <div class="trk-label mono">빌드 + 사업</div>
+      <h3>코드, SaaS, 아내 사업 지원, 가족 식당</h3>
+      <ul>
+        <li><strong>cprs-translator</strong> &mdash; VA 내부 추진 중 (Spark-Seed-Spread)</li>
+        <li><strong>giftsbysiot</strong> &mdash; 세일 알림 자동화(Python/Playwright, Oracle Cloud), 가격 세팅 지원</li>
+        <li><strong>KAI Sushi & Roll</strong> (Orange, CA) &mdash; 가족 레스토랑 운영 보조</li>
+        <li><strong>B2B SaaS</strong> &mdash; DetailBook/MenuPulse 리서치 완료, 12개월 목표 월 $3~5K</li>
+        <li><strong>veteran benefits 교육</strong> &mdash; "몰라서 못 받는 재향군인" 대상 아이템 구상</li>
+      </ul>
+    </div>
+    <div class="trk create">
+      <div class="trk-label mono">크리에이티브</div>
+      <h3>AI 음악 카탈로그 + beside. 큐레이션 + 카페 꿈</h3>
+      <ul>
+        <li>~20개 장르별 페르소나, DistroKid 유통, Logic Pro 마스터링</li>
+        <li>beside./b-side &mdash; "이 영화 좋았으면 이 노래" 크로스아트 큐레이션</li>
+        <li>b(e)side 카페/힐링 공간 &mdash; "커피가 아니라 '공간'이 핵심". 오래된 꿈</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="div-line">
+
+  <!-- ════ THROUGH-LINE ════ -->
+  <div class="sec">
+    <div class="sec-label teal mono">관통하는 축</div>
+    <h2 class="serif">흩어져 보이지만 같은 동기의 다른 출력이다</h2>
+  </div>
+
+  <div class="axis">
+    <blockquote class="serif">"Be who you needed when you were younger."</blockquote>
+    <p>
+      이건 모토가 아니라 <strong>실제 행동 패턴</strong>입니다.
+      심리학을 전공한 사람이 군에서 간호병이 되고, 제대 후 VA에서 veteran을 돌보고 있습니다.
+      대상과 자기가 분리되지 않는 자리 &mdash; 본인이 100% P&T이면서 다른 veteran을 간호하는 사람.
+    </p>
+    <p>
+      CPRS 번역기도 같은 맥락입니다. 시스템이 불친절하니까 직접 도구를 만듭니다.
+      veteran benefits 교육 아이템도 같습니다 &mdash; "몰라서 못 받는 사람"은 과거의 자신이었을 겁니다.
+      b(e)side 카페의 핵심이 '커피'가 아니라 '공간'이라는 것도 같은 선 위에 있습니다.
+    </p>
+    <p>
+      <strong>심리학 &rarr; 간호 &rarr; 정신간호</strong>로 20년째 일관되게 수렴하고 있습니다.
+      PMHNP는 산만한 목표 중 하나가 아닙니다. 이건 <strong>궤적의 종착지</strong>입니다.
+      그리고 그 종착지 위에 나머지 모든 것이 재배치됩니다.
+    </p>
+  </div>
+
+  <hr class="div-line">
+
+  <!-- ════ STRENGTHS ════ -->
+  <div class="sec">
+    <div class="sec-label violet mono">자산 지도</div>
+    <h2 class="serif">당신이 가진 것들, 정리</h2>
+  </div>
+
+  <div class="insights">
+    <div class="insight">
+      <h4>임상 + 시스템 이해</h4>
+      <p>LVN으로 VA 임상 현장을 안다. EHR/CPRS super user. 의료 시스템 안에서 뭐가 작동하고 뭐가 고장났는지 체감으로 안다. PMHNP가 되면 이 조합이 극도로 희소해진다.</p>
+    </div>
+    <div class="insight">
+      <h4>VA/군 베네핏 문해력</h4>
+      <p>38 U.S.C., MEB/IDES, CRSC, PCAFC, Chapter 35 DEA, VANEEP &mdash; 이 시스템을 자기 것으로 내비게이트하는 능력. 대부분의 veteran이 갖지 못하는 자산이고, 교육 아이템의 원천.</p>
+    </div>
+    <div class="insight">
+      <h4>빌더 근육</h4>
+      <p>CPRS 번역기, giftsbysiot 자동화, SaaS 리서치 &mdash; 문제를 보면 코드로 풀려는 본능. Claude를 커밋을 만드는 도구로 쓰는 수준의 AI 활용력.</p>
+    </div>
+    <div class="insight">
+      <h4>크리에이티브 이중성</h4>
+      <p>20개 음악 페르소나, beside. 큐레이션, 카페 꿈. 분석적 사고와 감성적 표현이 같은 사람 안에 있다. PMHNP에서 이건 약점이 아니라 치료적 자산이 된다.</p>
+    </div>
+  </div>
+
+  <hr class="div-line">
+
+  <!-- ════ RISKS ════ -->
+  <div class="sec">
+    <div class="sec-label amber mono">위험 지형</div>
+    <h2 class="serif">돈이 아니라 시간이 부족할 때 생기는 함정</h2>
+  </div>
+
+  <div class="warn">
+    <h3>육아 골든타임과 학업이 정면충돌한다</h3>
+    <p>
+      딸이 4세. 초등 입학이 2028, 사춘기 전이 2036. 이 10년이 육아에서 가장 중요한 시기입니다.
+      BSN 2~3년 + PMHNP 2~3년 = 최소 4년의 학업이 이 시기와 <strong>정확히 겹칩니다</strong>.
+      "나중에 하자"는 옵션이 아닙니다 &mdash; 38세에 BSN을 시작하면 PMHNP 완료가 42~43세이고,
+      이미 늦추면 늦출수록 임상 경력 축적 기간이 줄어듭니다.
+    </p>
+    <p>
+      <strong>이건 해결할 수 있는 문제가 아니라 관리할 수 있는 충돌입니다.</strong>
+      충돌이 존재한다는 걸 인정하고, 학업 일정과 가정 일정을 명시적으로 조율하는 것이 핵심입니다.
+    </p>
+  </div>
+
+  <div class="warn">
+    <h3>동시 트랙이 너무 많으면 어느 것도 완주 못 한다</h3>
+    <p>
+      VA 근무 + Reserve drill + A&P prereq + SFRG + MEB 패킷 + giftsbysiot 자동화 + KAI Sushi 보조 + SaaS 리서치 + 음악 카탈로그 + beside. 큐레이션 + veteran benefits 교육 구상 + CPRS 추진 + 카페 꿈.
+      <strong>13개 트랙</strong>이 동시에 돌고 있습니다.
+    </p>
+    <p>
+      "현실적으로 우선순위를 좁히세요"라는 뻔한 결론을 내리려는 게 아닙니다.
+      이 트랙들이 전부 같은 사람의 같은 동기에서 나왔다는 걸 압니다.
+      문제는 <strong>무엇을 버릴 것인가</strong>가 아니라 <strong>무엇을 언제 켤 것인가</strong>입니다.
+    </p>
+  </div>
+
+  <hr class="div-line">
+
+  <!-- ════ STRATEGY ════ -->
+  <div class="sec">
+    <div class="sec-label teal mono">방향 설계</div>
+    <h2 class="serif">"하나만 해라"가 아니라, 시퀀싱이 답이다</h2>
+    <p>
+      당신의 트랙들을 세 층위로 나눕니다.
+      <strong>중력선</strong>(바꿀 수 없는 경로), <strong>궤도</strong>(중력선을 도우면서 수익을 만드는 것), <strong>위성</strong>(에너지가 남을 때만 켜는 것).
+    </p>
+  </div>
+
+  <div class="strats">
+    <div class="strat primary">
+      <div class="strat-head">
+        <h3>중력선: LVN &rarr; BSN &rarr; PMHNP</h3>
+        <span class="strat-badge mono">모든 것의 축</span>
+      </div>
+      <div class="strat-body">
+        <p>
+          이건 선택이 아닙니다. 궤적 전체가 여기로 수렴하고 있습니다.
+          심리학 &rarr; 68C &rarr; LVN &rarr; VA &rarr; PMHNP.
+          <strong>20년 동안 같은 방향으로 걸어온 사람의 다음 발걸음</strong>입니다.
+        </p>
+        <p>
+          PMHNP가 되면 모든 것이 재배치됩니다:
+        </p>
+        <ul>
+          <li><strong>연봉 $130-160K+</strong> (CA 기준) &mdash; VA 안에서 또는 independent practice로</li>
+          <li><strong>처방권</strong> &mdash; psychiatrist 수준 깊이를 갖춘 NP는 극도로 희소</li>
+          <li><strong>veteran 전문 PMHNP</strong> &mdash; 본인이 veteran이자 VA 임상 경력자. 이 프로필을 가진 PMHNP는 미국에 거의 없음</li>
+          <li><strong>b(e)side 카페</strong> &mdash; 커피숍이 아니라 PMHNP가 운영하는 therapeutic space로 재정의 가능. 커피가 아니라 '공간'이라고 말한 그 직관이 PMHNP 자격증을 만나면 실현됨</li>
+          <li><strong>veteran benefits 교육</strong> &mdash; PMHNP + P&T veteran + VA 시스템 내부자 = 이 사람이 하는 veteran 교육은 신뢰도가 다름</li>
+        </ul>
+        <p>
+          Loma Linda University BSN은 VA 근무와 지리적으로 맞고, VANEEP이 통과되면 재정 부담도 최소화됩니다.
+          VANEEP이 안 되면 Chapter 31 VR&E도 검토 가능합니다.
+        </p>
+      </div>
+      <div class="strat-meta">
+        <span>BSN: <strong>~2028-2029</strong></span>
+        <span>PMHNP: <strong>~2030-2031</strong></span>
+        <span>완료 시 나이: <strong>42-43세</strong></span>
+        <span>딸 나이: <strong>8-9세</strong></span>
+      </div>
+    </div>
+
+    <div class="strat">
+      <div class="strat-head">
+        <h3>궤도 A: CPRS 번역기 + Veteran Benefits 교육</h3>
+        <span class="strat-badge mono">중력선을 돕는 수익</span>
+      </div>
+      <div class="strat-body">
+        <p>
+          이 두 가지는 PMHNP 경로와 <strong>충돌하지 않고 오히려 강화</strong>합니다.
+        </p>
+        <p>
+          <strong>CPRS 번역기</strong>는 이미 만들었고, VA 내부에서 추진 중입니다.
+          synthetic data 전환만 완료하면 Spark-Seed-Spread 파이프라인을 탈 수 있습니다.
+          BSN/PMHNP 지원서에 "VA 공식 채널로 채택된 도구를 만든 LVN"이라고 쓸 수 있다면
+          그것만으로 충분한 ROI입니다. 사업화하지 않아도 됩니다.
+        </p>
+        <p>
+          <strong>Veteran benefits 교육</strong>은 당신의 12개월 월 $3~5K 목표에 가장 적합한 아이템입니다.
+          DetailBook이나 MenuPulse보다 이걸 먼저 하세요. 이유:
+        </p>
+        <ul>
+          <li>당신이 <strong>실제 수혜자</strong>다 &mdash; 100% P&T, MEB/IDES, CRSC, PCAFC, Chapter 35, VA loan... 직접 내비게이트한 경험</li>
+          <li>타겟 고객을 <strong>매일 만난다</strong> &mdash; VA 병원에서, Reserve drill에서, SFRG에서</li>
+          <li>경쟁이 <strong>약하다</strong> &mdash; 기존 veteran benefits 콘텐츠는 변호사/VSO 관점이지 veteran 당사자 관점이 아님</li>
+          <li>형식: YouTube/TikTok 시리즈 + 유료 가이드/코스. 음악 카탈로그 유통 인프라(DistroKid 경험)가 콘텐츠 유통에도 적용 가능</li>
+        </ul>
+      </div>
+      <div class="strat-meta">
+        <span>시작: <strong>즉시 가능</strong></span>
+        <span>월 $3-5K: <strong>6-12개월</strong></span>
+        <span>중력선 충돌: <strong>없음 (보강)</strong></span>
+      </div>
+    </div>
+
+    <div class="strat">
+      <div class="strat-head">
+        <h3>궤도 B: AI 음악 카탈로그 + beside.</h3>
+        <span class="strat-badge mono">크리에이티브 아웃렛</span>
+      </div>
+      <div class="strat-body">
+        <p>
+          이건 사업이 아닙니다. <strong>정신 건강 인프라</strong>입니다.
+          BSN 과제, VA 근무, MEB 서류, 육아 &mdash; 이 모든 것이 논리적이고 구조적인 에너지를 소모합니다.
+          음악 만들기는 그 반대 회로를 씁니다. PMHNP를 준비하는 사람이
+          크리에이티브 아웃렛을 유지하는 건 사치가 아니라 <strong>지속가능성</strong>입니다.
+        </p>
+        <p>
+          ~20개 페르소나가 이미 세팅되어 있고, DistroKid이 유통하고, Logic Pro로 마스터링합니다.
+          <strong>추가 투자 없이 현상 유지만 해도 되는 구조</strong>입니다.
+          beside. 큐레이션 채널도 마찬가지 &mdash; 콘텐츠가 쌓이면 자연스럽게 음악 카탈로그 유입 퍼널이 됩니다.
+          수익화 압박을 걸지 마세요. 이건 <strong>비용이 거의 안 드는 장기 자산</strong>입니다.
+        </p>
+      </div>
+      <div class="strat-meta">
+        <span>현재 상태: <strong>유지 모드로 충분</strong></span>
+        <span>에너지 소모: <strong>낮음</strong></span>
+        <span>역할: <strong>번아웃 방지</strong></span>
+      </div>
+    </div>
+
+    <div class="strat">
+      <div class="strat-head">
+        <h3>위성: 나중에 켤 것들</h3>
+        <span class="strat-badge mono">PMHNP 이후</span>
+      </div>
+      <div class="strat-body">
+        <p><strong>지금은 끄세요. 죽이는 게 아니라 대기 상태에 넣는 겁니다.</strong></p>
+        <ul>
+          <li><strong>DetailBook / MenuPulse</strong> &mdash; 훌륭한 리서치지만, 지금 만들면 CS 대응과 기능 개발에 매주 10시간+가 소모됨. BSN 시작하면 그 10시간이 없음</li>
+          <li><strong>b(e)side 카페</strong> &mdash; PMHNP 자격증이 이 꿈을 '커피숍'에서 'therapeutic space'로 업그레이드함. 기다릴수록 더 좋은 버전이 됨. 2032+ 타겟</li>
+          <li><strong>"클로드 코드 기반 1인 AI 사업" (범용)</strong> &mdash; veteran benefits 교육이라는 구체적 아이템이 있으므로, 범용 탐색은 중단</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="div-line">
+
+  <!-- ════ 5-YEAR CALENDAR ════ -->
+  <div class="sec">
+    <div class="sec-label olive mono">5년 캘린더</div>
+    <h2 class="serif">2026&ndash;2031, 연도별 에너지 배분</h2>
+    <p>딸의 나이와 학업 마일스톤이 동기화됩니다.</p>
+  </div>
+
+  <div class="cal">
+    <div class="cal-row">
+      <div class="cal-year mono">2026<span class="sub">딸 4세</span></div>
+      <div class="cal-desc">
+        <span class="tag cl">임상</span> VA 근무 유지, A&P prereq 완료<br>
+        <span class="tag fm">베네핏</span> MEB/IDES 해결 &rarr; DD-214 Block 30 확보. CRSC, PCAFC 완료<br>
+        <span class="tag bz">수익</span> Veteran benefits 교육 콘텐츠 시작 (YouTube/TikTok, 월 2-4편). CPRS synthetic data 전환 완료<br>
+        <span class="tag cr">크리에이티브</span> 음악 카탈로그 유지 모드. beside. 콘텐츠 축적
+      </div>
+    </div>
+    <div class="cal-row">
+      <div class="cal-year mono">2027<span class="sub">딸 5세</span></div>
+      <div class="cal-desc">
+        <span class="tag cl">학업</span> <strong>BSN 프로그램 시작</strong> (Loma Linda or equivalent). VANEEP/VR&E 장학 활용<br>
+        <span class="tag fm">가정</span> 딸 kindergarten 입학 &mdash; 낮 시간 확보됨. 학업 스케줄과 맞물림<br>
+        <span class="tag bz">수익</span> Veteran benefits 콘텐츠 &rarr; 유료 가이드/코스 런칭. 월 $2-3K 목표<br>
+        <span class="tag cr">크리에이티브</span> 유지 모드
+      </div>
+    </div>
+    <div class="cal-row">
+      <div class="cal-year mono">2028-29<span class="sub">딸 6-7세</span></div>
+      <div class="cal-desc">
+        <span class="tag cl">학업</span> BSN 과정 진행/완료. 임상 실습 시간 확보가 핵심 병목<br>
+        <span class="tag fm">가정</span> <strong>주택 구입</strong> (2029 목표). VA loan, OC/IE 멀티패밀리 하우스핵. DD-214 Block 30이 확보되어 있으면 funding fee 면제<br>
+        <span class="tag bz">수익</span> Veteran benefits 교육 &rarr; 안정적 월 $3-5K. BSN 학업에 방해 안 되는 수준으로만 운영<br>
+        <span class="tag cr">크리에이티브</span> 유지 모드. 음악 카탈로그에 곡이 축적되며 스트리밍 수익이 천천히 성장
+      </div>
+    </div>
+    <div class="cal-row">
+      <div class="cal-year mono">2030-31<span class="sub">딸 8-9세</span></div>
+      <div class="cal-desc">
+        <span class="tag cl">학업</span> <strong>PMHNP 프로그램</strong>. 가장 강도 높은 시기. 임상 시간 + 이론 + 약리학<br>
+        <span class="tag fm">가정</span> 딸 초등 중반 &mdash; 자기 루틴이 생기는 시기. 육아 강도가 약간 낮아짐<br>
+        <span class="tag bz">수익</span> Veteran benefits 교육은 셀프서비스 모드 (녹화된 코스 판매). 신규 콘텐츠 제작 최소화<br>
+        <span class="tag cr">크리에이티브</span> 유지 모드
+      </div>
+    </div>
+    <div class="cal-row">
+      <div class="cal-year mono">2032+<span class="sub">딸 10세+</span></div>
+      <div class="cal-desc">
+        <span class="tag cl">커리어</span> <strong>PMHNP로서 새 챕터 시작.</strong> VA 안에서 승진하거나, veteran 전문 independent practice 개업<br>
+        <span class="tag bz">사업</span> 이제 "위성"을 켤 시간. b(e)side 카페/힐링 공간을 PMHNP practice + therapeutic space로 재설계. SaaS 아이디어가 아직 유효하면 그때 검토<br>
+        <span class="tag fm">자산</span> 멀티패밀리 부동산 수익 + PMHNP 소득 + VA disability + 콘텐츠 수익 = 다층적 소득 구조 완성
+      </div>
+    </div>
+  </div>
+
+  <hr class="div-line">
+
+  <!-- ════ CLOSING ════ -->
+  <div class="sec">
+    <div class="sec-label teal mono">결론</div>
+    <h2 class="serif">만드는 사람이자 돌보는 사람 &mdash; 둘이 따로 노는 게 아니다</h2>
+  </div>
+
+  <div class="closing">
+    <p class="serif">
+      당신의 궤적은 산만한 게 아닙니다. 같은 동기의 다른 출력입니다.
+      코드를 쓰는 것도, 음악을 만드는 것도, veteran을 돌보는 것도, 딸에게 공간을 만들어주는 것도 &mdash;
+      전부 "내가 어렸을 때 필요했던 사람이 되겠다"는 한 문장에서 나옵니다.
+      PMHNP는 그 문장이 제도적 힘을 갖는 순간입니다.
+      지금은 그 순간을 향해 걸으면서, 나머지는 리듬만 유지하세요.
+    </p>
+  </div>
+
+  <div class="foot mono">
+    Full trajectory analysis &middot; yoojinesong &middot; 2026.07.30
+  </div>
+</div>
