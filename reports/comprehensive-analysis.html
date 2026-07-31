@@ -1,0 +1,483 @@
+<title>Yoojin Song — 종합 분석 & 추천</title>
+<style>
+:root{
+  --g:#EBEAE6;--s:#FFFFFF;--s2:#DFDEDA;
+  --ink:#161A1F;--ink2:#52565E;--ink3:#7A7E86;
+  --rule:#CDCCC8;--rule2:#DDDCD8;
+  --ac:#335A6E;--ac-bg:#E6EEF2;--ac-brd:#AABFCE;
+  --gn:#2A7648;--gn-bg:#E4F0EA;--gn-brd:#A4CEB8;
+  --am:#8E6620;--am-bg:#F0EBE0;--am-brd:#CCBE96;
+  --rd:#8E3430;--rd-bg:#F0E6E4;
+  --vi:#5A4490;--vi-bg:#EAE8F2;--vi-brd:#BCB4D2;
+  --ol:#527030;--ol-bg:#E8EEE2;--ol-brd:#B6C4A4;
+}
+@media(prefers-color-scheme:dark){:root{
+  --g:#111315;--s:#1A1D22;--s2:#24282E;
+  --ink:#D4D2CE;--ink2:#8C8E8A;--ink3:#5E6060;
+  --rule:#2A2D32;--rule2:#22252A;
+  --ac:#68AAC6;--ac-bg:#121E28;--ac-brd:#1E3448;
+  --gn:#54C076;--gn-bg:#0E1E14;--gn-brd:#1A3826;
+  --am:#CEA238;--am-bg:#1C1810;--am-brd:#362E18;
+  --rd:#CE5650;--rd-bg:#1C1210;
+  --vi:#9680C6;--vi-bg:#161228;--vi-brd:#2A2248;
+  --ol:#84B44E;--ol-bg:#121C0E;--ol-brd:#263A18;
+}}
+:root[data-theme="light"]{
+  --g:#EBEAE6;--s:#FFFFFF;--s2:#DFDEDA;
+  --ink:#161A1F;--ink2:#52565E;--ink3:#7A7E86;
+  --rule:#CDCCC8;--rule2:#DDDCD8;
+  --ac:#335A6E;--ac-bg:#E6EEF2;--ac-brd:#AABFCE;
+  --gn:#2A7648;--gn-bg:#E4F0EA;--gn-brd:#A4CEB8;
+  --am:#8E6620;--am-bg:#F0EBE0;--am-brd:#CCBE96;
+  --rd:#8E3430;--rd-bg:#F0E6E4;
+  --vi:#5A4490;--vi-bg:#EAE8F2;--vi-brd:#BCB4D2;
+  --ol:#527030;--ol-bg:#E8EEE2;--ol-brd:#B6C4A4;
+}
+:root[data-theme="dark"]{
+  --g:#111315;--s:#1A1D22;--s2:#24282E;
+  --ink:#D4D2CE;--ink2:#8C8E8A;--ink3:#5E6060;
+  --rule:#2A2D32;--rule2:#22252A;
+  --ac:#68AAC6;--ac-bg:#121E28;--ac-brd:#1E3448;
+  --gn:#54C076;--gn-bg:#0E1E14;--gn-brd:#1A3826;
+  --am:#CEA238;--am-bg:#1C1810;--am-brd:#362E18;
+  --rd:#CE5650;--rd-bg:#1C1210;
+  --vi:#9680C6;--vi-bg:#161228;--vi-brd:#2A2248;
+  --ol:#84B44E;--ol-bg:#121C0E;--ol-brd:#263A18;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--g);color:var(--ink);font-size:14.5px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+.m{font-family:ui-monospace,'SF Mono','Cascadia Code',Consolas,monospace}
+
+.page{max-width:700px;margin:0 auto;padding:0 24px}
+.hr{border:none;border-top:1px solid var(--rule2);margin:44px 0}
+
+.hdr{padding:56px 0 0}
+.hdr-date{display:block;font-size:11px;color:var(--ink3);letter-spacing:.12em;margin-bottom:16px}
+.hdr h1{font-size:clamp(24px,4.5vw,32px);font-weight:700;line-height:1.25;letter-spacing:-.025em;text-wrap:balance;margin-bottom:14px}
+.hdr-sub{font-size:15px;color:var(--ink2);line-height:1.6;letter-spacing:-.005em}
+.hdr-sub strong{color:var(--ink)}
+
+.sl{display:block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.sl-ac{color:var(--ac)} .sl-gn{color:var(--gn)} .sl-am{color:var(--am)}
+.sl-vi{color:var(--vi)} .sl-ol{color:var(--ol)} .sl-rd{color:var(--rd)}
+h2{font-size:18px;font-weight:700;line-height:1.35;letter-spacing:-.01em;margin-bottom:12px;text-wrap:balance}
+h2.through{font-family:Georgia,'Noto Serif KR',serif;font-weight:400;font-style:italic;font-size:20px;letter-spacing:0;border-left:3px solid var(--ac);padding-left:18px;margin-bottom:16px}
+.p{font-size:14.5px;color:var(--ink2);margin-bottom:12px;line-height:1.65}
+.p strong{color:var(--ink)}
+.p:last-child{margin-bottom:0}
+
+.prem{border-left:3px solid var(--ac);padding:18px 20px;margin:16px 0;background:var(--s);border-radius:0 4px 4px 0}
+.prem p{font-size:13.5px;color:var(--ink);line-height:1.65;margin-bottom:8px}
+.prem p:last-child{margin-bottom:0}
+.prem strong{color:var(--ac)}
+
+.tl{margin:20px 0}
+.tl-i{display:grid;grid-template-columns:76px 1fr;gap:16px;padding:11px 0;border-bottom:1px solid var(--rule2)}
+.tl-i:last-child{border-bottom:none}
+.tl-d{font-size:11px;font-weight:700;color:var(--ink3);text-align:right;padding-top:2px;font-variant-numeric:tabular-nums}
+.tl-i.now .tl-d{color:var(--ac);font-weight:800}
+.tl-c{font-size:13.5px;color:var(--ink2);line-height:1.6}
+.tl-c strong{color:var(--ink)}
+
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.pill{font-size:11px;font-weight:600;padding:7px 14px;border-radius:4px;border-left:3px solid;line-height:1.35}
+.pill-ac{background:var(--ac-bg);border-color:var(--ac);color:var(--ac)}
+.pill-ol{background:var(--ol-bg);border-color:var(--ol);color:var(--ol)}
+.pill-vi{background:var(--vi-bg);border-color:var(--vi);color:var(--vi)}
+.pill-am{background:var(--am-bg);border-color:var(--am);color:var(--am)}
+
+.br{background:var(--s);border:1px solid var(--rule);border-left:3px solid var(--rule);border-radius:0 4px 4px 0;overflow:hidden;margin-bottom:14px}
+.br.top{border-left:4px solid var(--ac);border-color:var(--ac-brd);border-left-color:var(--ac)}
+.br-h{padding:14px 18px 10px;display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.br-h h3{font-size:14px;font-weight:700;letter-spacing:-.005em}
+.br-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:3px;white-space:nowrap}
+.br.top .br-badge{background:var(--ac);color:var(--s)}
+.br:not(.top) .br-badge{background:var(--s2);color:var(--ink3)}
+.br-b{padding:4px 18px 14px}
+.br-b ul{padding-left:16px;margin:0}
+.br-b li{font-size:12.5px;color:var(--ink2);line-height:1.55;margin-bottom:5px}
+.br-b li strong{color:var(--ink)}
+.n{color:var(--gn);font-weight:700;font-variant-numeric:tabular-nums}
+.br-v{padding:10px 18px;background:var(--gn-bg);border-top:1px solid var(--gn-brd);font-size:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}
+.br-v .l{font-weight:700;color:var(--gn);text-transform:uppercase;letter-spacing:.06em;font-size:9px}
+.br-v .val{font-weight:700;color:var(--gn);font-variant-numeric:tabular-nums}
+
+.wrn{border-left:3px solid var(--am);padding:16px 18px;margin:14px 0;background:var(--am-bg);border-radius:0 4px 4px 0}
+.wrn h3{font-size:13px;font-weight:700;color:var(--am);margin-bottom:6px}
+.wrn p{font-size:12.5px;color:var(--ink2);line-height:1.6;margin-bottom:6px}
+.wrn p:last-child{margin-bottom:0}
+.wrn strong{color:var(--ink)}
+
+.rec{background:var(--s);border:1px solid var(--gn-brd);border-left:4px solid var(--gn);border-radius:0 4px 4px 0;overflow:hidden;margin-bottom:14px}
+.rec-h{padding:13px 18px;border-bottom:1px solid var(--rule2);display:flex;align-items:center;gap:10px}
+.rec-n{width:22px;height:22px;border-radius:50%;background:var(--gn);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rec-h h3{font-size:14px;font-weight:700;letter-spacing:-.005em}
+.rec-when{font-size:10px;font-weight:600;color:var(--gn);margin-left:auto;white-space:nowrap}
+.rec-b{padding:13px 18px}
+.rec-b p{font-size:13px;color:var(--ink2);line-height:1.6;margin-bottom:8px}
+.rec-b p:last-child{margin-bottom:0}
+.rec-b strong{color:var(--ink)}
+.rec-b .why{font-size:11.5px;color:var(--ink3);border-top:1px solid var(--rule2);padding-top:8px;margin-top:8px}
+
+.stk{background:var(--s);border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin:16px 0}
+.stk-r{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--rule2);font-size:13px;gap:10px}
+.stk-r:last-child{border-bottom:none}
+.stk-r .i{color:var(--ink2)}
+.stk-r .v{font-weight:700;color:var(--gn);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stk-t{display:flex;justify-content:space-between;padding:12px 18px;border-top:2px solid var(--ac);font-size:14.5px;font-weight:700}
+.stk-t .v{color:var(--ac);font-variant-numeric:tabular-nums}
+
+.cal{border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--s);margin:16px 0}
+.cal-r{padding:14px 18px;border-bottom:1px solid var(--rule2);display:grid;grid-template-columns:76px 1fr;gap:14px;align-items:start}
+.cal-r:last-child{border-bottom:none}
+.cal-y{font-size:13px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums}
+.cal-y .sub{display:block;font-size:10px;font-weight:500;color:var(--ink3);margin-top:2px}
+.cal-d{font-size:12.5px;color:var(--ink2);line-height:1.6}
+.cal-d strong{color:var(--ink)}
+.tg{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:2px;margin-right:4px;vertical-align:1px}
+.tg-c{background:var(--ac-bg);color:var(--ac);border:1px solid var(--ac-brd)}
+.tg-f{background:var(--am-bg);color:var(--am);border:1px solid var(--am-brd)}
+.tg-b{background:var(--ol-bg);color:var(--ol);border:1px solid var(--ol-brd)}
+.tg-r{background:var(--vi-bg);color:var(--vi);border:1px solid var(--vi-brd)}
+
+.closing{border-top:2px solid var(--rule);padding:28px 0 0;margin:40px 0 0}
+.closing p{font-family:Georgia,'Noto Serif KR',serif;font-size:15.5px;color:var(--ink);line-height:1.75;font-style:italic}
+.foot{padding:36px 0 52px;text-align:center;font-size:11px;color:var(--ink3);letter-spacing:.05em}
+
+@media(max-width:480px){
+  .tl-i{grid-template-columns:58px 1fr;gap:10px}
+  .cal-r{grid-template-columns:1fr;gap:6px}
+  .br-h{flex-direction:column;align-items:flex-start}
+  .rec-h{flex-wrap:wrap}
+  .stk-r{flex-direction:column;align-items:flex-start;gap:3px}
+}
+</style>
+
+<div class="page">
+  <header class="hdr">
+    <span class="hdr-date m">종합 분석 &middot; 2026. 07</span>
+    <h1>궤적, 전략, 실행</h1>
+    <p class="hdr-sub">
+      궤적 분석 + branch-out 베네핏 + VANEEP 현황 + 실행 추천을 하나로 합침.
+      <strong>다른 챗에 이 텍스트를 넣으면 전체 맥락이 전달된다.</strong>
+    </p>
+  </header>
+
+  <hr class="hr">
+
+  <span class="sl sl-ac m">전제</span>
+  <h2>제약은 '돈'이 아니라 시간과 에너지다</h2>
+  <div class="prem">
+    <p>38세. 100% P&T VA disability로 <strong>베이스 소득 확보</strong>. 아내는 자기 사업(giftsbysiot). 딸 4세.</p>
+    <p><strong>"한정된 시간과 에너지를 어디에 쓸 것인가"</strong>가 진짜 질문. 육아 골든타임(5~10년)과 LVN&rarr;BSN&rarr;PMHNP 학업이 정면충돌.</p>
+    <p>SGT/68C, 921st Field Hospital. MEB/IDES 진행 중. VA Loma Linda LVN (Station 605, VISN 22). 2026.01.11 입사.</p>
+  </div>
+
+  <hr class="hr">
+
+  <span class="sl sl-ac m">궤적</span>
+  <h2>심리학에서 정신간호까지, 수렴</h2>
+  <div class="tl">
+    <div class="tl-i"><div class="tl-d m">2017</div><div class="tl-c"><strong>BA Psychology, CSULB.</strong> 출발점이 심리학 &mdash; 사람을 이해하는 것에서 시작.</div></div>
+    <div class="tl-i"><div class="tl-d m">2017-23</div><div class="tl-c"><strong>영주권 없는 6년.</strong> 시스템 밖에서 시스템을 관찰한 시간. &ldquo;몰라서 못 받는&rdquo; 것이 어떤 건지 체감.</div></div>
+    <div class="tl-i"><div class="tl-d m">2023</div><div class="tl-c"><strong>미 육군 입대, 68C.</strong> 체류 자격 + 간호 교육 + VA 베네핏 + &lsquo;돌보는 사람&rsquo; 정체성. TX 이동.</div></div>
+    <div class="tl-i"><div class="tl-d m">2025.07</div><div class="tl-c"><strong>LVN 면허, Army School of Nursing.</strong> CA(BVNPT) + TX(BON) 이중 면허. 입대&rarr;LVN 2년.</div></div>
+    <div class="tl-i"><div class="tl-d m">2026.01</div><div class="tl-c"><strong>VA Loma Linda LVN 입사.</strong> Veteran이 veteran을 돌보는 자리. EHR/CPRS super user.</div></div>
+    <div class="tl-i"><div class="tl-d m">빌드</div><div class="tl-c"><strong>CPRS 번역기</strong> (Spark-Seed-Spread 추진), <strong>AI 음악 카탈로그</strong> (~20 페르소나), <strong>SaaS 리서치</strong> (DetailBook/MenuPulse), <strong>giftsbysiot 자동화</strong>, <strong>KAI Sushi</strong> 보조.</div></div>
+    <div class="tl-i now"><div class="tl-d m">Now</div><div class="tl-c"><strong>MEB/IDES 진행, A&P prereq 수강, PMHNP를 향해 가는 중.</strong> 100% P&T, CRSC 검토, PCAFC 진행.</div></div>
+  </div>
+
+  <hr class="hr">
+
+  <span class="sl sl-ac m">관통하는 축</span>
+  <h2 class="through">&ldquo;Be who you needed when you were younger.&rdquo;</h2>
+  <p class="p">
+    이건 모토가 아니라 <strong>실제 행동 패턴</strong>.
+    심리학 &rarr; 영주권 없이 6년 &rarr; 군 간호 &rarr; VA에서 veteran 돌봄 &rarr; CPRS 도구 직접 개발 &rarr; veteran benefits 교육 구상.
+    전부 &ldquo;내가 겪었던 걸 다른 사람은 안 겪게&rdquo; 하는 행동이다.
+    <strong>PMHNP는 이 패턴이 제도적 힘을 갖는 순간.</strong>
+  </p>
+
+  <hr class="hr">
+
+  <span class="sl sl-ac m">전략 프레임</span>
+  <h2>중력선 / 궤도 / 위성</h2>
+  <p class="p">&ldquo;하나만 해라&rdquo;가 아니라, <strong>뭘 언제 켤 것인가</strong>.</p>
+  <div class="pills">
+    <div class="pill pill-ac">중력선: LVN &rarr; BSN &rarr; PMHNP</div>
+    <div class="pill pill-ol">궤도A: CPRS + Vet Benefits 교육</div>
+    <div class="pill pill-vi">궤도B: 음악/beside. (유지 모드)</div>
+    <div class="pill pill-am">위성: DetailBook, 카페, 범용 SaaS (PMHNP 이후)</div>
+  </div>
+
+  <hr class="hr">
+
+  <span class="sl sl-gn m">Branch-Out</span>
+  <h2>지금 뻗으면 연쇄로 딸려오는 것들</h2>
+  <p class="p">군 입대 하나로 LVN + disability + home loan + Chapter 35가 전부 딸려왔다. <strong>같은 구조가 지금 6개 있다.</strong></p>
+
+  <div class="br top">
+    <div class="br-h"><h3>VANEEP &rarr; BSN &rarr; PMHNP 체인</h3><span class="br-badge m">최대 레버리지</span></div>
+    <div class="br-b"><ul>
+      <li>VANEEP: 학비 ~$46K + <strong>풀 급여 유지</strong>하며 BSN</li>
+      <li>LVN &rarr; RN 전환 = 완전히 다른 커리어 래더. Nurse I/II = <span class="n m">$75K-$140K</span></li>
+      <li>RN 되면 NNEI로 PMHNP 학비 추가 지원 (~$46K). <strong>학비 2번 받는 구조</strong></li>
+      <li>PMHNP &rarr; VA Full Practice Authority (CA 주법 무시, 연방법), 자체 DEA, 독립 처방</li>
+      <li>Nurse III/IV = <span class="n m">$120K-$180K+</span> (LA locality 36.47% 포함)</li>
+      <li>EDRP: NP 포지션 이동 시 대출상환 <span class="n m">$200K/5년</span> 비과세</li>
+      <li>FERS 연금 베이스 $50K&rarr;$150K = 평생 연금 <span class="n m">+$19K/yr</span></li>
+    </ul></div>
+    <div class="br-v"><span class="l m">예상 가치</span><span class="val m">+$60K-100K/yr (승급+연금+TSP)</span></div>
+  </div>
+
+  <div class="br">
+    <div class="br-h"><h3>MEB 완료 &rarr; DD-214</h3><span class="br-badge m">진행 중</span></div>
+    <div class="br-b"><ul>
+      <li>CRSC: ~<span class="n m">$950/mo ($11,400/yr)</span> 비과세 추가 소득</li>
+      <li>DD-214 Block 30 &rarr; VA home loan funding fee 면제: <span class="n m">$12,900-$26,400</span>/회, 횟수 무제한</li>
+      <li>시간 회수: drill + AT = 연 ~30일. SFRG 해제</li>
+      <li>VR&E Ch.31 백업: VANEEP 실패 시 학비 상한 없음 + 월 <span class="n m">$1,188</span> 생활비</li>
+    </ul></div>
+    <div class="br-v"><span class="l m">예상 가치</span><span class="val m">+$11,400/yr + $26K 일시 + 30일 시간</span></div>
+  </div>
+
+  <div class="br">
+    <div class="br-h"><h3>PCAFC (아내 = Primary Caregiver)</h3><span class="br-badge m">신청서 1건</span></div>
+    <div class="br-b"><ul>
+      <li>LA/OC locality: Level 1 <span class="n m">~$2,211/mo</span>, Level 2 <span class="n m">~$3,537/mo</span>, 비과세</li>
+      <li>아내 CHAMPVA: 보험료 $0, 연간 본인부담 $3,000 상한</li>
+      <li>연 30일 respite care + 아내 정신건강 상담</li>
+    </ul></div>
+    <div class="br-v"><span class="l m">예상 가치</span><span class="val m">+$26,500-42,400/yr 비과세</span></div>
+  </div>
+
+  <div class="br">
+    <div class="br-h"><h3>VA 멀티패밀리 하우스핵</h3><span class="br-badge m">2029 목표</span></div>
+    <div class="br-b"><ul>
+      <li>Funding fee 면제 (100% P&T): <span class="n m">$16,100</span> 절약 ($700K 기준), 횟수 무제한</li>
+      <li>다운페이먼트 $0 + PMI 없음. 2-4유닛 가능</li>
+      <li>VA 소득 25% gross-up &rarr; 대출 한도 증가</li>
+      <li>CA 재산세 감면: <span class="n m">~$2,000-3,000/yr</span></li>
+      <li>렌탈: IE 듀플렉스 기준 <span class="n m">+$1,500-2,200/mo</span></li>
+    </ul></div>
+    <div class="br-v"><span class="l m">예상 가치</span><span class="val m">+$18K-30K/yr 렌탈 + $16K+ 일시</span></div>
+  </div>
+
+  <div class="br">
+    <div class="br-h"><h3>SDVOSB 인증</h3><span class="br-badge m">등록비 $0</span></div>
+    <div class="br-b"><ul>
+      <li>연방 sole-source 계약 $5M까지. FY2025 SDVOSB 총 수주 $28.6B</li>
+      <li>P&T 예외조항: 아내가 일상 운영 가능</li>
+      <li>SBA 8(a) 이중 인증 가능. 마이크로론 $50K</li>
+      <li>Veteran benefits 교육 사업에 NAICS 611430 적용</li>
+    </ul></div>
+    <div class="br-v"><span class="l m">예상 가치</span><span class="val m">사업 규모에 따라. 등록비 $0</span></div>
+  </div>
+
+  <div class="br">
+    <div class="br-h"><h3>딸 교육 스택</h3><span class="br-badge m">장기</span></div>
+    <div class="br-b"><ul>
+      <li>Chapter 35 DEA: <span class="n m">$1,574/mo &times; 36개월 = $56,664</span></li>
+      <li>CalVet College Fee Waiver: UC 4년 <span class="n m">~$62,352</span>. 소득 제한 없음 (100% P&T)</li>
+      <li>둘 다 + Pell Grant 중복 수령 가능 &rarr; UC 4년 <span class="n m">~$119K+</span></li>
+    </ul></div>
+    <div class="br-v"><span class="l m">총 가치</span><span class="val m">~$119,000+ (4년 대학)</span></div>
+  </div>
+
+  <hr class="hr">
+
+  <span class="sl sl-gn m">세금 스택</span>
+  <h2>PMHNP 완료 후 가구 소득 구조</h2>
+  <div class="stk">
+    <div class="stk-r"><span class="i">VA Disability 100% P&T (비과세)</span><span class="v m">$49,898/yr</span></div>
+    <div class="stk-r"><span class="i">CRSC (비과세)</span><span class="v m">~$11,400/yr</span></div>
+    <div class="stk-r"><span class="i">PCAFC &mdash; 아내 stipend (비과세)</span><span class="v m">~$26,500-42,400/yr</span></div>
+    <div class="stk-r"><span class="i">PMHNP 급여 (과세)</span><span class="v m">~$150,000/yr</span></div>
+    <div class="stk-r"><span class="i">렌탈 인컴 (부분 과세)</span><span class="v m">~$18,000-26,000/yr</span></div>
+    <div class="stk-r"><span class="i">Vet Benefits 교육 수익 (과세)</span><span class="v m">~$36,000-60,000/yr</span></div>
+    <div class="stk-t"><span>총 가구 소득</span><span class="v m">~$292K-340K/yr</span></div>
+  </div>
+  <p class="p">비과세분 $88K-104K. 동일 소득 비veteran 대비 실효세율 ~7%p 낮음 &rarr; <strong>연 ~$24,000 절세, 20년 = $480K</strong>.</p>
+
+  <hr class="hr">
+
+  <span class="sl sl-am m">VANEEP 현황</span>
+  <h2>공식 홀드 발표는 없다. 하지만.</h2>
+  <div class="wrn">
+    <h3>VA 전체 맥락이 불안정</h3>
+    <p>VA 40,000명 감축 (간호사 3,000명 포함). 79% VA 병원 간호 부족. <strong>교육/훈련 직위는 hiring freeze 면제 목록에 없었음.</strong></p>
+    <p>VANEEP은 중앙 프로그램이지만 <strong>각 시설이 운영</strong>. Loma Linda가 조용히 신청을 안 받고 있어도 공개 발표 안 남. 온라인으로 확인 불가.</p>
+    <p>2025.07 날짜 프로그램 문서가 마지막. VA Careers에는 active로 올라가 있음. <strong>Loma Linda 고유 중단 뉴스 없음.</strong></p>
+  </div>
+  <p class="p"><strong>확인 필요:</strong> (1) EISP Program Coordinator &mdash; &ldquo;October 2026 cycle 받나?&rdquo; (2) Nursing Education office &mdash; 예산/인력 사유 홀드 여부 (3) 동료 RN &mdash; 최근 승인자 있는지 (4) AFGE local</p>
+  <p class="p"><strong>VANEEP 안 되면:</strong> VR&E Ch.31이 백업. VA 고용 예산이 아니라 veteran benefits 예산이라 DOGE 영향 적음. 학비 상한 없음, 월 $1,188 생활비. 단, 풀 급여 유지는 안 됨 &mdash; LWOP 필요할 수 있음.</p>
+
+  <hr class="hr">
+
+  <span class="sl sl-gn m">추천</span>
+  <h2>지금 실행할 것, 순서대로</h2>
+
+  <div class="rec">
+    <div class="rec-h">
+      <div class="rec-n m">1</div>
+      <h3>VANEEP 상태 확인 &mdash; 이번 주</h3>
+      <span class="rec-when m">이번 주</span>
+    </div>
+    <div class="rec-b">
+      <p>Loma Linda EISP coordinator한테 직접 물어봐. <strong>&ldquo;October 2026 VANEEP cycle accepting applications?&rdquo;</strong> 이 한마디면 된다. 안 되면 바로 VR&E Ch.31 counselor appointment 잡아.</p>
+      <p class="why">모든 체인의 첫 고리. 이게 열리냐 막히냐에 따라 2027 BSN 시작 타이밍이 갈린다.</p>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-h">
+      <div class="rec-n m">2</div>
+      <h3>MEB 패킷 깔끔하게 마무리</h3>
+      <span class="rec-when m">2026 내</span>
+    </div>
+    <div class="rec-b">
+      <p>DA 7809 정정 끝내고, permanent profile 패킷 정확하게 제출. <strong>DD-214 Block 30 &ldquo;DISABILITY, PERMANENT&rdquo;</strong>가 나와야 home loan funding fee 면제 + CRSC + VR&E 백업 전부 열린다.</p>
+      <p class="why">DD-214가 브랜치 2(CRSC), 4(하우스핵), 7(VR&E)의 선행 조건.</p>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-h">
+      <div class="rec-n m">3</div>
+      <h3>PCAFC 신청 밀어붙이기</h3>
+      <span class="rec-when m">진행 중 &rarr; 빠를수록</span>
+    </div>
+    <div class="rec-b">
+      <p>이미 진행 중이면 follow-up. <strong>승인 시 연 $26K-42K 비과세 + 아내 의료보험</strong>. BSN 학업 기간 가계 안정의 핵심 기둥.</p>
+      <p class="why">신청서 1건으로 4개 베네핏. 비용 $0, 리스크 $0. 안 되면 잃는 것도 없다.</p>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-h">
+      <div class="rec-n m">4</div>
+      <h3>A&P prereq 완료 + BSN 지원 준비</h3>
+      <span class="rec-when m">2026-2027</span>
+    </div>
+    <div class="rec-b">
+      <p>SBVC에서 A&P 끝내기. Loma Linda University BSN 지원 요건 체크. <strong>CPRS translator를 지원서에 넣어라</strong> &mdash; &ldquo;VA Spark-Seed-Spread 채널로 추진 중인 도구를 만든 LVN&rdquo;은 입학 심사에서 차별화된다.</p>
+      <p class="why">VANEEP이든 VR&E든, prereq이 끝나야 다음 단계로 간다.</p>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-h">
+      <div class="rec-n m">5</div>
+      <h3>Veteran Benefits 교육 콘텐츠 시작</h3>
+      <span class="rec-when m">2026 Q3-Q4</span>
+    </div>
+    <div class="rec-b">
+      <p>YouTube/TikTok, 월 2-4편. 주제: MEB/IDES 네비게이션, CRSC 신청법, PCAFC 신청법, VA home loan 팁, Chapter 35 활용법. <strong>네가 직접 해본 것만 찍어라.</strong> 12개월 목표 $3-5K/mo.</p>
+      <p class="why">DetailBook/MenuPulse보다 이걸 먼저. 타겟 고객을 매일 만남(VA, drill, SFRG). 본인이 실제 수혜자. 경쟁 약함.</p>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-h">
+      <div class="rec-n m">6</div>
+      <h3>SDVOSB 인증</h3>
+      <span class="rec-when m">사업자 등록과 함께</span>
+    </div>
+    <div class="rec-b">
+      <p>veteran benefits 교육 사업을 사업자 등록할 때 SBA VetCert도 같이. <strong>비용 $0, 시간 최소.</strong> 나중에 연방 계약 길이 열림. CPRS 같은 도구를 VA에 공급하는 경로도 된다.</p>
+      <p class="why">등록해놓으면 옵션이 생기고, 안 해놓으면 옵션이 없다. 기회비용 제로.</p>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-h">
+      <div class="rec-n m">7</div>
+      <h3>CPRS synthetic data 전환</h3>
+      <span class="rec-when m">2026 내</span>
+    </div>
+    <div class="rec-b">
+      <p>VA에서 synthetic data 전환 권고를 받았다 = <strong>진지하게 검토 중</strong>이라는 뜻. 이거 끝내면 Spark-Seed-Spread 파이프라인 탐. BSN 지원서 한 줄이 생김.</p>
+      <p class="why">추가 코딩 시간 필요하지만, ROI가 금전이 아니라 &ldquo;이력서 한 줄 + VA 내부 크레딧&rdquo;.</p>
+    </div>
+  </div>
+
+  <hr class="hr">
+
+  <span class="sl sl-rd m">지금 하지 말 것</span>
+  <h2>대기 상태에 넣어라 (죽이는 게 아님)</h2>
+
+  <div class="wrn">
+    <h3>DetailBook / MenuPulse</h3>
+    <p>리서치는 훌륭했지만 지금 만들면 CS + 기능개발에 <strong>매주 10시간+</strong>. BSN 시작하면 그 시간 없음.</p>
+  </div>
+  <div class="wrn">
+    <h3>b(e)side 카페</h3>
+    <p>PMHNP 자격증이 이 꿈을 &lsquo;커피숍&rsquo;에서 <strong>&lsquo;therapeutic space&rsquo;</strong>로 업그레이드함. 기다릴수록 더 좋은 버전. 2032+.</p>
+  </div>
+  <div class="wrn">
+    <h3>범용 &ldquo;AI 사업&rdquo; 탐색</h3>
+    <p>veteran benefits 교육이라는 구체적 아이템이 있으므로, 범용 탐색은 중단.</p>
+  </div>
+
+  <hr class="hr">
+
+  <span class="sl sl-ol m">5년 캘린더</span>
+  <h2>2026&ndash;2032, 연도별</h2>
+
+  <div class="cal">
+    <div class="cal-r">
+      <div class="cal-y m">2026<span class="sub">딸 4세</span></div>
+      <div class="cal-d">
+        <span class="tg tg-c m">임상</span> VA 근무 유지, A&P prereq 완료<br>
+        <span class="tg tg-f m">베네핏</span> MEB 해결&rarr;DD-214. CRSC, PCAFC 완료. VANEEP 확인<br>
+        <span class="tg tg-b m">수익</span> Vet benefits 콘텐츠 시작 (월 2-4편). CPRS synthetic data 전환<br>
+        <span class="tg tg-r m">크리에이티브</span> 음악 유지 모드
+      </div>
+    </div>
+    <div class="cal-r">
+      <div class="cal-y m">2027<span class="sub">딸 5세</span></div>
+      <div class="cal-d">
+        <span class="tg tg-c m">학업</span> <strong>BSN 시작</strong> (VANEEP or VR&E). 딸 K 입학&rarr;낮 시간 확보<br>
+        <span class="tg tg-b m">수익</span> Vet benefits&rarr;유료 코스 런칭. 월 $2-3K 목표<br>
+        <span class="tg tg-f m">사업</span> SDVOSB 활용 검토
+      </div>
+    </div>
+    <div class="cal-r">
+      <div class="cal-y m">2028-29<span class="sub">딸 6-7세</span></div>
+      <div class="cal-d">
+        <span class="tg tg-c m">학업</span> BSN 진행/완료. 임상 실습 시간이 병목<br>
+        <span class="tg tg-f m">자산</span> <strong>주택 구입</strong> (VA loan, OC/IE 멀티패밀리). Funding fee 면제<br>
+        <span class="tg tg-b m">수익</span> Vet benefits 교육 안정 $3-5K/mo
+      </div>
+    </div>
+    <div class="cal-r">
+      <div class="cal-y m">2030-31<span class="sub">딸 8-9세</span></div>
+      <div class="cal-d">
+        <span class="tg tg-c m">학업</span> <strong>PMHNP 프로그램</strong>. 가장 강도 높은 시기<br>
+        <span class="tg tg-f m">가정</span> 딸 초등 중반, 자기 루틴 생김. 육아 강도&darr;<br>
+        <span class="tg tg-b m">수익</span> 교육 콘텐츠 셀프서비스 모드 (녹화 코스 판매)
+      </div>
+    </div>
+    <div class="cal-r">
+      <div class="cal-y m">2032+<span class="sub">딸 10세+</span></div>
+      <div class="cal-d">
+        <span class="tg tg-c m">커리어</span> <strong>PMHNP 시작.</strong> VA 승진 or independent practice<br>
+        <span class="tg tg-b m">사업</span> 위성 점등: b(e)side 카페 = PMHNP + therapeutic space<br>
+        <span class="tg tg-f m">자산</span> 부동산 + PMHNP + VA disability + 콘텐츠 = 다층 소득 <strong>$292K-340K/yr</strong>
+      </div>
+    </div>
+  </div>
+
+  <hr class="hr">
+
+  <div class="closing">
+    <p>군 입대가 &ldquo;행동 1개, 결과 10개&rdquo;였던 이유는 연방 시스템 안에 들어갔기 때문이다. 지금 당신은 이미 그 시스템 안에 있다. VANEEP 신청 1건이 지금의 &ldquo;입대&rdquo;야. 이번 주에 확인해.</p>
+  </div>
+
+  <div class="foot m">종합 분석 &middot; yoojinesong &middot; 2026.07</div>
+</div>
