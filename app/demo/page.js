@@ -24,6 +24,33 @@ const RECENT_CUSTOMERS = [
   { name: 'Tom Bradley', lastService: '91 days ago', service: 'Interior Clean', total: 100, visits: 1, rebook: true },
 ]
 
+const WEEKLY_REVENUE = [
+  { day: 'Mon', revenue: 350, jobs: 2 },
+  { day: 'Tue', revenue: 170, jobs: 1 },
+  { day: 'Wed', revenue: 520, jobs: 3 },
+  { day: 'Thu', revenue: 200, jobs: 2 },
+  { day: 'Fri', revenue: 0, jobs: 0 },
+  { day: 'Sat', revenue: 0, jobs: 0 },
+  { day: 'Sun', revenue: 0, jobs: 0 },
+]
+
+const SERVICE_BREAKDOWN = [
+  { service: 'Full Detail', count: 14, revenue: 2180, pct: 45 },
+  { service: 'Ceramic Coating', count: 4, revenue: 1400, pct: 29 },
+  { service: 'Exterior Wash', count: 8, revenue: 640, pct: 13 },
+  { service: 'Interior Deep Clean', count: 5, revenue: 450, pct: 9 },
+  { service: 'Paint Correction', count: 1, revenue: 600, pct: 4 },
+]
+
+const PAYMENT_HISTORY = [
+  { customer: 'Sarah Chen', service: 'Full Detail', amount: 170, deposit: 50, balance: 120, date: 'Aug 1', method: 'card' },
+  { customer: 'Marcus Johnson', service: 'Exterior Wash', amount: 80, deposit: 50, balance: 30, date: 'Jul 30', method: 'card' },
+  { customer: 'Jake Williams', service: 'Full Detail', amount: 130, deposit: 50, balance: 80, date: 'Jul 28', method: 'card' },
+  { customer: 'Lisa Park', service: 'Ceramic Coating', amount: 350, deposit: 50, balance: 300, date: 'Jul 25', method: 'card' },
+  { customer: 'Amanda Torres', service: 'Full Detail', amount: 170, deposit: 50, balance: 120, date: 'Jul 22', method: 'card' },
+  { customer: 'Robert Chen', service: 'Exterior Wash', amount: 60, deposit: 50, balance: 10, date: 'Jul 20', method: 'cash' },
+]
+
 export default function Dashboard() {
   const [tab, setTab] = useState('today')
   const [bookings, setBookings] = useState(BOOKINGS)
@@ -38,6 +65,7 @@ export default function Dashboard() {
   const todayPending = bookings.filter(b => b.status !== 'completed').reduce((sum, b) => sum + b.price, 0)
   const weekRevenue = 1240
   const monthRevenue = 4860
+  const maxWeekDay = Math.max(...WEEKLY_REVENUE.map(d => d.revenue))
 
   return (
     <div className="min-h-screen bg-neutral-950">
@@ -96,6 +124,7 @@ export default function Dashboard() {
             { id: 'today', label: `Today (${bookings.length})` },
             { id: 'tomorrow', label: `Tomorrow (${TOMORROW_BOOKINGS.length})` },
             { id: 'customers', label: 'Customers' },
+            { id: 'revenue', label: 'Revenue' },
           ].map(t => (
             <button
               key={t.id}
@@ -236,6 +265,99 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Revenue */}
+        {tab === 'revenue' && (
+          <div className="space-y-6">
+            {/* Weekly chart */}
+            <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">This Week</h3>
+                <span className="text-lg font-bold text-sky-400 tabular-nums">${WEEKLY_REVENUE.reduce((s, d) => s + d.revenue, 0).toLocaleString()}</span>
+              </div>
+              <div className="flex items-end gap-2 h-32">
+                {WEEKLY_REVENUE.map(d => (
+                  <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="w-full flex flex-col items-center justify-end flex-1">
+                      {d.revenue > 0 && (
+                        <div className="text-[10px] tabular-nums text-neutral-500 mb-1">${d.revenue}</div>
+                      )}
+                      <div
+                        className="w-full rounded-t-md bg-sky-500/60 min-h-[2px] transition-all"
+                        style={{ height: maxWeekDay > 0 ? `${Math.max((d.revenue / maxWeekDay) * 80, d.revenue > 0 ? 8 : 2)}%` : '2%' }}
+                      />
+                    </div>
+                    <div className="text-[10px] text-neutral-600 font-medium">{d.day}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Monthly summary */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-neutral-900/60 border border-neutral-800/60 rounded-xl p-4 text-center">
+                <div className="text-2xl font-bold text-sky-400 tabular-nums">$4,860</div>
+                <div className="text-[10px] text-neutral-500 uppercase tracking-wider mt-1">This Month</div>
+              </div>
+              <div className="bg-neutral-900/60 border border-neutral-800/60 rounded-xl p-4 text-center">
+                <div className="text-2xl font-bold tabular-nums">31</div>
+                <div className="text-[10px] text-neutral-500 uppercase tracking-wider mt-1">Jobs Done</div>
+              </div>
+              <div className="bg-neutral-900/60 border border-neutral-800/60 rounded-xl p-4 text-center">
+                <div className="text-2xl font-bold text-emerald-400 tabular-nums">$157</div>
+                <div className="text-[10px] text-neutral-500 uppercase tracking-wider mt-1">Avg / Job</div>
+              </div>
+            </div>
+
+            {/* Service breakdown */}
+            <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">By Service</h3>
+              <div className="space-y-3">
+                {SERVICE_BREAKDOWN.map(s => (
+                  <div key={s.service} className="flex items-center gap-3">
+                    <div className="w-28 text-xs font-medium text-right truncate text-neutral-300">{s.service}</div>
+                    <div className="flex-1 bg-neutral-800/50 rounded-full h-4 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-sky-500/60 transition-all"
+                        style={{ width: `${s.pct}%` }}
+                      />
+                    </div>
+                    <div className="w-10 text-right text-[10px] text-neutral-500 tabular-nums">{s.count} jobs</div>
+                    <div className="w-16 text-right text-xs font-mono text-sky-400 tabular-nums">${s.revenue.toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment history */}
+            <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">Recent Payments</h3>
+              <div className="space-y-0">
+                {PAYMENT_HISTORY.map((p, i) => (
+                  <div key={i} className="flex items-center gap-3 py-3 border-b border-neutral-800/40 last:border-b-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{p.customer}</div>
+                      <div className="text-xs text-neutral-500">{p.service} · {p.date}</div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-sm font-bold text-sky-400 tabular-nums">${p.amount}</div>
+                      <div className="text-[10px] text-neutral-600">dep. ${p.deposit} + bal. ${p.balance}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tax export hint */}
+            <div className="bg-sky-500/8 border border-sky-500/20 rounded-xl p-4 text-center">
+              <div className="text-sm font-medium text-sky-400 mb-1">Tax Season Ready</div>
+              <p className="text-xs text-neutral-500">Export all payment data as CSV for your accountant. Deposits, payments, and tips — all tracked.</p>
+              <button className="mt-3 text-xs bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/30 px-4 py-2 rounded-lg font-medium transition">
+                Export to CSV
+              </button>
+            </div>
           </div>
         )}
       </div>

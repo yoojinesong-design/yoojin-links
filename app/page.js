@@ -76,7 +76,7 @@ export default function Home() {
             Everything a solo detailer needs — nothing you don't. <strong className="text-neutral-300">$39/mo.</strong>
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/book/demo-detailer" className="bg-sky-500 hover:bg-sky-400 text-white px-6 py-3 rounded-lg font-semibold text-base transition shadow-lg shadow-sky-500/20">
+            <Link href="/setup" className="bg-sky-500 hover:bg-sky-400 text-white px-6 py-3 rounded-lg font-semibold text-base transition shadow-lg shadow-sky-500/20">
               Start 14-Day Free Trial
             </Link>
             <Link href="/demo" className="border border-neutral-700 hover:border-neutral-500 text-neutral-300 px-6 py-3 rounded-lg font-medium text-base transition">
@@ -193,7 +193,7 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-            <Link href="/book/demo-detailer" className="block w-full bg-sky-500 hover:bg-sky-400 text-white py-3 rounded-lg font-semibold transition shadow-lg shadow-sky-500/20">
+            <Link href="/setup" className="block w-full bg-sky-500 hover:bg-sky-400 text-white py-3 rounded-lg font-semibold transition shadow-lg shadow-sky-500/20">
               Start Free Trial
             </Link>
           </div>
@@ -233,7 +233,7 @@ export default function Home() {
           <p className="text-neutral-400 mb-8 text-base">
             10 minutes to set up. 14 days free. Cancel anytime.
           </p>
-          <Link href="/book/demo-detailer" className="inline-block bg-sky-500 hover:bg-sky-400 text-white px-8 py-3 rounded-lg font-semibold transition shadow-lg shadow-sky-500/20">
+          <Link href="/setup" className="inline-block bg-sky-500 hover:bg-sky-400 text-white px-8 py-3 rounded-lg font-semibold transition shadow-lg shadow-sky-500/20">
             Start Free Trial
           </Link>
         </div>

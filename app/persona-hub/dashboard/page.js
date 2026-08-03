@@ -24,6 +24,24 @@ const MOCK_RELEASES = [
   { id: 'r6', persona: 'nitefall', personaColor: '#3B82F6', title: 'Cloud Nine', date: '2026-08-29', status: 'scheduled', type: 'single', aiGenerated: true },
 ]
 
+const PLATFORMS = [
+  { id: 'spotify', name: 'Spotify', color: '#1DB954', prefix: 'open.spotify.com/artist/' },
+  { id: 'apple', name: 'Apple Music', color: '#FA2D48', prefix: 'music.apple.com/artist/' },
+  { id: 'youtube', name: 'YouTube Music', color: '#FF0000', prefix: 'music.youtube.com/channel/' },
+  { id: 'soundcloud', name: 'SoundCloud', color: '#FF5500', prefix: 'soundcloud.com/' },
+  { id: 'tidal', name: 'Tidal', color: '#00FFFF', prefix: 'tidal.com/artist/' },
+  { id: 'bandcamp', name: 'Bandcamp', color: '#1DA0C3', prefix: 'bandcamp.com' },
+]
+
+const MOCK_LINKS = {
+  '1': { spotify: 'yooj-official', apple: 'yooj', youtube: '', soundcloud: 'yooj', tidal: '', bandcamp: '' },
+  '2': { spotify: 'nitefall-music', apple: 'nitefall', youtube: 'nitefall-lofi', soundcloud: 'nitefall', tidal: 'nitefall', bandcamp: 'nitefall.bandcamp.com' },
+  '3': { spotify: 'ctrlv-hyper', apple: '', youtube: 'ctrlv-music', soundcloud: 'ctrlv', tidal: '', bandcamp: '' },
+  '4': { spotify: 'dr-groove-jazz', apple: 'dr-groove', youtube: '', soundcloud: '', tidal: 'dr-groove', bandcamp: '' },
+  '5': { spotify: '', apple: '', youtube: 'seoul-phantom', soundcloud: 'seoul-phantom', tidal: '', bandcamp: '' },
+  '6': { spotify: 'glass-lake-folk', apple: 'glass-lake', youtube: '', soundcloud: 'glass-lake', tidal: '', bandcamp: 'glasslake.bandcamp.com' },
+}
+
 const STATUS_STYLE = {
   scheduled: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   draft: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
@@ -519,6 +537,8 @@ export default function Dashboard() {
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [csvImported, setCsvImported] = useState(false)
   const [user, setUser] = useState(null)
+  const [links, setLinks] = useState(MOCK_LINKS)
+  const [editingLinks, setEditingLinks] = useState(null)
 
   useEffect(() => {
     try {
@@ -618,7 +638,7 @@ export default function Dashboard() {
 
       <div className="pt-14 max-w-6xl mx-auto px-5">
         <div className="flex gap-1 border-b border-neutral-800/60 mt-4 mb-6">
-          {['overview', 'releases', 'revenue'].map(tab => (
+          {['overview', 'releases', 'revenue', 'links'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -795,6 +815,107 @@ export default function Dashboard() {
                 <li className="flex gap-2"><span className="text-violet-400 font-bold">2.</span> Click "Upload CSV" above</li>
                 <li className="flex gap-2"><span className="text-violet-400 font-bold">3.</span> We auto-match tracks to your personas by artist name</li>
                 <li className="flex gap-2"><span className="text-violet-400 font-bold">4.</span> See revenue broken down per persona, per track, per platform</li>
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'links' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">Smart Links by Persona</h2>
+            </div>
+
+            <div className="bg-violet-500/8 border border-violet-500/20 rounded-xl p-4 mb-6">
+              <div className="text-sm font-medium text-violet-400 mb-1">One link per persona, all platforms</div>
+              <p className="text-xs text-neutral-500">Share a single link that routes fans to their preferred streaming platform. Edit links below to configure each persona's streaming profiles.</p>
+            </div>
+
+            <div className="space-y-4">
+              {personas.map(p => {
+                const personaLinks = links[p.id] || {}
+                const connectedCount = PLATFORMS.filter(pl => personaLinks[pl.id]).length
+                const isEditing = editingLinks === p.id
+
+                return (
+                  <div key={p.id} className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl overflow-hidden">
+                    <div
+                      className="flex items-center gap-3 p-4 cursor-pointer hover:bg-neutral-800/30 transition"
+                      onClick={() => setEditingLinks(isEditing ? null : p.id)}
+                    >
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: p.color }}>
+                        {p.name[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm">{p.name}</div>
+                        <div className="text-xs text-neutral-500">{p.genre}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex -space-x-1">
+                          {PLATFORMS.filter(pl => personaLinks[pl.id]).map(pl => (
+                            <div key={pl.id} className="w-5 h-5 rounded-full border-2 border-neutral-900 flex items-center justify-center" style={{ background: pl.color }}>
+                              <span className="text-[8px] text-white font-bold">{pl.name[0]}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-xs text-neutral-500 tabular-nums">{connectedCount}/{PLATFORMS.length}</span>
+                        <span className="text-neutral-600 text-sm">{isEditing ? '−' : '+'}</span>
+                      </div>
+                    </div>
+
+                    {isEditing && (
+                      <div className="border-t border-neutral-800/60 p-4 space-y-3">
+                        <div className="bg-neutral-800/30 rounded-lg p-3 mb-3">
+                          <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1">Smart Link URL</div>
+                          <div className="text-sm text-violet-400 font-mono">personahub.app/{p.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}</div>
+                        </div>
+
+                        {PLATFORMS.map(pl => (
+                          <div key={pl.id} className="flex items-center gap-3">
+                            <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ background: pl.color + '20' }}>
+                              <span className="text-[10px] font-bold" style={{ color: pl.color }}>{pl.name[0]}</span>
+                            </div>
+                            <span className="text-xs font-medium text-neutral-400 w-24 flex-shrink-0">{pl.name}</span>
+                            <input
+                              type="text"
+                              value={personaLinks[pl.id] || ''}
+                              onChange={e => {
+                                setLinks(prev => ({
+                                  ...prev,
+                                  [p.id]: { ...prev[p.id], [pl.id]: e.target.value }
+                                }))
+                              }}
+                              placeholder={pl.prefix}
+                              className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-neutral-100 placeholder:text-neutral-700 focus:outline-none focus:border-violet-500 transition font-mono"
+                            />
+                            {personaLinks[pl.id] && (
+                              <span className="text-emerald-400 text-xs flex-shrink-0">Connected</span>
+                            )}
+                          </div>
+                        ))}
+
+                        <div className="flex gap-2 pt-2">
+                          <button className="text-xs bg-violet-500 hover:bg-violet-400 text-white px-4 py-2 rounded-lg font-medium transition">
+                            Save Links
+                          </button>
+                          <button className="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-4 py-2 rounded-lg font-medium transition">
+                            Preview Smart Link Page
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5 mt-6">
+              <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-3">How Smart Links work</h3>
+              <ol className="space-y-2 text-sm text-neutral-400">
+                <li className="flex gap-2"><span className="text-violet-400 font-bold">1.</span> Add your streaming profiles for each persona above</li>
+                <li className="flex gap-2"><span className="text-violet-400 font-bold">2.</span> Share one link per persona — fans pick their platform</li>
+                <li className="flex gap-2"><span className="text-violet-400 font-bold">3.</span> Use as pre-save links before release day</li>
+                <li className="flex gap-2"><span className="text-violet-400 font-bold">4.</span> Track clicks per platform in Cross-Persona Analytics</li>
               </ol>
             </div>
           </div>
