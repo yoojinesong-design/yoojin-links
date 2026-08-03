@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { parseDistroKidCSV, matchToPersonas } from '../../../lib/csv-parser'
 
 const COLORS = ['#7C3AED', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6', '#06B6D4']
 
@@ -31,9 +32,12 @@ const STATUS_STYLE = {
 
 const MONTHS = ['Aug 2026', 'Sep 2026', 'Oct 2026']
 
-function PersonaCard({ persona }) {
+function PersonaCard({ persona, onEdit }) {
   return (
-    <div className="bg-neutral-900/60 border border-neutral-800/60 rounded-xl p-4 hover:border-neutral-700/60 transition group">
+    <div
+      className="bg-neutral-900/60 border border-neutral-800/60 rounded-xl p-4 hover:border-neutral-700/60 transition group cursor-pointer"
+      onClick={() => onEdit?.(persona)}
+    >
       <div className="flex items-center gap-3 mb-3">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ background: persona.color }}>
           {persona.name[0]}
@@ -62,10 +66,13 @@ function PersonaCard({ persona }) {
   )
 }
 
-function ReleaseRow({ release }) {
-  const hasCollision = MOCK_RELEASES.filter(r => r.date === release.date && r.id !== release.id).length > 0
+function ReleaseRow({ release, allReleases, onClick }) {
+  const hasCollision = allReleases.filter(r => r.date === release.date && r.id !== release.id).length > 0
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-neutral-800/40 last:border-b-0 group">
+    <div
+      className={`flex items-center gap-3 py-3 border-b border-neutral-800/40 last:border-b-0 group ${release.aiGenerated ? 'cursor-pointer hover:bg-neutral-800/30' : ''}`}
+      onClick={onClick}
+    >
       <div className="w-1 h-8 rounded-full" style={{ background: release.personaColor }} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -152,6 +159,74 @@ function AddPersonaModal({ onClose, onAdd }) {
   )
 }
 
+function EditPersonaModal({ persona, onClose, onSave, onToggleActive }) {
+  const [name, setName] = useState(persona.name)
+  const [genre, setGenre] = useState(persona.genre)
+  const [color, setColor] = useState(persona.color)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold mb-4">Edit Persona</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Artist Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-neutral-100 focus:outline-none focus:border-violet-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Genre</label>
+            <input
+              type="text"
+              value={genre}
+              onChange={e => setGenre(e.target.value)}
+              className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-neutral-100 focus:outline-none focus:border-violet-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Color</label>
+            <div className="flex gap-2">
+              {COLORS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={`w-8 h-8 rounded-lg transition ${color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-900' : 'hover:scale-110'}`}
+                  style={{ background: c }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={() => { onToggleActive(persona.id); onClose() }}
+            className={`text-xs px-3 py-2 rounded-lg border transition ${
+              persona.active
+                ? 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10'
+                : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+            }`}
+          >
+            {persona.active ? 'Deactivate' : 'Activate'}
+          </button>
+          <div className="flex-1" />
+          <button onClick={onClose} className="border border-neutral-700 text-neutral-300 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-neutral-800 transition">Cancel</button>
+          <button
+            onClick={() => { onSave(persona.id, { name, genre, color }); onClose() }}
+            disabled={!name}
+            className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AIChecklistModal({ release, onClose }) {
   const [checks, setChecks] = useState({
     ddexAi: false,
@@ -225,16 +300,232 @@ function AIChecklistModal({ release, onClose }) {
   )
 }
 
+function CSVUploadModal({ onClose, personas, onImport }) {
+  const fileRef = useRef(null)
+  const [csvData, setCsvData] = useState(null)
+  const [matched, setMatched] = useState(null)
+  const [error, setError] = useState('')
+  const [fileName, setFileName] = useState('')
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setFileName(file.name)
+    setError('')
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const text = ev.target?.result
+      const entries = parseDistroKidCSV(text)
+      if (entries.length === 0) {
+        setError('Could not parse CSV. Make sure it has Artist and Earnings columns.')
+        return
+      }
+      setCsvData(entries)
+      const result = matchToPersonas(entries, personas)
+      setMatched(result)
+    }
+    reader.readAsText(file)
+  }
+
+  const totalRevenue = csvData?.reduce((s, e) => s + e.revenue_usd, 0) || 0
+  const totalStreams = csvData?.reduce((s, e) => s + e.streams, 0) || 0
+  const matchedEntries = matched ? Object.entries(matched).filter(([k]) => k !== 'unmatched') : []
+  const unmatchedData = matched?.unmatched
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold mb-4">Import Revenue CSV</h3>
+
+        {!csvData ? (
+          <div className="space-y-4">
+            <div
+              className="border-2 border-dashed border-neutral-700 rounded-xl p-8 text-center cursor-pointer hover:border-violet-500/50 transition"
+              onClick={() => fileRef.current?.click()}
+            >
+              <div className="text-3xl mb-2">📄</div>
+              <p className="text-sm text-neutral-400">Drop your DistroKid/TuneCore CSV here</p>
+              <p className="text-xs text-neutral-600 mt-1">or click to browse</p>
+            </div>
+            <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
+
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+
+            <div className="bg-neutral-800/50 border border-neutral-700/60 rounded-lg p-4">
+              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">Supported formats</p>
+              <ul className="space-y-1 text-xs text-neutral-500">
+                <li>DistroKid Bank/Stats CSV export</li>
+                <li>TuneCore Earnings Report CSV</li>
+                <li>Any CSV with Artist + Earnings columns</li>
+              </ul>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 flex items-center gap-3">
+              <span className="text-emerald-400 text-lg">✓</span>
+              <div>
+                <div className="text-sm font-medium text-emerald-300">{fileName}</div>
+                <div className="text-xs text-neutral-400">{csvData.length} entries · ${totalRevenue.toFixed(2)} total · {totalStreams.toLocaleString()} streams</div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">Matched to Personas</p>
+              <div className="space-y-1.5">
+                {matchedEntries
+                  .filter(([, v]) => v.entries.length > 0)
+                  .sort((a, b) => b[1].totalRevenue - a[1].totalRevenue)
+                  .map(([key, data]) => (
+                    <div key={key} className="flex items-center gap-2 bg-neutral-800/50 rounded-lg p-2.5">
+                      <div className="w-3 h-3 rounded" style={{ background: data.persona.color }} />
+                      <span className="text-sm font-medium flex-1">{data.persona.name}</span>
+                      <span className="text-xs text-neutral-500">{data.entries.length} tracks</span>
+                      <span className="text-xs font-mono text-emerald-400 tabular-nums">${data.totalRevenue.toFixed(2)}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {unmatchedData?.entries.length > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                <p className="text-xs font-semibold text-amber-400 mb-1">{unmatchedData.entries.length} unmatched entries</p>
+                <p className="text-xs text-neutral-500">
+                  Artists not matching any persona: {[...new Set(unmatchedData.entries.map(e => e.artist))].slice(0, 5).join(', ')}
+                  {[...new Set(unmatchedData.entries.map(e => e.artist))].length > 5 && '...'}
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button onClick={onClose} className="flex-1 border border-neutral-700 text-neutral-300 py-2.5 rounded-lg text-sm font-medium hover:bg-neutral-800 transition">Cancel</button>
+              <button
+                onClick={() => { onImport(matched); onClose() }}
+                className="flex-1 bg-violet-500 hover:bg-violet-400 text-white py-2.5 rounded-lg text-sm font-semibold transition"
+              >
+                Import {csvData.length} entries
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AddReleaseModal({ onClose, onAdd, personas }) {
+  const [title, setTitle] = useState('')
+  const [personaId, setPersonaId] = useState(personas[0]?.id || '')
+  const [date, setDate] = useState('')
+  const [type, setType] = useState('single')
+  const [aiGenerated, setAiGenerated] = useState(true)
+
+  const selectedPersona = personas.find(p => p.id === personaId)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold mb-4">New Release</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="e.g. Midnight Rain"
+              className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:border-violet-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Persona</label>
+            <select
+              value={personaId}
+              onChange={e => setPersonaId(e.target.value)}
+              className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-neutral-100 focus:outline-none focus:border-violet-500 transition"
+            >
+              {personas.filter(p => p.active).map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Release Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-neutral-100 focus:outline-none focus:border-violet-500 transition"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Type</label>
+              <select
+                value={type}
+                onChange={e => setType(e.target.value)}
+                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-neutral-100 focus:outline-none focus:border-violet-500 transition"
+              >
+                <option value="single">Single</option>
+                <option value="ep">EP</option>
+                <option value="album">Album</option>
+                <option value="mixtape">Mixtape</option>
+              </select>
+            </div>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={aiGenerated} onChange={e => setAiGenerated(e.target.checked)} className="sr-only peer" />
+            <div className="w-5 h-5 rounded border-2 border-neutral-600 peer-checked:bg-violet-500 peer-checked:border-violet-500 flex items-center justify-center transition">
+              {aiGenerated && <span className="text-white text-xs">✓</span>}
+            </div>
+            <span className="text-sm text-neutral-300">AI-generated content</span>
+          </label>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 border border-neutral-700 text-neutral-300 py-2.5 rounded-lg text-sm font-medium hover:bg-neutral-800 transition">Cancel</button>
+          <button
+            onClick={() => {
+              if (!title || !date) return
+              onAdd({
+                id: 'r' + Date.now(),
+                persona: selectedPersona?.name || '',
+                personaColor: selectedPersona?.color || COLORS[0],
+                title, date, type, aiGenerated,
+                status: 'draft',
+              })
+              onClose()
+            }}
+            disabled={!title || !date}
+            className="flex-1 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white py-2.5 rounded-lg text-sm font-semibold transition"
+          >
+            Create Release
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [personas, setPersonas] = useState(MOCK_PERSONAS)
+  const [releases, setReleases] = useState(MOCK_RELEASES)
   const [showAddPersona, setShowAddPersona] = useState(false)
+  const [showAddRelease, setShowAddRelease] = useState(false)
+  const [editingPersona, setEditingPersona] = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
   const [checklistRelease, setChecklistRelease] = useState(null)
+  const [showCSVUpload, setShowCSVUpload] = useState(false)
+  const [csvImported, setCsvImported] = useState(false)
 
   const totalStreams = personas.reduce((s, p) => s + p.streams, 0)
   const totalRevenue = personas.reduce((s, p) => s + p.revenue, 0)
   const activePersonas = personas.filter(p => p.active).length
-  const collisions = MOCK_RELEASES.filter((r, _, arr) => arr.some(o => o.date === r.date && o.id !== r.id))
+  const collisionDates = [...new Set(
+    releases
+      .filter((r, _, arr) => arr.some(o => o.date === r.date && o.id !== r.id))
+      .map(r => r.date)
+  )]
 
   const addPersona = ({ name, genre, color }) => {
     setPersonas(prev => [...prev, {
@@ -249,9 +540,33 @@ export default function Dashboard() {
     }])
   }
 
+  const updatePersona = (id, updates) => {
+    setPersonas(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
+  }
+
+  const togglePersonaActive = (id) => {
+    setPersonas(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p))
+  }
+
+  const addRelease = (release) => {
+    setReleases(prev => [...prev, release])
+  }
+
+  const handleCSVImport = useCallback((matched) => {
+    setPersonas(prev => prev.map(p => {
+      const data = matched[p.id]
+      if (!data || data.entries.length === 0) return p
+      return {
+        ...p,
+        revenue: p.revenue + data.totalRevenue,
+        streams: p.streams + data.totalStreams,
+      }
+    }))
+    setCsvImported(true)
+  }, [])
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
-      {/* Top bar */}
       <nav className="fixed top-0 w-full z-40 border-b border-neutral-800/60 bg-neutral-950/90 backdrop-blur-lg">
         <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
           <Link href="/persona-hub" className="text-lg font-bold tracking-tight">
@@ -269,7 +584,6 @@ export default function Dashboard() {
       </nav>
 
       <div className="pt-14 max-w-6xl mx-auto px-5">
-        {/* Tabs */}
         <div className="flex gap-1 border-b border-neutral-800/60 mt-4 mb-6">
           {['overview', 'releases', 'revenue'].map(tab => (
             <button
@@ -286,16 +600,14 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Overview Tab */}
         {activeTab === 'overview' && (
           <>
-            {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
               {[
                 { label: 'Active Personas', value: activePersonas, color: 'text-violet-400' },
                 { label: 'Total Streams', value: `${(totalStreams / 1000).toFixed(1)}K`, color: 'text-blue-400' },
                 { label: 'Total Revenue', value: `$${totalRevenue.toFixed(0)}`, color: 'text-emerald-400' },
-                { label: 'Collisions', value: collisions.length > 0 ? `${collisions.length / 2} ⚠` : '0', color: collisions.length > 0 ? 'text-red-400' : 'text-emerald-400' },
+                { label: 'Collisions', value: collisionDates.length > 0 ? `${collisionDates.length} ⚠` : '0', color: collisionDates.length > 0 ? 'text-red-400' : 'text-emerald-400' },
               ].map(stat => (
                 <div key={stat.label} className="bg-neutral-900/60 border border-neutral-800/60 rounded-xl p-4">
                   <div className={`text-2xl font-bold tabular-nums ${stat.color}`}>{stat.value}</div>
@@ -304,32 +616,41 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* Personas Grid */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">Your Personas</h2>
                 <button onClick={() => setShowAddPersona(true)} className="text-xs text-violet-400 hover:text-violet-300 transition">+ Add</button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {personas.map(p => <PersonaCard key={p.id} persona={p} />)}
+                {personas.map(p => <PersonaCard key={p.id} persona={p} onEdit={setEditingPersona} />)}
               </div>
             </div>
 
-            {/* Upcoming Releases */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">Upcoming Releases</h2>
-                {collisions.length > 0 && (
-                  <span className="text-xs bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-semibold">
-                    1 date collision detected
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {collisionDates.length > 0 && (
+                    <span className="text-xs bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-semibold">
+                      {collisionDates.length} date collision{collisionDates.length > 1 ? 's' : ''} detected
+                    </span>
+                  )}
+                  <button
+                    onClick={() => setShowAddRelease(true)}
+                    className="text-xs text-violet-400 hover:text-violet-300 transition"
+                  >
+                    + Add
+                  </button>
+                </div>
               </div>
               <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-4">
-                {MOCK_RELEASES.sort((a, b) => a.date.localeCompare(b.date)).map(r => (
-                  <div key={r.id} onClick={() => r.aiGenerated && setChecklistRelease(r)} className={r.aiGenerated ? 'cursor-pointer' : ''}>
-                    <ReleaseRow release={r} />
-                  </div>
+                {releases.sort((a, b) => a.date.localeCompare(b.date)).map(r => (
+                  <ReleaseRow
+                    key={r.id}
+                    release={r}
+                    allReleases={releases}
+                    onClick={() => r.aiGenerated && setChecklistRelease(r)}
+                  />
                 ))}
               </div>
               <p className="text-xs text-neutral-600 mt-2">Click any AI release to open the disclosure checklist.</p>
@@ -337,20 +658,24 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* Releases Tab */}
         {activeTab === 'releases' && (
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">Release Calendar</h2>
+              <button
+                onClick={() => setShowAddRelease(true)}
+                className="text-xs bg-violet-500 hover:bg-violet-400 text-white px-3 py-1.5 rounded-md font-medium transition"
+              >
+                + New Release
+              </button>
             </div>
 
-            {/* Calendar view */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               {MONTHS.map(month => {
-                const monthReleases = MOCK_RELEASES.filter(r => {
+                const monthReleases = releases.filter(r => {
                   const d = new Date(r.date)
                   const label = d.toLocaleString('en', { month: 'short', year: 'numeric' })
-                  return label === month.replace('Aug', 'Aug').replace('Sep', 'Sep').replace('Oct', 'Oct')
+                  return label === month
                 })
                 return (
                   <div key={month} className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-4">
@@ -360,10 +685,17 @@ export default function Dashboard() {
                     ) : (
                       <div className="space-y-2">
                         {monthReleases.map(r => (
-                          <div key={r.id} className="flex items-center gap-2 p-2 bg-neutral-800/40 rounded-lg">
+                          <div
+                            key={r.id}
+                            className={`flex items-center gap-2 p-2 bg-neutral-800/40 rounded-lg ${r.aiGenerated ? 'cursor-pointer hover:bg-neutral-800/60' : ''}`}
+                            onClick={() => r.aiGenerated && setChecklistRelease(r)}
+                          >
                             <div className="w-1 h-6 rounded-full" style={{ background: r.personaColor }} />
                             <div className="flex-1 min-w-0">
-                              <div className="text-xs font-medium truncate">{r.title}</div>
+                              <div className="text-xs font-medium truncate flex items-center gap-1.5">
+                                {r.title}
+                                {r.aiGenerated && <span className="text-[9px] bg-violet-500/15 text-violet-400 px-1 rounded">AI</span>}
+                              </div>
                               <div className="text-[10px] text-neutral-500">{r.persona} · {r.date.split('-').slice(1).join('/')}</div>
                             </div>
                           </div>
@@ -377,34 +709,45 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Revenue Tab */}
         {activeTab === 'revenue' && (
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">Revenue by Persona</h2>
-              <button className="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-3 py-1.5 rounded-md font-medium transition">
+              <button
+                onClick={() => setShowCSVUpload(true)}
+                className="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-3 py-1.5 rounded-md font-medium transition"
+              >
                 Upload CSV
               </button>
             </div>
 
-            {/* Revenue bars */}
+            {csvImported && (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mb-4 flex items-center gap-2">
+                <span className="text-emerald-400">✓</span>
+                <span className="text-sm text-emerald-300">CSV imported — revenue updated across matched personas</span>
+              </div>
+            )}
+
             <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5 mb-6">
               <div className="space-y-3">
                 {personas
                   .filter(p => p.revenue > 0)
                   .sort((a, b) => b.revenue - a.revenue)
-                  .map(p => (
-                    <div key={p.id} className="flex items-center gap-3">
-                      <div className="w-20 text-xs font-medium text-right truncate text-neutral-300">{p.name}</div>
-                      <div className="flex-1 bg-neutral-800/50 rounded-full h-5 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${(p.revenue / 400) * 100}%`, background: p.color }}
-                        />
+                  .map(p => {
+                    const maxRev = Math.max(...personas.map(x => x.revenue))
+                    return (
+                      <div key={p.id} className="flex items-center gap-3">
+                        <div className="w-20 text-xs font-medium text-right truncate text-neutral-300">{p.name}</div>
+                        <div className="flex-1 bg-neutral-800/50 rounded-full h-5 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${(p.revenue / maxRev) * 100}%`, background: p.color }}
+                          />
+                        </div>
+                        <div className="w-16 text-right text-xs font-mono text-emerald-400 tabular-nums">${p.revenue.toFixed(0)}</div>
                       </div>
-                      <div className="w-16 text-right text-xs font-mono text-emerald-400 tabular-nums">${p.revenue.toFixed(0)}</div>
-                    </div>
-                  ))}
+                    )
+                  })}
               </div>
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-neutral-800/60">
                 <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Total</span>
@@ -427,9 +770,11 @@ export default function Dashboard() {
         <div className="h-12" />
       </div>
 
-      {/* Modals */}
       {showAddPersona && <AddPersonaModal onClose={() => setShowAddPersona(false)} onAdd={addPersona} />}
+      {editingPersona && <EditPersonaModal persona={editingPersona} onClose={() => setEditingPersona(null)} onSave={updatePersona} onToggleActive={togglePersonaActive} />}
       {checklistRelease && <AIChecklistModal release={checklistRelease} onClose={() => setChecklistRelease(null)} />}
+      {showCSVUpload && <CSVUploadModal onClose={() => setShowCSVUpload(false)} personas={personas} onImport={handleCSVImport} />}
+      {showAddRelease && <AddReleaseModal onClose={() => setShowAddRelease(false)} onAdd={addRelease} personas={personas} />}
     </div>
   )
 }
