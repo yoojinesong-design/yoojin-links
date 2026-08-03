@@ -51,6 +51,44 @@ const STATUS_STYLE = {
 
 const MONTHS = ['Aug 2026', 'Sep 2026', 'Oct 2026']
 
+const MOCK_PLATFORM_STREAMS = [
+  { platform: 'Spotify', streams: 182400, pct: 59, color: '#1DB954' },
+  { platform: 'Apple Music', streams: 52100, pct: 17, color: '#FA2D48' },
+  { platform: 'YouTube Music', streams: 37200, pct: 12, color: '#FF0000' },
+  { platform: 'SoundCloud', streams: 21800, pct: 7, color: '#FF5500' },
+  { platform: 'Tidal', streams: 9400, pct: 3, color: '#00FFFF' },
+  { platform: 'Other', streams: 7300, pct: 2, color: '#6B7280' },
+]
+
+const MOCK_MONTHLY_GROWTH = [
+  { month: 'Mar', streams: 18200, revenue: 54.60 },
+  { month: 'Apr', streams: 24100, revenue: 72.30 },
+  { month: 'May', streams: 31400, revenue: 94.20 },
+  { month: 'Jun', streams: 42800, revenue: 128.40 },
+  { month: 'Jul', streams: 58600, revenue: 175.80 },
+  { month: 'Aug', streams: 62300, revenue: 186.90 },
+]
+
+const MOCK_TOP_TRACKS = [
+  { title: '3am in Gangnam', persona: 'nitefall', personaColor: '#3B82F6', streams: 34200, revenue: 102.60 },
+  { title: 'Velvet Underground', persona: 'Dr. Groove', personaColor: '#10B981', streams: 28100, revenue: 84.30 },
+  { title: 'Glass Heart', persona: 'YOOJ', personaColor: '#7C3AED', streams: 22400, revenue: 67.20 },
+  { title: 'CTRL+DELETE', persona: 'CTRL+V', personaColor: '#EC4899', streams: 18700, revenue: 56.10 },
+  { title: 'Rain on Concrete', persona: 'nitefall', personaColor: '#3B82F6', streams: 16300, revenue: 48.90 },
+  { title: 'Seoul After Dark', persona: 'Seoul Phantom', personaColor: '#EF4444', streams: 14800, revenue: 44.40 },
+  { title: 'Autumn Leaves', persona: 'glass_lake', personaColor: '#F59E0B', streams: 12100, revenue: 36.30 },
+  { title: 'Moonlight Sonata (remix)', persona: 'Dr. Groove', personaColor: '#10B981', streams: 11400, revenue: 34.20 },
+]
+
+const MOCK_GEO = [
+  { country: 'United States', pct: 38, streams: 117400 },
+  { country: 'South Korea', pct: 22, streams: 68000 },
+  { country: 'Japan', pct: 12, streams: 37100 },
+  { country: 'United Kingdom', pct: 8, streams: 24700 },
+  { country: 'Germany', pct: 5, streams: 15500 },
+  { country: 'Others', pct: 15, streams: 47500 },
+]
+
 function PersonaCard({ persona, onEdit }) {
   return (
     <div
@@ -638,7 +676,7 @@ export default function Dashboard() {
 
       <div className="pt-14 max-w-6xl mx-auto px-5">
         <div className="flex gap-1 border-b border-neutral-800/60 mt-4 mb-6">
-          {['overview', 'releases', 'revenue', 'links'].map(tab => (
+          {['overview', 'releases', 'revenue', 'links', 'analytics'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -898,9 +936,13 @@ export default function Dashboard() {
                           <button className="text-xs bg-violet-500 hover:bg-violet-400 text-white px-4 py-2 rounded-lg font-medium transition">
                             Save Links
                           </button>
-                          <button className="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-4 py-2 rounded-lg font-medium transition">
+                          <Link
+                            href={`/persona-hub/link/${p.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                            target="_blank"
+                            className="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-4 py-2 rounded-lg font-medium transition"
+                          >
                             Preview Smart Link Page
-                          </button>
+                          </Link>
                         </div>
                       </div>
                     )}
@@ -917,6 +959,145 @@ export default function Dashboard() {
                 <li className="flex gap-2"><span className="text-violet-400 font-bold">3.</span> Use as pre-save links before release day</li>
                 <li className="flex gap-2"><span className="text-violet-400 font-bold">4.</span> Track clicks per platform in Cross-Persona Analytics</li>
               </ol>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">Cross-Persona Analytics</h2>
+              <span className="text-xs text-neutral-600">Last 6 months</span>
+            </div>
+
+            {/* Growth chart */}
+            <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">Monthly Growth</h3>
+                <div className="flex items-center gap-4 text-xs text-neutral-500">
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-violet-500 inline-block" /> Streams</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-emerald-500 inline-block" /> Revenue</span>
+                </div>
+              </div>
+              <div className="flex items-end gap-3 h-40">
+                {MOCK_MONTHLY_GROWTH.map((m, i) => {
+                  const maxStreams = Math.max(...MOCK_MONTHLY_GROWTH.map(x => x.streams))
+                  const barH = Math.max((m.streams / maxStreams) * 100, 4)
+                  return (
+                    <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
+                      <div className="w-full flex flex-col items-center justify-end flex-1">
+                        <div className="text-[10px] text-emerald-400 tabular-nums mb-0.5">${m.revenue.toFixed(0)}</div>
+                        <div className="text-[10px] text-neutral-500 tabular-nums mb-1">{(m.streams / 1000).toFixed(1)}K</div>
+                        <div
+                          className="w-full rounded-t-md bg-violet-500/50 transition-all relative"
+                          style={{ height: `${barH}%` }}
+                        >
+                          <div
+                            className="absolute bottom-0 left-0 right-0 rounded-t-md bg-emerald-500/40"
+                            style={{ height: `${Math.max((m.revenue / maxStreams * 1000) * 100, 4)}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-neutral-600 font-medium">{m.month}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Platform distribution + Geo split */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Platform distribution */}
+              <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">By Platform</h3>
+                <div className="space-y-2.5">
+                  {MOCK_PLATFORM_STREAMS.map(p => (
+                    <div key={p.platform} className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
+                      <span className="text-xs font-medium text-neutral-300 w-24">{p.platform}</span>
+                      <div className="flex-1 bg-neutral-800/50 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${p.pct}%`, background: p.color + 'aa' }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-neutral-500 tabular-nums w-10 text-right">{p.pct}%</span>
+                      <span className="text-[10px] text-neutral-600 tabular-nums w-14 text-right">{(p.streams / 1000).toFixed(1)}K</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Geographic distribution */}
+              <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">By Country</h3>
+                <div className="space-y-2.5">
+                  {MOCK_GEO.map(g => (
+                    <div key={g.country} className="flex items-center gap-3">
+                      <span className="text-xs font-medium text-neutral-300 w-28 truncate">{g.country}</span>
+                      <div className="flex-1 bg-neutral-800/50 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-violet-500/50 transition-all"
+                          style={{ width: `${g.pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-neutral-500 tabular-nums w-10 text-right">{g.pct}%</span>
+                      <span className="text-[10px] text-neutral-600 tabular-nums w-14 text-right">{(g.streams / 1000).toFixed(1)}K</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Top tracks */}
+            <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5 mb-6">
+              <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">Top Tracks (All Personas)</h3>
+              <div className="space-y-0">
+                {MOCK_TOP_TRACKS.map((t, i) => (
+                  <div key={t.title} className="flex items-center gap-3 py-2.5 border-b border-neutral-800/40 last:border-b-0">
+                    <span className="text-xs text-neutral-600 w-5 text-right tabular-nums font-medium">{i + 1}</span>
+                    <div className="w-1 h-6 rounded-full" style={{ background: t.personaColor }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{t.title}</div>
+                      <div className="text-xs text-neutral-500">{t.persona}</div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-xs tabular-nums text-neutral-300">{(t.streams / 1000).toFixed(1)}K streams</div>
+                      <div className="text-[10px] tabular-nums text-emerald-400">${t.revenue.toFixed(2)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Per-persona summary */}
+            <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">Persona Performance</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {personas
+                  .filter(p => p.active)
+                  .sort((a, b) => b.streams - a.streams)
+                  .map(p => {
+                    const maxStreams = Math.max(...personas.filter(x => x.active).map(x => x.streams))
+                    return (
+                      <div key={p.id} className="bg-neutral-800/30 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 rounded flex items-center justify-center text-white text-[10px] font-bold" style={{ background: p.color }}>
+                            {p.name[0]}
+                          </div>
+                          <span className="text-sm font-semibold truncate">{p.name}</span>
+                        </div>
+                        <div className="bg-neutral-700/30 rounded-full h-1.5 mb-2">
+                          <div className="h-full rounded-full" style={{ width: `${(p.streams / maxStreams) * 100}%`, background: p.color }} />
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-neutral-500 tabular-nums">{(p.streams / 1000).toFixed(1)}K streams</span>
+                          <span className="text-emerald-400 tabular-nums">${p.revenue.toFixed(0)}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
             </div>
           </div>
         )}
