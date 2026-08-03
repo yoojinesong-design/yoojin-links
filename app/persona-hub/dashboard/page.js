@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { parseDistroKidCSV, matchToPersonas } from '../../../lib/csv-parser'
+import { getSupabase } from '../../../lib/supabase-browser'
 
 const COLORS = ['#7C3AED', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6', '#06B6D4']
 
@@ -517,6 +518,30 @@ export default function Dashboard() {
   const [checklistRelease, setChecklistRelease] = useState(null)
   const [showCSVUpload, setShowCSVUpload] = useState(false)
   const [csvImported, setCsvImported] = useState(false)
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    try {
+      const supabase = getSupabase()
+      supabase.auth.getUser().then(({ data }) => setUser(data?.user ?? null))
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null)
+      })
+      return () => subscription.unsubscribe()
+    } catch {
+      // Supabase not configured — demo mode
+    }
+  }, [])
+
+  const handleSignOut = async () => {
+    try {
+      const supabase = getSupabase()
+      await supabase.auth.signOut()
+      window.location.href = '/persona-hub'
+    } catch {
+      window.location.href = '/persona-hub'
+    }
+  }
 
   const totalStreams = personas.reduce((s, p) => s + p.streams, 0)
   const totalRevenue = personas.reduce((s, p) => s + p.revenue, 0)
@@ -572,13 +597,21 @@ export default function Dashboard() {
           <Link href="/persona-hub" className="text-lg font-bold tracking-tight">
             Persona<span className="text-violet-400">Hub</span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setShowAddPersona(true)}
               className="text-sm bg-violet-500 hover:bg-violet-400 text-white px-3 py-1.5 rounded-md font-medium transition flex items-center gap-1.5"
             >
               <span>+</span> New Persona
             </button>
+            {user && (
+              <button
+                onClick={handleSignOut}
+                className="text-xs text-neutral-500 hover:text-neutral-300 transition"
+              >
+                Sign Out
+              </button>
+            )}
           </div>
         </div>
       </nav>
