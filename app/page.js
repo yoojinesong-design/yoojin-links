@@ -48,6 +48,28 @@ export default function Home() {
     { q: 'Is there a contract?', a: 'No. Month-to-month, cancel anytime. 14-day free trial to start.' },
   ]
 
+  const [email, setEmail] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleWaitlist = async (e) => {
+    e.preventDefault()
+    if (!email || submitting) return
+    setSubmitting(true)
+    try {
+      await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, product: 'detailbook' }),
+      })
+      setSubmitted(true)
+    } catch {
+      setSubmitted(true)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="min-h-screen">
       {/* Nav */}
@@ -56,7 +78,7 @@ export default function Home() {
           <span className="text-lg font-bold tracking-tight">Detail<span className="text-sky-400">Book</span></span>
           <div className="flex items-center gap-4">
             <Link href="/demo" className="text-sm text-neutral-400 hover:text-neutral-200 transition">Live Demo</Link>
-            <Link href="/book/demo-detailer" className="text-sm bg-sky-500 hover:bg-sky-400 text-white px-4 py-1.5 rounded-md font-medium transition">Try Free</Link>
+            <a href="#waitlist" className="text-sm bg-sky-500 hover:bg-sky-400 text-white px-4 py-1.5 rounded-md font-medium transition">Join Waitlist</a>
           </div>
         </div>
       </nav>
@@ -224,18 +246,45 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 px-5 border-t border-neutral-800/60">
+      {/* CTA / Waitlist */}
+      <section id="waitlist" className="py-20 px-5 border-t border-neutral-800/60">
         <div className="max-w-xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">
-            Your next detail is booked<br />before you finish this one.
+            Your next detail is booked<br />
+            <span className="text-sky-400">before you finish this one.</span>
           </h2>
           <p className="text-neutral-400 mb-8 text-base">
-            10 minutes to set up. 14 days free. Cancel anytime.
+            Early access launching soon. Join the waitlist — first 100 detailers get 3 months free.
           </p>
-          <Link href="/setup" className="inline-block bg-sky-500 hover:bg-sky-400 text-white px-8 py-3 rounded-lg font-semibold transition shadow-lg shadow-sky-500/20">
-            Start Free Trial
-          </Link>
+          {submitted ? (
+            <div className="bg-sky-500/10 border border-sky-500/30 rounded-lg p-6">
+              <div className="text-sky-400 text-2xl mb-2">✓</div>
+              <p className="text-neutral-200 font-medium">You're on the list. We'll email you when it's ready.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:border-sky-500 transition"
+              />
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-sky-500 hover:bg-sky-400 disabled:opacity-60 text-white px-6 py-3 rounded-lg font-semibold text-sm transition shadow-lg shadow-sky-500/20 whitespace-nowrap"
+              >
+                {submitting ? 'Joining...' : 'Join Waitlist'}
+              </button>
+            </form>
+          )}
+          <div className="mt-6">
+            <Link href="/setup" className="text-sm text-neutral-500 hover:text-neutral-300 transition">
+              or start your 14-day free trial now →
+            </Link>
+          </div>
         </div>
       </section>
 

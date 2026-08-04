@@ -306,7 +306,7 @@ export default function Dashboard() {
 
       <div className="pt-14 max-w-6xl mx-auto px-5">
         <div className="flex gap-1 border-b border-neutral-800/60 mt-4 mb-6">
-          {['overview', 'releases', 'revenue', 'links', 'analytics'].map(tab => (
+          {['overview', 'releases', 'revenue', 'links', 'analytics', 'settings'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2.5 text-sm font-medium capitalize transition border-b-2 -mb-px ${activeTab === tab ? 'text-violet-400 border-violet-400' : 'text-neutral-500 border-transparent hover:text-neutral-300'}`}>{tab}</button>
           ))}
         </div>
@@ -436,6 +436,89 @@ export default function Dashboard() {
             </div>
             <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5 mb-6"><h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">Top Tracks (All Personas)</h3><div className="space-y-0">{MOCK_TOP_TRACKS.map((t, i) => (<div key={t.title} className="flex items-center gap-3 py-2.5 border-b border-neutral-800/40 last:border-b-0"><span className="text-xs text-neutral-600 w-5 text-right tabular-nums font-medium">{i + 1}</span><div className="w-1 h-6 rounded-full" style={{ background: t.personaColor }} /><div className="flex-1 min-w-0"><div className="text-sm font-medium truncate">{t.title}</div><div className="text-xs text-neutral-500">{t.persona}</div></div><div className="text-right flex-shrink-0"><div className="text-xs tabular-nums text-neutral-300">{(t.streams / 1000).toFixed(1)}K streams</div><div className="text-[10px] tabular-nums text-emerald-400">${t.revenue.toFixed(2)}</div></div></div>))}</div></div>
             <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5"><h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">Persona Performance</h3><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{personas.filter(p => p.active).sort((a, b) => b.streams - a.streams).map(p => { const maxStreams = Math.max(...personas.filter(x => x.active).map(x => x.streams)); return (<div key={p.id} className="bg-neutral-800/30 rounded-lg p-3"><div className="flex items-center gap-2 mb-2"><div className="w-6 h-6 rounded flex items-center justify-center text-white text-[10px] font-bold" style={{ background: p.color }}>{p.name[0]}</div><span className="text-sm font-semibold truncate">{p.name}</span></div><div className="bg-neutral-700/30 rounded-full h-1.5 mb-2"><div className="h-full rounded-full" style={{ width: `${(p.streams / maxStreams) * 100}%`, background: p.color }} /></div><div className="flex justify-between text-xs"><span className="text-neutral-500 tabular-nums">{(p.streams / 1000).toFixed(1)}K streams</span><span className="text-emerald-400 tabular-nums">${p.revenue.toFixed(0)}</span></div></div>) })}</div></div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div>
+            <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">Account Settings</h2>
+            <div className="space-y-4">
+              <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5">
+                <h3 className="text-sm font-semibold mb-4">Profile</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400 text-lg font-bold">
+                      {user?.email?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">{user?.email || 'demo@personahub.app'}</div>
+                      <div className="text-xs text-neutral-500">Signed in via {user?.app_metadata?.provider === 'google' ? 'Google' : 'Email'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold">Your Plan</h3>
+                  <span className="text-xs bg-violet-500/15 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded font-semibold uppercase tracking-wider">Free</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <div className="text-2xl font-bold tabular-nums">{personas.length}<span className="text-sm font-normal text-neutral-500">/3</span></div>
+                    <div className="text-[10px] text-neutral-500 uppercase tracking-wider mt-1">Personas Used</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold tabular-nums text-emerald-400">$0<span className="text-sm font-normal text-neutral-500">/mo</span></div>
+                    <div className="text-[10px] text-neutral-500 uppercase tracking-wider mt-1">Current Cost</div>
+                  </div>
+                </div>
+                <div className="bg-neutral-800/50 rounded-lg p-3 mb-4">
+                  <div className="text-xs font-semibold text-neutral-400 mb-2">Free plan includes:</div>
+                  <ul className="space-y-1">
+                    {['3 personas', 'Release calendar', 'AI disclosure checklist', 'Basic revenue view'].map(f => (
+                      <li key={f} className="flex gap-2 text-xs text-neutral-500"><span className="text-violet-400">✓</span>{f}</li>
+                    ))}
+                  </ul>
+                </div>
+                <button className="w-full bg-violet-500 hover:bg-violet-400 text-white py-2.5 rounded-lg text-sm font-semibold transition">
+                  Upgrade to Pro — $9/mo
+                </button>
+                <p className="text-[10px] text-neutral-600 text-center mt-2">Unlimited personas, CSV revenue import, analytics export, priority support</p>
+              </div>
+
+              <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5">
+                <h3 className="text-sm font-semibold mb-4">Data & Export</h3>
+                <div className="space-y-2">
+                  <button className="w-full flex items-center gap-3 p-3 bg-neutral-800/40 hover:bg-neutral-800/60 rounded-lg transition text-left">
+                    <span className="text-base">📊</span>
+                    <div><div className="text-sm font-medium">Export Analytics</div><div className="text-xs text-neutral-500">Download streams, revenue, and growth data as CSV</div></div>
+                  </button>
+                  <button className="w-full flex items-center gap-3 p-3 bg-neutral-800/40 hover:bg-neutral-800/60 rounded-lg transition text-left">
+                    <span className="text-base">📋</span>
+                    <div><div className="text-sm font-medium">Export AI Audit Log</div><div className="text-xs text-neutral-500">Download all AI disclosure records for compliance</div></div>
+                  </button>
+                  <button className="w-full flex items-center gap-3 p-3 bg-neutral-800/40 hover:bg-neutral-800/60 rounded-lg transition text-left">
+                    <span className="text-base">📦</span>
+                    <div><div className="text-sm font-medium">Export All Data</div><div className="text-xs text-neutral-500">Full account backup — personas, releases, links, revenue</div></div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-neutral-900/40 border border-red-500/20 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-red-400 mb-4">Danger Zone</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-neutral-800/40 rounded-lg">
+                    <div><div className="text-sm font-medium">Delete all personas</div><div className="text-xs text-neutral-500">Remove all personas and their data</div></div>
+                    <button className="text-xs border border-red-500/30 text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg font-medium transition">Delete All</button>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-neutral-800/40 rounded-lg">
+                    <div><div className="text-sm font-medium">Delete account</div><div className="text-xs text-neutral-500">Permanently delete your account and all data</div></div>
+                    <button className="text-xs border border-red-500/30 text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg font-medium transition">Delete Account</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
