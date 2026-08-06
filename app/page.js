@@ -51,20 +51,24 @@ export default function Home() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [waitlistError, setWaitlistError] = useState('')
 
   const handleWaitlist = async (e) => {
     e.preventDefault()
     if (!email || submitting) return
     setSubmitting(true)
+    setWaitlistError('')
     try {
-      await fetch('/api/waitlist', {
+      const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, product: 'detailbook' }),
       })
+      const data = await res.json()
+      if (!res.ok && res.status !== 200) throw new Error(data.error || 'Something went wrong')
       setSubmitted(true)
-    } catch {
-      setSubmitted(true)
+    } catch (err) {
+      setWaitlistError(err.message || 'Network error — please try again')
     } finally {
       setSubmitting(false)
     }
@@ -280,6 +284,7 @@ export default function Home() {
               </button>
             </form>
           )}
+          {waitlistError && <p className="text-red-400 text-sm mt-3">{waitlistError}</p>}
           <div className="mt-6">
             <Link href="/setup" className="text-sm text-neutral-500 hover:text-neutral-300 transition">
               or start your 14-day free trial now →

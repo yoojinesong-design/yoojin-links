@@ -130,3 +130,21 @@ $$ language plpgsql security definer;
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Waitlist (shared across products)
+create table public.waitlist (
+  id uuid default uuid_generate_v4() primary key,
+  email text not null,
+  product text not null check (product in ('detailbook', 'persona-hub')),
+  name text,
+  created_at timestamptz default now(),
+  unique (email, product)
+);
+
+alter table public.waitlist enable row level security;
+-- Public insert (anyone can join), no select/update/delete from client
+create policy "Anyone can insert into waitlist" on public.waitlist
+  for insert with check (true);
+
+create index idx_waitlist_product on public.waitlist(product);
+create index idx_waitlist_email on public.waitlist(email);

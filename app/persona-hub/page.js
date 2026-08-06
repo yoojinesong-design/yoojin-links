@@ -48,20 +48,24 @@ export default function PersonaHubLanding() {
   const [submitted, setSubmitted] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email || submitting) return
     setSubmitting(true)
+    setError('')
     try {
-      await fetch('/api/waitlist', {
+      const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, product: 'persona-hub' }),
       })
+      const data = await res.json()
+      if (!res.ok && res.status !== 200) throw new Error(data.error || 'Something went wrong')
       setSubmitted(true)
-    } catch {
-      setSubmitted(true)
+    } catch (err) {
+      setError(err.message || 'Network error — please try again')
     } finally {
       setSubmitting(false)
     }
@@ -243,12 +247,14 @@ export default function PersonaHubLanding() {
               />
               <button
                 type="submit"
-                className="bg-violet-500 hover:bg-violet-400 text-white px-6 py-3 rounded-lg font-semibold text-sm transition shadow-lg shadow-violet-500/20 whitespace-nowrap"
+                disabled={submitting}
+                className="bg-violet-500 hover:bg-violet-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-semibold text-sm transition shadow-lg shadow-violet-500/20 whitespace-nowrap"
               >
-                Join Waitlist
+                {submitting ? 'Joining...' : 'Join Waitlist'}
               </button>
             </form>
           )}
+          {error && <p className="text-red-400 text-sm mt-3">{error}</p>}
         </div>
       </section>
 
