@@ -619,8 +619,9 @@ export default function GageDoumiDemo() {
         {renderTab()}
 
         {/* Footer */}
-        <div className="mt-8 pt-6 border-t border-neutral-800 text-center">
+        <div className="mt-8 pt-6 border-t border-neutral-800 text-center space-y-2">
           <p className="text-sm text-neutral-500" style={{ fontSize: '14px' }}>🏪 가게도우미 — 우리 가게 관리를 쉽고 편하게</p>
+          <p className="text-xs text-neutral-600">이 페이지의 모든 데이터는 데모용 가상 데이터입니다. 실제 가게/고객 정보가 아닙니다.</p>
         </div>
       </div>
     </div>

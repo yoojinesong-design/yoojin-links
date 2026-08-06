@@ -36,7 +36,7 @@ const FEATURES = [
 ]
 
 const PAIN_POINTS = [
-  { pain: 'DistroKid gives you 2 artist slots on the basic plan', fix: 'Manage unlimited personas from one dashboard' },
+  { pain: 'Your distributor may limit artist slots per plan', fix: 'Manage unlimited personas from one dashboard' },
   { pain: 'Spreadsheet hell tracking releases across 5+ names', fix: 'Visual calendar — all personas, color-coded' },
   { pain: 'No idea which persona is actually making money', fix: 'CSV upload → instant per-persona revenue breakdown' },
   { pain: 'EU AI Act just started — what boxes do I check?', fix: 'Per-release AI disclosure checklist with audit log' },
@@ -169,17 +169,19 @@ export default function PersonaHubLanding() {
       <section className="py-20 px-5">
         <div className="max-w-3xl mx-auto">
           <div className="bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20 rounded-2xl p-8 sm:p-10">
-            <div className="text-xs font-semibold tracking-widest uppercase text-violet-400 mb-3">EU AI Act Article 50 — Live Since Aug 2, 2026</div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4">AI disclosure is no longer optional.</h2>
+            <div className="text-xs font-semibold tracking-widest uppercase text-violet-400 mb-3">EU AI Act — Transparency Requirements</div>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4">AI disclosure is becoming mandatory.</h2>
             <p className="text-neutral-400 text-sm leading-relaxed mb-4">
-              DDEX 5.0 now requires <code className="text-violet-300 bg-violet-500/10 px-1.5 py-0.5 rounded text-xs">IsAIGenerated</code>,
-              <code className="text-violet-300 bg-violet-500/10 px-1.5 py-0.5 rounded text-xs">AIComponentType</code>, and
-              <code className="text-violet-300 bg-violet-500/10 px-1.5 py-0.5 rounded text-xs">AITrainingDisclosure</code> fields
-              on every release. Spotify adopted them September 2025. Fines up to €15M or 3% of revenue.
+              The EU AI Act introduces transparency obligations for AI-generated content. Industry standards like DDEX are developing
+              AI disclosure fields, and major platforms are adopting their own AI content policies.
+              Penalties for non-compliance can be significant.
             </p>
-            <p className="text-neutral-400 text-sm leading-relaxed">
-              PersonaHub gives you a <strong className="text-neutral-200">per-release checklist</strong> that walks you through exactly which boxes to check,
-              keeps an audit log, and tracks platform-specific requirements (Spotify AI Credits, Apple Music, YouTube).
+            <p className="text-neutral-400 text-sm leading-relaxed mb-4">
+              PersonaHub gives you a <strong className="text-neutral-200">per-release checklist</strong> to help you track AI disclosure requirements
+              across platforms, with an audit log for your records.
+            </p>
+            <p className="text-neutral-500 text-xs leading-relaxed italic">
+              This is general guidance only, not legal advice. Consult a legal professional for regulatory compliance.
             </p>
           </div>
         </div>
@@ -228,7 +230,7 @@ export default function PersonaHubLanding() {
             <span className="text-violet-400">For creators like you.</span>
           </h2>
           <p className="text-neutral-400 mb-8 text-base">
-            Early access launching soon. Join the waitlist — first 50 users get Pro free for 6 months.
+            Early access launching soon. Join the waitlist — early adopters receive special pricing.
           </p>
           {submitted ? (
             <div className="bg-violet-500/10 border border-violet-500/30 rounded-lg p-6">
@@ -267,6 +269,9 @@ export default function PersonaHubLanding() {
             <Link href="/" className="hover:text-neutral-400 transition">DetailBook</Link>
             <Link href="/gage-doumi" className="hover:text-neutral-400 transition">가게도우미</Link>
           </div>
+        </div>
+        <div className="max-w-5xl mx-auto mt-4 text-xs text-neutral-700 leading-relaxed text-center">
+          <p>DistroKid, TuneCore, Spotify, Apple Music, YouTube, Linkfire, Suno, and Udio are trademarks of their respective owners. PersonaHub is not affiliated with or endorsed by any of these companies. AI compliance features are general guidance only, not legal advice.</p>
         </div>
       </footer>
     </div>

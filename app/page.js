@@ -11,7 +11,7 @@ const FEATURES = [
   {
     icon: '💳',
     title: 'Auto Deposits',
-    desc: 'Collect $25–50 deposits at booking. The system asks, not you — no awkward conversations. No-shows drop to under 5%.',
+    desc: 'Collect $25–50 deposits at booking. The system asks, not you — no awkward conversations. Deposits significantly reduce no-shows.',
   },
   {
     icon: '💬',
@@ -26,7 +26,7 @@ const FEATURES = [
   {
     icon: '🔄',
     title: 'Rebook Automation',
-    desc: '60 or 90 days later: "Time for your next detail!" Auto-text with your booking link. 60–70% of revenue is repeat.',
+    desc: '60 or 90 days later: "Time for your next detail!" Auto-text with your booking link. Repeat customers drive the majority of revenue.',
   },
 ]
 
@@ -117,9 +117,9 @@ export default function Home() {
       <section className="border-y border-neutral-800/60 bg-neutral-900/40">
         <div className="max-w-4xl mx-auto px-5 py-8 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
           {[
-            ['15–25%', 'No-show rate without deposits'],
-            ['3+ hrs/day', 'Spent on texts, calls, admin'],
-            ['63%', 'Of detailers use no software'],
+            ['15–25%', 'Est. no-show rate without deposits*'],
+            ['3+ hrs/day', 'Est. time on texts, calls, admin*'],
+            ['~63%', 'Est. detailers using no software*'],
             ['$39/mo', 'Everything included'],
           ].map(([num, label]) => (
             <div key={label}>
@@ -223,7 +223,7 @@ export default function Home() {
               Start Free Trial
             </Link>
           </div>
-          <p className="text-xs text-neutral-600 mt-6">Stripe processing fees (2.9% + 30¢) apply to customer payments. That's it.</p>
+          <p className="text-xs text-neutral-600 mt-6">Standard payment processing fees apply. See <a href="https://stripe.com/pricing" className="underline" target="_blank" rel="noopener">stripe.com/pricing</a> for current rates.</p>
         </div>
       </section>
 
@@ -258,7 +258,7 @@ export default function Home() {
             <span className="text-sky-400">before you finish this one.</span>
           </h2>
           <p className="text-neutral-400 mb-8 text-base">
-            Early access launching soon. Join the waitlist — first 100 detailers get 3 months free.
+            Early access launching soon. Join the waitlist — early adopters receive special pricing.
           </p>
           {submitted ? (
             <div className="bg-sky-500/10 border border-sky-500/30 rounded-lg p-6">
@@ -302,6 +302,9 @@ export default function Home() {
             <Link href="/persona-hub" className="hover:text-neutral-400 transition">PersonaHub</Link>
             <Link href="/gage-doumi" className="hover:text-neutral-400 transition">가게도우미</Link>
           </div>
+        </div>
+        <div className="max-w-5xl mx-auto mt-4 text-xs text-neutral-700 leading-relaxed text-center">
+          <p>* Statistics are industry estimates and may not be exact. Stripe is a registered trademark of Stripe, Inc. DetailBook is not affiliated with or endorsed by Stripe.</p>
         </div>
       </footer>
     </div>

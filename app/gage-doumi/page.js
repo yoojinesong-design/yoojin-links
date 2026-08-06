@@ -20,9 +20,9 @@ const FEATURES = [
 ]
 
 const TESTIMONIALS = [
-  { name: '김순자 사장님', shop: '순이네 감자탕', years: '20년 경력', quote: '배달앱 주문 놓치는 거 없어졌어요. 이제 마음 편하게 요리에만 집중해요.' },
-  { name: '박영호 사장님', shop: '영호 칼국수', years: '15년 경력', quote: '아들이 해주던 구글 관리를 이제 제가 직접 해요. 생각보다 쉽더라고요.' },
-  { name: '이미경 사장님', shop: '미경이네 분식', years: '25년 경력', quote: '글씨가 커서 좋아요. 복잡한 거 하나도 없고, 딱 필요한 것만 있어요.' },
+  { name: 'A 사장님', shop: '감자탕 전문점', years: '예상 후기', quote: '배달앱 주문 놓치는 거 없어졌어요. 이제 마음 편하게 요리에만 집중해요.' },
+  { name: 'B 사장님', shop: '칼국수 전문점', years: '예상 후기', quote: '아들이 해주던 구글 관리를 이제 제가 직접 해요. 생각보다 쉽더라고요.' },
+  { name: 'C 사장님', shop: '분식점', years: '예상 후기', quote: '글씨가 커서 좋아요. 복잡한 거 하나도 없고, 딱 필요한 것만 있어요.' },
 ]
 
 const STEPS = [
@@ -98,10 +98,10 @@ export default function GageDoumiLanding() {
       <section className="border-y border-neutral-800/60 bg-neutral-900/40">
         <div className="max-w-4xl mx-auto px-5 py-10 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
           {[
-            ['73%', '소상공인 중 디지털 전환\n어려움 호소'],
-            ['하루 2시간+', '배달앱, 전화, 예약에\n쓰는 시간'],
-            ['평균 3.2개', '사장님이 동시에\n관리하는 앱 수'],
-            ['월 ₩19,900', '모든 기능 포함'],
+            ['~70%', '소상공인 중 디지털 전환\n어려움 호소*'],
+            ['하루 2시간+', '배달앱, 전화, 예약에\n쓰는 시간(추정)'],
+            ['평균 3+개', '사장님이 동시에\n관리하는 앱 수(추정)'],
+            ['$14.99/mo', 'Everything included'],
           ].map(([stat, desc]) => (
             <div key={stat}>
               <div className="text-2xl sm:text-3xl font-extrabold text-amber-400 mb-2">{stat}</div>
@@ -178,7 +178,7 @@ export default function GageDoumiLanding() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-neutral-900/80 border border-neutral-700/60 rounded-2xl p-6 text-left">
               <div className="text-base font-semibold text-neutral-400 mb-2">무료</div>
-              <div className="text-3xl font-extrabold mb-1">₩0</div>
+              <div className="text-3xl font-extrabold mb-1">$0</div>
               <p className="text-sm text-neutral-500 mb-4">부담 없이 시작하세요</p>
               <ul className="space-y-2">
                 {['기본 주문관리', '예약 5건/월', '리뷰 알림'].map(f => (
@@ -191,7 +191,7 @@ export default function GageDoumiLanding() {
             <div className="bg-neutral-900/80 border-2 border-amber-500/50 rounded-2xl p-6 text-left relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-neutral-950 text-sm font-bold px-4 py-1 rounded-full">추천</div>
               <div className="text-base font-semibold text-amber-400 mb-2">프로</div>
-              <div className="text-3xl font-extrabold mb-1">₩19,900<span className="text-lg font-normal text-neutral-500">/월</span></div>
+              <div className="text-3xl font-extrabold mb-1">$14.99<span className="text-lg font-normal text-neutral-500">/mo</span></div>
               <p className="text-sm text-neutral-500 mb-4">첫 달 무료 체험</p>
               <ul className="space-y-2">
                 {['무제한 예약', 'AI 리뷰 답변', '고객 메시지 발송', '매출 리포트', '구글 프로필 관리', '우선 고객 지원'].map(f => (
@@ -209,8 +209,8 @@ export default function GageDoumiLanding() {
       <section className="py-20 px-5">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
-            <div className="text-sm font-semibold tracking-wide text-amber-400 mb-2">사장님들의 후기</div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">이미 이런 사장님들이 쓰고 계세요</h2>
+            <div className="text-sm font-semibold tracking-wide text-amber-400 mb-2">이런 변화를 기대해요</div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">사장님들이 기대하는 후기</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {TESTIMONIALS.map((t) => (
@@ -272,6 +272,10 @@ export default function GageDoumiLanding() {
             <Link href="/gage-doumi/demo" className="hover:text-neutral-400 transition">데모</Link>
             <Link href="/" className="hover:text-neutral-400 transition">홈</Link>
           </div>
+        </div>
+        <div className="max-w-5xl mx-auto mt-4 text-xs text-neutral-700 leading-relaxed text-center">
+          <p>* 통계 수치는 내부 추정치이며 정확하지 않을 수 있습니다. 예상 후기는 실제 사용자의 후기가 아닙니다.</p>
+          <p className="mt-1">배달의민족, 쿠팡이츠, 요기요, 구글은 각 회사의 등록 상표입니다. 가게도우미는 해당 회사와 제휴하거나 보증을 받지 않았습니다.</p>
         </div>
       </footer>
     </div>
