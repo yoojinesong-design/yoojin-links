@@ -11,16 +11,22 @@ export default function NotFound() {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href="/"
-            className="text-sm bg-sky-500 hover:bg-sky-400 text-white px-5 py-2.5 rounded-lg font-medium transition"
+            href="/gage-doumi"
+            className="text-sm bg-amber-500 hover:bg-amber-400 text-white px-5 py-2.5 rounded-lg font-medium transition"
           >
-            DetailBook Home
+            가게도우미
+          </Link>
+          <Link
+            href="/"
+            className="text-sm border border-neutral-700 hover:border-neutral-500 text-neutral-300 px-5 py-2.5 rounded-lg font-medium transition"
+          >
+            DetailBook
           </Link>
           <Link
             href="/persona-hub"
             className="text-sm border border-neutral-700 hover:border-neutral-500 text-neutral-300 px-5 py-2.5 rounded-lg font-medium transition"
           >
-            PersonaHub Home
+            PersonaHub
           </Link>
         </div>
       </div>

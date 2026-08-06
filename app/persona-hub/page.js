@@ -265,6 +265,7 @@ export default function PersonaHubLanding() {
           <div className="flex gap-4">
             <Link href="/persona-hub/dashboard" className="hover:text-neutral-400 transition">Dashboard</Link>
             <Link href="/" className="hover:text-neutral-400 transition">DetailBook</Link>
+            <Link href="/gage-doumi" className="hover:text-neutral-400 transition">가게도우미</Link>
           </div>
         </div>
       </footer>

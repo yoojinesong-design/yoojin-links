@@ -300,6 +300,7 @@ export default function Home() {
           <div className="flex gap-4">
             <Link href="/demo" className="hover:text-neutral-400 transition">Demo</Link>
             <Link href="/persona-hub" className="hover:text-neutral-400 transition">PersonaHub</Link>
+            <Link href="/gage-doumi" className="hover:text-neutral-400 transition">가게도우미</Link>
           </div>
         </div>
       </footer>
