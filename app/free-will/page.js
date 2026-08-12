@@ -1,8 +1,8 @@
 'use client'
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 
-/* ── Lightweight confetti burst (no dependencies) ── */
-function fireConfetti() {
+/* ── Lightweight confetti burst (scales with tier) ── */
+function fireConfetti(tier = 1) {
   const canvas = document.createElement('canvas')
   canvas.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none;width:100%;height:100%'
   document.body.appendChild(canvas)
@@ -11,12 +11,16 @@ function fireConfetti() {
   const ctx = canvas.getContext('2d')
   ctx.scale(2, 2)
 
-  const colors = ['#a855f7', '#ec4899', '#f59e0b', '#8b5cf6', '#f43f5e', '#22d3ee', '#34d399']
-  const pieces = Array.from({ length: 60 }, () => ({
+  const count = tier === 3 ? 120 : tier === 2 ? 80 : 45
+  const colors = tier === 3
+    ? ['#f43f5e', '#ec4899', '#a855f7', '#8b5cf6', '#f59e0b', '#22d3ee', '#34d399', '#fbbf24']
+    : ['#a855f7', '#ec4899', '#f59e0b', '#8b5cf6', '#f43f5e', '#22d3ee', '#34d399']
+
+  const pieces = Array.from({ length: count }, () => ({
     x: window.innerWidth / 2 + (Math.random() - 0.5) * 200,
     y: window.innerHeight / 2,
-    vx: (Math.random() - 0.5) * 16,
-    vy: -Math.random() * 18 - 4,
+    vx: (Math.random() - 0.5) * (tier === 3 ? 24 : 16),
+    vy: -Math.random() * (tier === 3 ? 24 : 18) - 4,
     w: Math.random() * 8 + 4,
     h: Math.random() * 6 + 2,
     color: colors[Math.floor(Math.random() * colors.length)],
@@ -26,6 +30,7 @@ function fireConfetti() {
   }))
 
   let frame = 0
+  const maxFrames = tier === 3 ? 120 : 90
   const animate = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     let alive = false
@@ -41,16 +46,63 @@ function fireConfetti() {
         ctx.translate(p.x, p.y)
         ctx.rotate(p.rot)
         ctx.fillStyle = p.color
-        ctx.globalAlpha = Math.max(0, 1 - frame / 80)
+        ctx.globalAlpha = Math.max(0, 1 - frame / maxFrames)
         ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h)
         ctx.restore()
       }
     }
     frame++
-    if (alive && frame < 90) requestAnimationFrame(animate)
+    if (alive && frame < maxFrames) requestAnimationFrame(animate)
     else canvas.remove()
   }
   requestAnimationFrame(animate)
+}
+
+/* ── Sound effects (Web Audio API, zero dependencies) ── */
+let audioCtx = null
+function getAudioCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)() } catch { return null }
+  }
+  return audioCtx
+}
+
+function playTick(pitch = 800) {
+  const ctx = getAudioCtx()
+  if (!ctx) return
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+  osc.frequency.value = pitch
+  osc.type = 'sine'
+  gain.gain.value = 0.04
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06)
+  osc.start(ctx.currentTime)
+  osc.stop(ctx.currentTime + 0.06)
+}
+
+function playReveal(tier = 1) {
+  const ctx = getAudioCtx()
+  if (!ctx) return
+  const notes = tier === 3 ? [523, 659, 784, 1047] : tier === 2 ? [523, 659, 784] : [523, 659]
+  notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = freq
+    osc.type = 'sine'
+    gain.gain.value = 0.06
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15 * (i + 1) + 0.2)
+    osc.start(ctx.currentTime + 0.12 * i)
+    osc.stop(ctx.currentTime + 0.12 * i + 0.25)
+  })
+}
+
+/* ── Haptic feedback ── */
+function haptic(pattern) {
+  try { if (navigator.vibrate) navigator.vibrate(pattern) } catch { /* */ }
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -213,6 +265,12 @@ const FILTER_GROUPS = [
   },
 ]
 
+const TIER_FILTERS = [
+  { key: 1, label: '5 min', icon: '⚡' },
+  { key: 2, label: '1 hour', icon: '⏰' },
+  { key: 3, label: 'Epic', icon: '🌟' },
+]
+
 /* ── Vibe styling ── */
 const VIBE_META = {
   unhinged: {
@@ -267,8 +325,27 @@ const SPIN_WORDS = [
 
 const SLOT_EMOJIS = ['🎲', '✨', '🌟', '💫', '🎯', '🔮', '🎪', '🚀', '⚡', '🌈', '🦋', '🌀', '💥', '🫧', '🪄']
 
+/* ── Daily challenge seed ── */
+function getDailyChallenge() {
+  const today = new Date()
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate()
+  const idx = seed % CHALLENGES.length
+  return CHALLENGES[idx]
+}
+
+/* ── Streak milestone messages ── */
+const STREAK_MILESTONES = {
+  3: { msg: '3 days strong! 🔥', emoji: '🔥' },
+  7: { msg: 'One whole week of free will! 🌟', emoji: '🌟' },
+  14: { msg: 'Two weeks! You\'re unstoppable 💪', emoji: '💪' },
+  30: { msg: '30 DAYS. Legend status. 👑', emoji: '👑' },
+  50: { msg: '50 days?! This is your identity now 🫡', emoji: '🫡' },
+  100: { msg: '100 DAYS. You are free will personified 🏆', emoji: '🏆' },
+}
+
 export default function FreeWillUtilizer() {
   const [activeFilters, setActiveFilters] = useState(new Set())
+  const [tierFilter, setTierFilter] = useState(null)
   const [current, setCurrent] = useState(null)
   const [isSpinning, setIsSpinning] = useState(false)
   const [slotEmoji, setSlotEmoji] = useState('🎲')
@@ -278,10 +355,16 @@ export default function FreeWillUtilizer() {
   const [shakeCard, setShakeCard] = useState(false)
   const [totalSpins, setTotalSpins] = useState(0)
   const [accepted, setAccepted] = useState(0)
+  const [challengeAccepted, setChallengeAccepted] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const [streakMilestone, setStreakMilestone] = useState(null)
+  const [soundOn, setSoundOn] = useState(true)
   const spinRef = useRef(null)
 
   const [dayStreak, setDayStreak] = useState(0)
   const [lastDay, setLastDay] = useState(null)
+
+  const daily = useMemo(() => getDailyChallenge(), [])
 
   /* ── Load stats from localStorage ── */
   useEffect(() => {
@@ -291,22 +374,19 @@ export default function FreeWillUtilizer() {
       if (saved.accepted) setAccepted(saved.accepted)
       if (saved.streak) setDayStreak(saved.streak)
       if (saved.lastDay) setLastDay(saved.lastDay)
+      if (saved.soundOn === false) setSoundOn(false)
 
-      // Check if streak continues today
       const today = new Date().toDateString()
       if (saved.lastDay) {
         const last = new Date(saved.lastDay)
         const diff = Math.floor((new Date(today) - last) / 86400000)
-        if (diff > 1) {
-          // Streak broken — reset
-          setDayStreak(0)
-        }
+        if (diff > 1) setDayStreak(0)
       }
     } catch { /* */ }
   }, [])
 
   const saveStats = (spins, acc, streak, day) => {
-    try { localStorage.setItem('fwu-stats', JSON.stringify({ spins, accepted: acc, streak, lastDay: day })) } catch { /* */ }
+    try { localStorage.setItem('fwu-stats', JSON.stringify({ spins, accepted: acc, streak, lastDay: day, soundOn })) } catch { /* */ }
   }
 
   const toggleFilter = (key) => {
@@ -318,13 +398,20 @@ export default function FreeWillUtilizer() {
   }
 
   const getPool = useCallback(() => {
-    if (activeFilters.size === 0) return CHALLENGES
-    return CHALLENGES.filter((a) =>
-      [...activeFilters].every((f) => a.tags.includes(f))
-    )
-  }, [activeFilters])
+    let pool = CHALLENGES
+    if (activeFilters.size > 0) {
+      pool = pool.filter((a) =>
+        [...activeFilters].every((f) => a.tags.includes(f))
+      )
+    }
+    if (tierFilter) {
+      pool = pool.filter((a) => a.tier === tierFilter)
+    }
+    return pool
+  }, [activeFilters, tierFilter])
 
   const poolSize = getPool().length
+  const anyFilterActive = activeFilters.size > 0 || tierFilter !== null
 
   const spin = useCallback(() => {
     const pool = getPool()
@@ -335,14 +422,24 @@ export default function FreeWillUtilizer() {
     }
 
     setIsSpinning(true)
+    setChallengeAccepted(false)
     setSpinWord(SPIN_WORDS[Math.floor(Math.random() * SPIN_WORDS.length)])
 
+    // Decelerating slot animation
     let tick = 0
-    spinRef.current = setInterval(() => {
-      setSlotEmoji(SLOT_EMOJIS[Math.floor(Math.random() * SLOT_EMOJIS.length)])
-      tick++
-      if (tick > 14) clearInterval(spinRef.current)
-    }, 70)
+    const totalTicks = 18
+    const scheduleTick = () => {
+      if (tick >= totalTicks) return
+      const delay = 50 + tick * 12 + (tick > 12 ? (tick - 12) * 30 : 0) // deceleration curve
+      spinRef.current = setTimeout(() => {
+        setSlotEmoji(SLOT_EMOJIS[Math.floor(Math.random() * SLOT_EMOJIS.length)])
+        if (soundOn) playTick(600 + tick * 30)
+        haptic(20)
+        tick++
+        scheduleTick()
+      }, delay)
+    }
+    scheduleTick()
 
     setTimeout(() => {
       const pick = pool[Math.floor(Math.random() * pool.length)]
@@ -350,11 +447,13 @@ export default function FreeWillUtilizer() {
       setSlotEmoji(pick.emoji)
       setIsSpinning(false)
       setHistory((prev) => [pick, ...prev.filter((h) => h.text !== pick.text)].slice(0, 12))
-      fireConfetti()
+      fireConfetti(pick.tier)
+      if (soundOn) playReveal(pick.tier)
+      haptic(pick.tier === 3 ? [100, 50, 100, 50, 200] : pick.tier === 2 ? [60, 40, 100] : 80)
+
       const newSpins = totalSpins + 1
       setTotalSpins(newSpins)
 
-      // Update day streak
       const today = new Date().toDateString()
       let newStreak = dayStreak
       if (lastDay !== today) {
@@ -363,30 +462,40 @@ export default function FreeWillUtilizer() {
         newStreak = diff <= 1 ? dayStreak + 1 : 1
         setDayStreak(newStreak)
         setLastDay(today)
+
+        if (STREAK_MILESTONES[newStreak]) {
+          setStreakMilestone(STREAK_MILESTONES[newStreak])
+          setTimeout(() => setStreakMilestone(null), 3500)
+        }
       }
 
       saveStats(newSpins, accepted, newStreak, today)
-    }, 1200)
-  }, [getPool, totalSpins, accepted, dayStreak, lastDay])
+    }, 1600)
+  }, [getPool, totalSpins, accepted, dayStreak, lastDay, soundOn])
 
-  useEffect(() => () => { if (spinRef.current) clearInterval(spinRef.current) }, [])
+  useEffect(() => () => { if (spinRef.current) clearTimeout(spinRef.current) }, [])
 
   const acceptChallenge = () => {
+    if (challengeAccepted) return
+    setChallengeAccepted(true)
     const newAcc = accepted + 1
     setAccepted(newAcc)
     saveStats(totalSpins, newAcc, dayStreak, lastDay)
+    if (soundOn) playReveal(1)
+    haptic(60)
   }
 
   const vibe = current ? VIBE_META[current.vibe] : null
   const tier = current ? TIER_META[current.tier] : null
 
-  /* ── Share text — uses the actual meme format ── */
+  /* ── Share text — meme format with hashtag + link ── */
   const dayLabel = dayStreak > 0 ? `Day ${dayStreak} of using my free will:` : 'When I remembered I have free will:'
   const shareText = current
-    ? `${dayLabel}\n\n${current.text}\n\namazing use of free will ✦`
+    ? `${dayLabel}\n\n${current.text}\n\namazing use of free will ✦\n#amazinguseoffreewill`
     : ''
 
   const tweetUrl = () => `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`
+  const whatsappUrl = () => `https://wa.me/?text=${encodeURIComponent(shareText)}`
 
   const copyText = async () => {
     try {
@@ -406,39 +515,32 @@ export default function FreeWillUtilizer() {
     c.width = W; c.height = H
     const ctx = c.getContext('2d')
 
-    // Background gradient
     const bg = ctx.createLinearGradient(0, 0, W, H)
     bg.addColorStop(0, v.canvasBg[0]); bg.addColorStop(1, v.canvasBg[1])
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H)
 
-    // Subtle grid pattern
     ctx.strokeStyle = 'rgba(255,255,255,0.015)'
     ctx.lineWidth = 1
     for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke() }
     for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke() }
 
-    // Large glow circle
     const grd = ctx.createRadialGradient(W / 2, H * 0.36, 0, W / 2, H * 0.36, 420)
     grd.addColorStop(0, v.glow); grd.addColorStop(0.6, v.glow.replace('0.35', '0.08')); grd.addColorStop(1, 'transparent')
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H)
 
-    // Top label — uses the meme format
     ctx.fillStyle = 'rgba(255,255,255,0.3)'
     ctx.font = '500 18px -apple-system, system-ui, sans-serif'
     ctx.textAlign = 'center'
     ctx.fillText('✦  FREE WILL UTILIZER  ✦', W / 2, 70)
 
-    // Day streak label
     ctx.fillStyle = 'rgba(255,255,255,0.5)'
     ctx.font = '400 26px -apple-system, system-ui, sans-serif'
     const dayText = dayStreak > 0 ? `Day ${dayStreak} of using my free will` : 'When I remembered I have free will'
     ctx.fillText(dayText, W / 2, 120)
 
-    // Emoji
     ctx.font = '140px serif'
     ctx.fillText(current.emoji, W / 2, H * 0.3 + 20)
 
-    // Activity text — word wrap
     ctx.fillStyle = '#f5f5f5'
     ctx.font = 'bold 44px -apple-system, system-ui, sans-serif'
     const words = current.text.split(' ')
@@ -453,24 +555,20 @@ export default function FreeWillUtilizer() {
     const textY = H * 0.43
     lines.forEach((l, i) => ctx.fillText(l, W / 2, textY + i * lineH))
 
-    // Vibe + tier badges
     const badgeY = textY + lines.length * lineH + 45
     ctx.fillStyle = 'rgba(255,255,255,0.4)'
     ctx.font = '500 24px -apple-system, system-ui, sans-serif'
     ctx.fillText(`${v.badge}  ·  ${t.label}`, W / 2, badgeY)
 
-    // Divider
     const divY = H * 0.74
     ctx.strokeStyle = 'rgba(255,255,255,0.08)'
     ctx.lineWidth = 1
     ctx.beginPath(); ctx.moveTo(W * 0.15, divY); ctx.lineTo(W * 0.85, divY); ctx.stroke()
 
-    // "amazing use of free will"
     ctx.fillStyle = '#e5e5e5'
     ctx.font = 'italic 36px Georgia, "Times New Roman", serif'
     ctx.fillText('"amazing use of free will"', W / 2, divY + 65)
 
-    // Accent line at bottom
     const accentGrd = ctx.createLinearGradient(W * 0.2, 0, W * 0.8, 0)
     accentGrd.addColorStop(0, 'transparent')
     accentGrd.addColorStop(0.5, v.canvasAccent)
@@ -479,17 +577,19 @@ export default function FreeWillUtilizer() {
     ctx.lineWidth = 2
     ctx.beginPath(); ctx.moveTo(W * 0.2, H - 110); ctx.lineTo(W * 0.8, H - 110); ctx.stroke()
 
-    // Footer
-    ctx.fillStyle = 'rgba(255,255,255,0.2)'
+    ctx.fillStyle = 'rgba(255,255,255,0.25)'
     ctx.font = '400 20px -apple-system, system-ui, sans-serif'
-    ctx.fillText('freewillutilizer.com', W / 2, H - 65)
+    ctx.fillText('#amazinguseoffreewill', W / 2, H - 65)
 
-    // Download
     const link = document.createElement('a')
     link.download = 'amazing-use-of-free-will.png'
     link.href = c.toDataURL('image/png')
     link.click()
   }, [current, dayStreak])
+
+  /* ── Daily challenge vibe meta ── */
+  const dailyVibe = VIBE_META[daily.vibe]
+  const dailyTier = TIER_META[daily.tier]
 
   return (
     <div className="min-h-screen bg-[#08080d] text-neutral-100 overflow-x-hidden selection:bg-purple-500/30">
@@ -498,18 +598,24 @@ export default function FreeWillUtilizer() {
         <div className="absolute -top-48 -left-48 w-[500px] h-[500px] bg-purple-600/[0.05] rounded-full blur-[120px]" />
         <div className="absolute top-1/2 -right-32 w-96 h-96 bg-rose-600/[0.04] rounded-full blur-[120px]" />
         <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-amber-600/[0.03] rounded-full blur-[120px]" />
-        {/* Subtle grid */}
         <div className="absolute inset-0 opacity-[0.015]" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
           backgroundSize: '60px 60px'
         }} />
       </div>
 
+      {/* Streak milestone toast */}
+      {streakMilestone && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-purple-600/90 backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl border border-purple-400/30" style={{ animation: 'card-reveal 0.4s ease' }}>
+          <p className="text-base font-bold text-white text-center">{streakMilestone.emoji} {streakMilestone.msg}</p>
+        </div>
+      )}
+
       <div className="relative z-10 max-w-xl mx-auto px-5">
 
         {/* ── Header ── */}
-        <header className="pt-10 pb-6 text-center">
-          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-neutral-700 mb-4">
+        <header className="pt-10 pb-5 text-center">
+          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-neutral-600 mb-4">
             ✦ you have free will ✦ might as well use it ✦
           </p>
           <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-[1.05] mb-3">
@@ -519,17 +625,14 @@ export default function FreeWillUtilizer() {
             <br />
             <span className="text-neutral-300 text-4xl sm:text-5xl font-extrabold">Utilizer</span>
           </h1>
-          <p className="text-[13px] text-neutral-600 max-w-xs mx-auto leading-relaxed">
-            Wildly creative things you can actually do.
-          </p>
-          <p className="text-[13px] text-neutral-500 mt-1 italic">
-            The kind where people comment <span className="text-neutral-300">&quot;amazing use of free will&quot;</span>
+          <p className="text-sm text-neutral-400 max-w-xs mx-auto leading-relaxed">
+            The kind where people comment <span className="text-neutral-200 font-medium">&quot;amazing use of free will&quot;</span>
           </p>
         </header>
 
         {/* ── Stats bar ── */}
         {totalSpins > 0 && (
-          <div className="flex items-center justify-center gap-4 sm:gap-6 mb-6 text-[11px] text-neutral-700 flex-wrap">
+          <div className="flex items-center justify-center gap-4 sm:gap-6 mb-5 text-[11px] text-neutral-500 flex-wrap">
             {dayStreak > 0 && (
               <>
                 <span className="text-purple-400 font-semibold">🔥 Day {dayStreak}</span>
@@ -544,54 +647,112 @@ export default function FreeWillUtilizer() {
           </div>
         )}
 
-        {/* ── Filters ── */}
-        <section className="mb-7">
-          <div className="bg-white/[0.025] border border-white/[0.05] rounded-2xl p-4 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-neutral-700">Dial it in</span>
-              {activeFilters.size > 0 && (
-                <button onClick={() => setActiveFilters(new Set())} className="text-[10px] text-neutral-700 hover:text-neutral-400 transition">
+        {/* ── Daily Challenge ── */}
+        {!current && !isSpinning && (
+          <section className="mb-5" style={{ animation: 'card-reveal 0.5s ease' }}>
+            <button
+              onClick={() => { setCurrent(daily); fireConfetti(daily.tier); if (soundOn) playReveal(daily.tier) }}
+              className={`w-full bg-gradient-to-r ${dailyVibe.bg} border ${dailyVibe.border} rounded-2xl p-4 text-left hover:scale-[1.01] transition-all active:scale-[0.99]`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{daily.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-purple-400">Today&apos;s Challenge</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${dailyTier.border} ${dailyTier.color} bg-black/30`}>{dailyTier.label}</span>
+                  </div>
+                  <p className="text-sm text-neutral-300 leading-snug truncate">{daily.text}</p>
+                </div>
+                <span className="text-neutral-600 text-lg">→</span>
+              </div>
+            </button>
+          </section>
+        )}
+
+        {/* ── Filters (collapsible) ── */}
+        <section className="mb-5">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-white/[0.025] border border-white/[0.05] rounded-xl text-xs text-neutral-500 hover:bg-white/[0.04] transition-all"
+          >
+            <span className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-neutral-500">
+                {anyFilterActive ? `Filtered — ${poolSize} challenges` : 'Dial it in'}
+              </span>
+              {anyFilterActive && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setActiveFilters(new Set()); setTierFilter(null) }}
+                  className="text-[10px] text-neutral-600 hover:text-neutral-300 underline ml-1"
+                >
                   Clear
                 </button>
               )}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {FILTER_GROUPS.map((g) => (
-                <div key={g.label} className="space-y-1.5">
-                  <div className="text-[10px] font-medium text-neutral-700 pl-0.5">{g.label}</div>
-                  {g.options.map((o) => {
-                    const on = activeFilters.has(o.key)
-                    return (
-                      <button
-                        key={o.key}
-                        onClick={() => toggleFilter(o.key)}
-                        className={`w-full flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
-                          on
-                            ? 'bg-purple-500/15 border border-purple-400/25 text-purple-300'
-                            : 'bg-white/[0.025] border border-white/[0.05] text-neutral-500 hover:bg-white/[0.05] hover:text-neutral-300'
-                        }`}
-                      >
-                        <span className="text-sm">{o.icon}</span>
-                        <span>{o.label}</span>
-                      </button>
-                    )
-                  })}
+            </span>
+            <span className={`text-neutral-600 transition-transform ${showFilters ? 'rotate-180' : ''}`}>▾</span>
+          </button>
+
+          {showFilters && (
+            <div className="mt-2 bg-white/[0.025] border border-white/[0.05] rounded-2xl p-4 backdrop-blur-sm" style={{ animation: 'card-reveal 0.3s ease' }}>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                {FILTER_GROUPS.map((g) => (
+                  <div key={g.label} className="space-y-1.5">
+                    <div className="text-[10px] font-medium text-neutral-500 pl-0.5">{g.label}</div>
+                    {g.options.map((o) => {
+                      const on = activeFilters.has(o.key)
+                      return (
+                        <button
+                          key={o.key}
+                          onClick={() => toggleFilter(o.key)}
+                          className={`w-full flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
+                            on
+                              ? 'bg-purple-500/15 border border-purple-400/25 text-purple-300 scale-[1.02]'
+                              : 'bg-white/[0.025] border border-white/[0.05] text-neutral-500 hover:bg-white/[0.05] hover:text-neutral-300'
+                          }`}
+                        >
+                          <span className="text-sm">{o.icon}</span>
+                          <span>{o.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+
+              {/* Tier filter */}
+              <div className="border-t border-white/[0.04] pt-3">
+                <div className="text-[10px] font-medium text-neutral-500 pl-0.5 mb-1.5">Commitment</div>
+                <div className="flex gap-2">
+                  {TIER_FILTERS.map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => setTierFilter(tierFilter === t.key ? null : t.key)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
+                        tierFilter === t.key
+                          ? 'bg-purple-500/15 border border-purple-400/25 text-purple-300'
+                          : 'bg-white/[0.025] border border-white/[0.05] text-neutral-500 hover:bg-white/[0.05]'
+                      }`}
+                    >
+                      <span>{t.icon}</span> <span>{t.label}</span>
+                    </button>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <p className="mt-3 text-center text-[10px] text-neutral-600">
+                {poolSize} challenge{poolSize !== 1 ? 's' : ''} loaded
+              </p>
             </div>
-            <p className="mt-2.5 text-center text-[10px] text-neutral-700">
-              {poolSize} challenge{poolSize !== 1 ? 's' : ''} loaded
-            </p>
-          </div>
+          )}
         </section>
 
-        {/* ── Main card ── */}
+        {/* ── Main card (clickable to spin when empty) ── */}
         <section className="mb-5">
           <div
-            className={`relative rounded-3xl border min-h-[300px] sm:min-h-[340px] flex flex-col items-center justify-center p-7 sm:p-10 text-center transition-all duration-700 ${
+            onClick={!current && !isSpinning ? spin : undefined}
+            className={`relative rounded-3xl border min-h-[280px] sm:min-h-[340px] flex flex-col items-center justify-center p-7 sm:p-10 text-center transition-all duration-700 ${
               current && !isSpinning
                 ? `bg-gradient-to-br ${vibe.bg} ${vibe.border}`
-                : 'bg-white/[0.015] border-white/[0.05]'
+                : `bg-white/[0.015] border-white/[0.05] ${!current && !isSpinning ? 'cursor-pointer hover:bg-white/[0.03] hover:border-white/[0.08]' : ''}`
             }`}
             style={{
               animation: shakeCard ? 'shake 0.6s ease' : isSpinning ? 'pulse-glow 0.35s ease infinite alternate' : 'none',
@@ -606,7 +767,7 @@ export default function FreeWillUtilizer() {
                     <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-400/60" style={{ animation: `dot-bounce 0.5s ease ${i * 0.1}s infinite alternate` }} />
                   ))}
                 </div>
-                <p className="text-xs text-neutral-600 italic">{spinWord}</p>
+                <p className="text-xs text-neutral-500 italic">{spinWord}</p>
               </div>
             ) : current ? (
               <div className="flex flex-col items-center gap-4" style={{ animation: 'card-reveal 0.6s cubic-bezier(0.16,1,0.3,1)' }}>
@@ -622,28 +783,50 @@ export default function FreeWillUtilizer() {
                     {tier.label}
                   </span>
                 </div>
+                {/* Inline share buttons — at peak excitement */}
+                <div className="flex items-center gap-2 mt-2">
+                  <a href={tweetUrl()} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] transition-all" title="Post to X">
+                    <svg className="w-3.5 h-3.5 text-neutral-400" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </a>
+                  <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] transition-all" title="WhatsApp">
+                    <svg className="w-3.5 h-3.5 text-neutral-400" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  </a>
+                  <button onClick={copyText} className="p-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] transition-all" title="Copy">
+                    <span className="text-sm">{copied ? '✅' : '📋'}</span>
+                  </button>
+                  <button onClick={downloadShareCard} className="p-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] transition-all" title="Download story card">
+                    <span className="text-sm">📸</span>
+                  </button>
+                  <button
+                    onClick={() => { if (typeof navigator !== 'undefined' && navigator.share) navigator.share({ text: shareText }).catch(() => {}) }}
+                    className="p-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] transition-all sm:hidden"
+                    title="Share"
+                  >
+                    <span className="text-sm">📤</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3">
-                <div className="text-6xl opacity-[0.15]" style={{ animation: 'float 3s ease-in-out infinite' }}>🎲</div>
-                <p className="text-sm text-neutral-600">Your next amazing use of free will</p>
-                <p className="text-[11px] text-neutral-800">is one tap away ↓</p>
+                <div className="text-7xl" style={{ animation: 'float 3s ease-in-out infinite' }}>🎲</div>
+                <p className="text-base text-neutral-400 font-medium">Tap to use your free will</p>
+                <p className="text-xs text-neutral-600">From {poolSize} wildly creative challenges</p>
               </div>
             )}
           </div>
         </section>
 
         {/* ── Action buttons ── */}
-        <div className="flex flex-col items-center gap-3 mb-7">
+        <div className="flex flex-col items-center gap-3 mb-6">
           {/* Spin button */}
           <button
             onClick={spin}
             disabled={isSpinning}
-            className={`relative px-10 py-4 rounded-2xl font-bold text-base transition-all duration-300 ${
+            className={`relative w-full sm:w-auto px-10 py-4 rounded-2xl font-bold text-base transition-all duration-300 ${
               isSpinning
-                ? 'bg-neutral-900 text-neutral-700 cursor-wait'
+                ? 'bg-neutral-900 text-neutral-600 cursor-wait'
                 : poolSize === 0
-                ? 'bg-neutral-900 text-neutral-700 cursor-not-allowed'
+                ? 'bg-neutral-900 text-neutral-600 cursor-not-allowed'
                 : 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-[length:200%_100%] text-white shadow-[0_4px_30px_rgba(168,85,247,0.25)] hover:shadow-[0_4px_40px_rgba(168,85,247,0.4)] hover:scale-[1.03] active:scale-[0.97]'
             }`}
             style={!isSpinning && poolSize > 0 ? { animation: 'shimmer 3s ease infinite' } : {}}
@@ -661,75 +844,43 @@ export default function FreeWillUtilizer() {
           {current && !isSpinning && (
             <button
               onClick={acceptChallenge}
-              className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-white/[0.06] border border-white/[0.1] text-neutral-300 hover:bg-white/[0.1] hover:text-white transition-all active:scale-[0.97]"
+              className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.97] ${
+                challengeAccepted
+                  ? 'bg-green-500/15 border border-green-400/25 text-green-400'
+                  : 'bg-white/[0.06] border border-white/[0.1] text-neutral-300 hover:bg-white/[0.1] hover:text-white'
+              }`}
               style={{ animation: 'card-reveal 0.3s ease' }}
             >
-              ✅ Challenge Accepted
+              {challengeAccepted ? '✅ Challenge Accepted!' : '🤝 Accept This Challenge'}
             </button>
           )}
+
+          {/* Sound toggle */}
+          <button
+            onClick={() => { setSoundOn(!soundOn); try { localStorage.setItem('fwu-stats', JSON.stringify({ spins: totalSpins, accepted, streak: dayStreak, lastDay, soundOn: !soundOn })) } catch { /* */ } }}
+            className="text-[10px] text-neutral-700 hover:text-neutral-400 transition"
+          >
+            {soundOn ? '🔊 Sound on' : '🔇 Sound off'}
+          </button>
         </div>
 
-        {/* ── Share section ── */}
+        {/* ── Share section (expanded view) ── */}
         {current && !isSpinning && (
-          <section className="mb-8" style={{ animation: 'card-reveal 0.4s ease' }}>
-            <div className="bg-white/[0.02] border border-white/[0.04] rounded-2xl p-5">
-              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-neutral-700 mb-4 text-center">
-                Share it. Do it. Let them comment.
+          <section className="mb-7" style={{ animation: 'card-reveal 0.4s ease' }}>
+            {/* Screenshot-friendly preview card */}
+            <div className="bg-[#0c0c14] border border-white/[0.06] rounded-xl p-6 text-center">
+              <p className="text-xs text-neutral-400 mb-2">
+                {dayStreak > 0 ? `Day ${dayStreak} of using my free will:` : 'When I remembered I have free will:'}
               </p>
-
-              <div className="flex flex-wrap gap-2 justify-center mb-4">
-                <a
-                  href={tweetUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-sm font-medium text-neutral-400 hover:bg-white/[0.07] hover:text-white transition-all"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                  Post
-                </a>
-
-                <button
-                  onClick={downloadShareCard}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-sm font-medium text-neutral-400 hover:bg-white/[0.07] hover:text-white transition-all"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1.5"/></svg>
-                  Story Card
-                </button>
-
-                <button
-                  onClick={copyText}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-sm font-medium text-neutral-400 hover:bg-white/[0.07] hover:text-white transition-all"
-                >
-                  {copied ? '✅ Copied!' : '📋 Copy'}
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (typeof navigator !== 'undefined' && navigator.share) {
-                      navigator.share({ text: shareText }).catch(() => {})
-                    }
-                  }}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-sm font-medium text-neutral-400 hover:bg-white/[0.07] hover:text-white transition-all sm:hidden"
-                >
-                  📤 Share
-                </button>
+              <p className="text-[15px] text-neutral-200 font-semibold leading-relaxed mb-3">
+                {current.text}
+              </p>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-[10px] text-neutral-500">{vibe.badge}</span>
+                <span className="text-neutral-700">·</span>
+                <span className={`text-[10px] ${tier.color}`}>{tier.label}</span>
               </div>
-
-              {/* Screenshot-friendly preview — uses the actual meme format */}
-              <div className="bg-[#0c0c14] border border-white/[0.06] rounded-xl p-6 text-center">
-                <p className="text-xs text-neutral-500 mb-2">
-                  {dayStreak > 0 ? `Day ${dayStreak} of using my free will:` : 'When I remembered I have free will:'}
-                </p>
-                <p className="text-[15px] text-neutral-200 font-semibold leading-relaxed mb-3">
-                  {current.text}
-                </p>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-[10px] text-neutral-500">{vibe.badge}</span>
-                  <span className="text-neutral-800">·</span>
-                  <span className={`text-[10px] ${tier.color}`}>{tier.label}</span>
-                </div>
-                <p className="text-[11px] text-neutral-600 italic">amazing use of free will ✦</p>
-              </div>
+              <p className="text-[11px] text-neutral-500 italic">amazing use of free will ✦</p>
             </div>
           </section>
         )}
@@ -737,20 +888,20 @@ export default function FreeWillUtilizer() {
         {/* ── History ── */}
         {history.length > 1 && (
           <section className="mb-10">
-            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-neutral-700 mb-3">
+            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-neutral-600 mb-3">
               Free will log
             </p>
             <div className="space-y-1.5">
               {history.slice(1).map((item, i) => (
                 <button
                   key={item.text}
-                  onClick={() => { setCurrent(item) }}
-                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/[0.015] border border-white/[0.03] text-sm text-neutral-600 text-left hover:bg-white/[0.04] transition-colors"
+                  onClick={() => { setCurrent(item); setChallengeAccepted(false) }}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/[0.015] border border-white/[0.03] text-sm text-neutral-500 text-left hover:bg-white/[0.04] transition-colors"
                   style={{ opacity: 1 - i * 0.06 }}
                 >
                   <span className="text-base flex-shrink-0">{item.emoji}</span>
                   <span className="truncate flex-1">{item.text}</span>
-                  <span className="text-[10px] flex-shrink-0 text-neutral-800">{VIBE_META[item.vibe].badge.split(' ')[0]}</span>
+                  <span className="text-[10px] flex-shrink-0 text-neutral-700">{VIBE_META[item.vibe].badge.split(' ')[0]}</span>
                 </button>
               ))}
             </div>
@@ -759,10 +910,10 @@ export default function FreeWillUtilizer() {
 
         {/* ── Footer ── */}
         <footer className="pb-14 text-center border-t border-white/[0.03] pt-8">
-          <p className="text-[11px] text-neutral-800 leading-relaxed max-w-xs mx-auto mb-2">
+          <p className="text-[11px] text-neutral-600 leading-relaxed max-w-xs mx-auto mb-2">
             ~2.5 billion seconds in a life. You just used one to decide how to spend the next few thousand.
           </p>
-          <p className="text-[10px] text-neutral-900">
+          <p className="text-[10px] text-neutral-700">
             ✦ built with free will ✦
           </p>
         </footer>
