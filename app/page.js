@@ -299,6 +299,7 @@ export default function Home() {
           <span>DetailBook — Built for solo detailers, by someone who gets it.</span>
           <div className="flex gap-4">
             <Link href="/demo" className="hover:text-neutral-400 transition">Demo</Link>
+            <Link href="/free-will" className="hover:text-neutral-400 transition">Free Will</Link>
             <Link href="/persona-hub" className="hover:text-neutral-400 transition">PersonaHub</Link>
             <Link href="/gage-doumi" className="hover:text-neutral-400 transition">가게도우미</Link>
           </div>
