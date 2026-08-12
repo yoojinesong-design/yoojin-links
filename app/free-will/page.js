@@ -1,6 +1,58 @@
 'use client'
 import { useState, useCallback, useEffect, useRef } from 'react'
 
+/* ── Lightweight confetti burst (no dependencies) ── */
+function fireConfetti() {
+  const canvas = document.createElement('canvas')
+  canvas.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none;width:100%;height:100%'
+  document.body.appendChild(canvas)
+  canvas.width = window.innerWidth * 2
+  canvas.height = window.innerHeight * 2
+  const ctx = canvas.getContext('2d')
+  ctx.scale(2, 2)
+
+  const colors = ['#a855f7', '#ec4899', '#f59e0b', '#8b5cf6', '#f43f5e', '#22d3ee', '#34d399']
+  const pieces = Array.from({ length: 60 }, () => ({
+    x: window.innerWidth / 2 + (Math.random() - 0.5) * 200,
+    y: window.innerHeight / 2,
+    vx: (Math.random() - 0.5) * 16,
+    vy: -Math.random() * 18 - 4,
+    w: Math.random() * 8 + 4,
+    h: Math.random() * 6 + 2,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    rot: Math.random() * Math.PI * 2,
+    rv: (Math.random() - 0.5) * 0.3,
+    gravity: 0.4 + Math.random() * 0.2,
+  }))
+
+  let frame = 0
+  const animate = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    let alive = false
+    for (const p of pieces) {
+      p.x += p.vx
+      p.vy += p.gravity
+      p.y += p.vy
+      p.rot += p.rv
+      p.vx *= 0.98
+      if (p.y < window.innerHeight + 50) {
+        alive = true
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate(p.rot)
+        ctx.fillStyle = p.color
+        ctx.globalAlpha = Math.max(0, 1 - frame / 80)
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h)
+        ctx.restore()
+      }
+    }
+    frame++
+    if (alive && frame < 90) requestAnimationFrame(animate)
+    else canvas.remove()
+  }
+  requestAnimationFrame(animate)
+}
+
 /* ─────────────────────────────────────────────────────────────
    FREE WILL UTILIZER
 
@@ -206,17 +258,33 @@ export default function FreeWillUtilizer() {
   const [accepted, setAccepted] = useState(0)
   const spinRef = useRef(null)
 
+  const [dayStreak, setDayStreak] = useState(0)
+  const [lastDay, setLastDay] = useState(null)
+
   /* ── Load stats from localStorage ── */
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('fwu-stats') || '{}')
       if (saved.spins) setTotalSpins(saved.spins)
       if (saved.accepted) setAccepted(saved.accepted)
+      if (saved.streak) setDayStreak(saved.streak)
+      if (saved.lastDay) setLastDay(saved.lastDay)
+
+      // Check if streak continues today
+      const today = new Date().toDateString()
+      if (saved.lastDay) {
+        const last = new Date(saved.lastDay)
+        const diff = Math.floor((new Date(today) - last) / 86400000)
+        if (diff > 1) {
+          // Streak broken — reset
+          setDayStreak(0)
+        }
+      }
     } catch { /* */ }
   }, [])
 
-  const saveStats = (spins, acc) => {
-    try { localStorage.setItem('fwu-stats', JSON.stringify({ spins, accepted: acc })) } catch { /* */ }
+  const saveStats = (spins, acc, streak, day) => {
+    try { localStorage.setItem('fwu-stats', JSON.stringify({ spins, accepted: acc, streak, lastDay: day })) } catch { /* */ }
   }
 
   const toggleFilter = (key) => {
@@ -260,26 +328,40 @@ export default function FreeWillUtilizer() {
       setSlotEmoji(pick.emoji)
       setIsSpinning(false)
       setHistory((prev) => [pick, ...prev.filter((h) => h.text !== pick.text)].slice(0, 12))
+      fireConfetti()
       const newSpins = totalSpins + 1
       setTotalSpins(newSpins)
-      saveStats(newSpins, accepted)
+
+      // Update day streak
+      const today = new Date().toDateString()
+      let newStreak = dayStreak
+      if (lastDay !== today) {
+        const last = lastDay ? new Date(lastDay) : null
+        const diff = last ? Math.floor((new Date(today) - last) / 86400000) : 999
+        newStreak = diff <= 1 ? dayStreak + 1 : 1
+        setDayStreak(newStreak)
+        setLastDay(today)
+      }
+
+      saveStats(newSpins, accepted, newStreak, today)
     }, 1200)
-  }, [getPool, totalSpins, accepted])
+  }, [getPool, totalSpins, accepted, dayStreak, lastDay])
 
   useEffect(() => () => { if (spinRef.current) clearInterval(spinRef.current) }, [])
 
   const acceptChallenge = () => {
     const newAcc = accepted + 1
     setAccepted(newAcc)
-    saveStats(totalSpins, newAcc)
+    saveStats(totalSpins, newAcc, dayStreak, lastDay)
   }
 
   const vibe = current ? VIBE_META[current.vibe] : null
   const tier = current ? TIER_META[current.tier] : null
 
-  /* ── Share text ── */
+  /* ── Share text — uses the actual meme format ── */
+  const dayLabel = dayStreak > 0 ? `Day ${dayStreak} of using my free will:` : 'When I remembered I have free will:'
   const shareText = current
-    ? `"${current.text}"\n\namazing use of free will ✦`
+    ? `${dayLabel}\n\n${current.text}\n\namazing use of free will ✦`
     : ''
 
   const tweetUrl = () => `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`
@@ -318,12 +400,17 @@ export default function FreeWillUtilizer() {
     grd.addColorStop(0, v.glow); grd.addColorStop(0.6, v.glow.replace('0.35', '0.08')); grd.addColorStop(1, 'transparent')
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H)
 
-    // Top label
+    // Top label — uses the meme format
     ctx.fillStyle = 'rgba(255,255,255,0.3)'
     ctx.font = '500 18px -apple-system, system-ui, sans-serif'
     ctx.textAlign = 'center'
-    ctx.letterSpacing = '6px'
-    ctx.fillText('✦  FREE WILL UTILIZER  ✦', W / 2, 80)
+    ctx.fillText('✦  FREE WILL UTILIZER  ✦', W / 2, 70)
+
+    // Day streak label
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'
+    ctx.font = '400 26px -apple-system, system-ui, sans-serif'
+    const dayText = dayStreak > 0 ? `Day ${dayStreak} of using my free will` : 'When I remembered I have free will'
+    ctx.fillText(dayText, W / 2, 120)
 
     // Emoji
     ctx.font = '140px serif'
@@ -380,7 +467,7 @@ export default function FreeWillUtilizer() {
     link.download = 'amazing-use-of-free-will.png'
     link.href = c.toDataURL('image/png')
     link.click()
-  }, [current])
+  }, [current, dayStreak])
 
   return (
     <div className="min-h-screen bg-[#08080d] text-neutral-100 overflow-x-hidden selection:bg-purple-500/30">
@@ -420,7 +507,13 @@ export default function FreeWillUtilizer() {
 
         {/* ── Stats bar ── */}
         {totalSpins > 0 && (
-          <div className="flex items-center justify-center gap-6 mb-6 text-[11px] text-neutral-700">
+          <div className="flex items-center justify-center gap-4 sm:gap-6 mb-6 text-[11px] text-neutral-700 flex-wrap">
+            {dayStreak > 0 && (
+              <>
+                <span className="text-purple-400 font-semibold">🔥 Day {dayStreak}</span>
+                <span className="w-px h-3 bg-neutral-800" />
+              </>
+            )}
             <span>🎲 {totalSpins} spin{totalSpins !== 1 ? 's' : ''}</span>
             <span className="w-px h-3 bg-neutral-800" />
             <span>✅ {accepted} accepted</span>
@@ -600,18 +693,20 @@ export default function FreeWillUtilizer() {
                 </button>
               </div>
 
-              {/* Screenshot-friendly preview — designed to look good as a crop */}
+              {/* Screenshot-friendly preview — uses the actual meme format */}
               <div className="bg-[#0c0c14] border border-white/[0.06] rounded-xl p-6 text-center">
-                <p className="text-[10px] tracking-[0.15em] uppercase text-neutral-700 mb-3">✦ free will utilizer ✦</p>
-                <p className="text-base text-neutral-200 font-semibold leading-relaxed mb-3">
-                  &quot;{current.text}&quot;
+                <p className="text-xs text-neutral-500 mb-2">
+                  {dayStreak > 0 ? `Day ${dayStreak} of using my free will:` : 'When I remembered I have free will:'}
                 </p>
-                <div className="flex items-center justify-center gap-2 mb-3">
+                <p className="text-[15px] text-neutral-200 font-semibold leading-relaxed mb-3">
+                  {current.text}
+                </p>
+                <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-[10px] text-neutral-500">{vibe.badge}</span>
                   <span className="text-neutral-800">·</span>
                   <span className={`text-[10px] ${tier.color}`}>{tier.label}</span>
                 </div>
-                <p className="text-xs text-neutral-500 italic">amazing use of free will ✦</p>
+                <p className="text-[11px] text-neutral-600 italic">amazing use of free will ✦</p>
               </div>
             </div>
           </section>
