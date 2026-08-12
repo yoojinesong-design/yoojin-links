@@ -157,6 +157,28 @@ const CHALLENGES = [
   { text: 'Buy a notebook that costs more than you\'d normally spend. Only write important things in it.', tags: ['solo', 'paid', 'indoor'], emoji: '📓', vibe: 'genius', tier: 1 },
   { text: 'Go to a thrift store. Buy the weirdest mug. It\'s your personality now. No returns.', tags: ['solo', 'paid', 'outdoor'], emoji: '🍵', vibe: 'unhinged', tier: 1 },
   { text: 'Take the scenic route to somewhere boring. See if the journey redeems the destination.', tags: ['solo', 'free', 'outdoor'], emoji: '🛤️', vibe: 'wholesome', tier: 1 },
+
+  // ── PURE AUDACITY ── the ones that make people say "amazing use of free will"
+  { text: 'Send a thank you card to a Wikipedia editor. They won\'t know who you are. That\'s the point.', tags: ['solo', 'free', 'indoor'], emoji: '📬', vibe: 'genius', tier: 2 },
+  { text: 'Learn to fold one origami animal perfectly. Leave it on a stranger\'s car. No note.', tags: ['solo', 'free', 'outdoor'], emoji: '🦢', vibe: 'genius', tier: 1 },
+  { text: 'Go to a park with a sign that says "Free Compliments." Actually follow through.', tags: ['solo', 'free', 'outdoor'], emoji: '🪧', vibe: 'wholesome', tier: 2 },
+  { text: 'Narrate your commute as a TED Talk about the human condition. Record it. Don\'t post it. Post it.', tags: ['solo', 'free', 'outdoor'], emoji: '🎤', vibe: 'unhinged', tier: 2 },
+  { text: 'Go to a coffee shop. Write a short story in one sitting. Leave it folded on the table when you go.', tags: ['solo', 'paid', 'outdoor'], emoji: '✍️', vibe: 'genius', tier: 2 },
+  { text: 'Set an alarm for 3am. Watch the sunrise. Make it the most intentional thing you do this month.', tags: ['solo', 'free', 'outdoor'], emoji: '🌅', vibe: 'genius', tier: 2 },
+  { text: 'Send a voice memo to your best friend that\'s just you listing every reason they matter. No warning.', tags: ['solo', 'free', 'indoor'], emoji: '🎧', vibe: 'wholesome', tier: 1 },
+  { text: 'Make a zine about something hyper-specific you care about. Staple 10 copies. Distribute them.', tags: ['solo', 'paid', 'indoor'], emoji: '📰', vibe: 'genius', tier: 3 },
+  { text: 'Walk into a florist. Ask which flower best represents Tuesday. Buy it. Tell no one why.', tags: ['solo', 'paid', 'outdoor'], emoji: '🌸', vibe: 'unhinged', tier: 1 },
+  { text: 'Text everyone in your recent contacts a memory you have with them. No context. Just the memory.', tags: ['solo', 'free', 'indoor'], emoji: '💭', vibe: 'wholesome', tier: 2 },
+  { text: 'Go to a farmer\'s market. Buy exactly one of the strangest thing there. Cook dinner around it.', tags: ['solo', 'paid', 'outdoor'], emoji: '🥬', vibe: 'genius', tier: 1 },
+  { text: 'Wear something you\'ve been saving "for a special occasion." Today is the occasion. You decided.', tags: ['solo', 'free', 'indoor'], emoji: '👔', vibe: 'genius', tier: 1 },
+  { text: 'Host a movie night for films nobody has heard of. Serve snacks that match each film\'s vibe.', tags: ['group', 'paid', 'indoor'], emoji: '🎬', vibe: 'genius', tier: 2 },
+  { text: 'Go to a hardware store. Ask an employee which aisle has meaning. Document their response.', tags: ['solo', 'free', 'outdoor'], emoji: '🔨', vibe: 'unhinged', tier: 1 },
+  { text: 'Create a gallery wall of your worst photos. Curate them seriously. Invite people to the opening.', tags: ['solo', 'free', 'indoor'], emoji: '🖼️', vibe: 'unhinged', tier: 2 },
+  { text: 'Memorize a poem this week. Recite it to someone when the moment is right. You\'ll know when.', tags: ['solo', 'free', 'indoor'], emoji: '📜', vibe: 'genius', tier: 2 },
+  { text: 'Make friendship bracelets. You\'re an adult. That makes it better. Give them out with zero irony.', tags: ['solo', 'paid', 'indoor'], emoji: '📿', vibe: 'wholesome', tier: 1 },
+  { text: 'Start a neighborhood book club but the only book is the takeout menu from the nearest restaurant.', tags: ['group', 'free', 'outdoor'], emoji: '📕', vibe: 'unhinged', tier: 3 },
+  { text: 'Go on a date with yourself. Dress up. Get a table for one. Leave yourself a good review after.', tags: ['solo', 'paid', 'outdoor'], emoji: '🕯️', vibe: 'genius', tier: 2 },
+  { text: 'Commission a caricature of yourself. Use it as your LinkedIn photo for a week. Commit fully.', tags: ['solo', 'paid', 'outdoor'], emoji: '🎪', vibe: 'unhinged', tier: 3 },
 ]
 
 /* ── Filter config ── */
