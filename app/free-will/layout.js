@@ -1,10 +1,15 @@
 export const metadata = {
-  title: 'Free Will Utilizer — What Should You Do Right Now?',
-  description: 'Spin the wheel of possibilities! Get random activity ideas filtered by solo/group, free/paid, charity, environment & more. Share your pick on social media!',
+  title: 'Free Will Utilizer — amazing use of free will',
+  description: 'Wildly creative ideas you can actually do. The kind where people comment "amazing use of free will." Spin, share, repeat.',
   openGraph: {
-    title: 'Free Will Utilizer 🎲',
-    description: 'I just used my free will to decide what to do. Try it!',
+    title: 'Free Will Utilizer ✦',
+    description: 'Wildly creative ideas you can actually do. The kind where people comment "amazing use of free will."',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Free Will Utilizer ✦',
+    description: 'Wildly creative ideas you can actually do. Spin, share, repeat.',
   },
 }
 

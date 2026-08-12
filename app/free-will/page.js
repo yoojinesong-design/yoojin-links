@@ -1,368 +1,440 @@
 'use client'
 import { useState, useCallback, useEffect, useRef } from 'react'
 
-/* ─── Activity database ─── */
+/* ─────────────────────────────────────────────────────────────
+   ACTIVITIES — wildly creative yet genuinely useful.
+   The kind of thing where people comment
+   "amazing use of free will" on the post.
+   ───────────────────────────────────────────────────────────── */
 const ACTIVITIES = [
-  // Individual + Free + Outdoor
-  { text: 'Go for a walk and count how many dogs you see 🐕', tags: ['individual', 'free', 'outdoor'], emoji: '🚶', vibe: 'chill' },
-  { text: 'Find a park bench and people-watch for 20 minutes', tags: ['individual', 'free', 'outdoor'], emoji: '🪑', vibe: 'chill' },
-  { text: 'Take photos of interesting shadows', tags: ['individual', 'free', 'outdoor'], emoji: '📸', vibe: 'creative' },
-  { text: 'Go cloud-watching and name the shapes', tags: ['individual', 'free', 'outdoor'], emoji: '☁️', vibe: 'chill' },
-  { text: 'Do a handstand (or try to) in a park', tags: ['individual', 'free', 'outdoor'], emoji: '🤸', vibe: 'active' },
-  { text: 'Walk barefoot in grass for 10 minutes', tags: ['individual', 'free', 'outdoor'], emoji: '🌿', vibe: 'chill' },
-  { text: 'Sprint as fast as you can for 30 seconds', tags: ['individual', 'free', 'outdoor'], emoji: '🏃', vibe: 'active' },
-  { text: 'Find the tallest tree nearby and sit under it', tags: ['individual', 'free', 'outdoor'], emoji: '🌳', vibe: 'chill' },
+  // Solo + Free + Indoor — Creative chaos
+  { text: 'Write a formal resignation letter to a bad habit. Seal it. Burn it.', tags: ['solo', 'free', 'indoor'], emoji: '🔥', vibe: 'unhinged' },
+  { text: 'Build a tiny museum exhibit for the most interesting object in your junk drawer', tags: ['solo', 'free', 'indoor'], emoji: '🏛️', vibe: 'genius' },
+  { text: 'Write a Yelp review for your own kitchen. Be brutally honest.', tags: ['solo', 'free', 'indoor'], emoji: '⭐', vibe: 'unhinged' },
+  { text: 'Design a national flag for your apartment. Explain the symbolism.', tags: ['solo', 'free', 'indoor'], emoji: '🏳️', vibe: 'genius' },
+  { text: 'Compose a breakup letter to an app you\'re deleting', tags: ['solo', 'free', 'indoor'], emoji: '💔', vibe: 'unhinged' },
+  { text: 'Make an IKEA-style instruction manual for making your bed', tags: ['solo', 'free', 'indoor'], emoji: '📐', vibe: 'genius' },
+  { text: 'Create a nature documentary narration of yourself making coffee', tags: ['solo', 'free', 'indoor'], emoji: '🎬', vibe: 'unhinged' },
+  { text: 'Draw a map of your home from memory. Include all the danger zones.', tags: ['solo', 'free', 'indoor'], emoji: '🗺️', vibe: 'genius' },
+  { text: 'Write a 5-star review of water. It deserves the recognition.', tags: ['solo', 'free', 'indoor'], emoji: '💧', vibe: 'unhinged' },
+  { text: 'Make a resume for your pet. List their skills honestly.', tags: ['solo', 'free', 'indoor'], emoji: '📄', vibe: 'genius' },
+  { text: 'Rearrange a bookshelf by color and feel emotionally healed', tags: ['solo', 'free', 'indoor'], emoji: '📚', vibe: 'wholesome' },
+  { text: 'Draw a self-portrait using only your non-dominant hand. Frame it.', tags: ['solo', 'free', 'indoor'], emoji: '🎨', vibe: 'genius' },
+  { text: 'Write a recipe for your current emotional state', tags: ['solo', 'free', 'indoor'], emoji: '🧑‍🍳', vibe: 'unhinged' },
+  { text: 'Create a playlist that tells the story of your entire week', tags: ['solo', 'free', 'indoor'], emoji: '🎵', vibe: 'wholesome' },
+  { text: 'Write a formal apology to a plant you forgot to water', tags: ['solo', 'free', 'indoor'], emoji: '🌿', vibe: 'unhinged' },
+  { text: 'Make a PowerPoint presentation about why your favorite snack is superior', tags: ['solo', 'free', 'indoor'], emoji: '📊', vibe: 'genius' },
+  { text: 'Build a time capsule in a shoebox. Open in 5 years.', tags: ['solo', 'free', 'indoor'], emoji: '📦', vibe: 'wholesome' },
+  { text: 'Write your morning routine as if it were a heist movie script', tags: ['solo', 'free', 'indoor'], emoji: '🎭', vibe: 'genius' },
+  { text: 'Take a photo of every door in your home. Make a gallery.', tags: ['solo', 'free', 'indoor'], emoji: '🚪', vibe: 'genius' },
+  { text: 'Invent a cocktail (or mocktail) with only what you have. Name it something dramatic.', tags: ['solo', 'free', 'indoor'], emoji: '🍹', vibe: 'unhinged' },
 
-  // Individual + Free + Indoor
-  { text: 'Rearrange your room — feng shui style', tags: ['individual', 'free', 'indoor'], emoji: '🛋️', vibe: 'creative' },
-  { text: 'Write a letter to your future self', tags: ['individual', 'free', 'indoor'], emoji: '✉️', vibe: 'creative' },
-  { text: 'Learn to fold an origami crane', tags: ['individual', 'free', 'indoor'], emoji: '🦢', vibe: 'creative' },
-  { text: 'Dance like nobody is watching for one full song', tags: ['individual', 'free', 'indoor'], emoji: '💃', vibe: 'active' },
-  { text: 'Try meditating for just 5 minutes', tags: ['individual', 'free', 'indoor'], emoji: '🧘', vibe: 'chill' },
-  { text: 'Draw a self-portrait without looking at the paper', tags: ['individual', 'free', 'indoor'], emoji: '🎨', vibe: 'creative' },
-  { text: 'Organize one drawer — just one', tags: ['individual', 'free', 'indoor'], emoji: '🗄️', vibe: 'productive' },
-  { text: 'Cook something with only ingredients you already have', tags: ['individual', 'free', 'indoor'], emoji: '👨‍🍳', vibe: 'creative' },
-  { text: 'Take a cold shower — if you dare', tags: ['individual', 'free', 'indoor'], emoji: '🚿', vibe: 'active' },
-  { text: 'Start a journal — write literally anything', tags: ['individual', 'free', 'indoor'], emoji: '📓', vibe: 'creative' },
+  // Solo + Free + Outdoor — Beautiful weird
+  { text: 'Find a stranger\'s lost glove on the street. Imagine the life it lived.', tags: ['solo', 'free', 'outdoor'], emoji: '🧤', vibe: 'wholesome' },
+  { text: 'Sit on a park bench and write a one-page biography for every person who walks by', tags: ['solo', 'free', 'outdoor'], emoji: '📝', vibe: 'genius' },
+  { text: 'Find the most architecturally ugly building near you. Write it a love letter.', tags: ['solo', 'free', 'outdoor'], emoji: '🏢', vibe: 'unhinged' },
+  { text: 'Take a photo walk but only shoot reflections', tags: ['solo', 'free', 'outdoor'], emoji: '📸', vibe: 'genius' },
+  { text: 'Find a tree. Sit under it. Write the tree a thank you note.', tags: ['solo', 'free', 'outdoor'], emoji: '🌳', vibe: 'wholesome' },
+  { text: 'Walk until you find something beautiful. Take a photo. Walk home.', tags: ['solo', 'free', 'outdoor'], emoji: '🚶', vibe: 'wholesome' },
+  { text: 'Pick a cloud. Name it. Watch your cloud until it changes shape. Mourn it.', tags: ['solo', 'free', 'outdoor'], emoji: '☁️', vibe: 'unhinged' },
+  { text: 'Go to a bookstore and read only the first sentence of 20 books. Pick the winner.', tags: ['solo', 'free', 'outdoor'], emoji: '📖', vibe: 'genius' },
+  { text: 'Take the scenic route to somewhere boring. See if the journey fixes it.', tags: ['solo', 'free', 'outdoor'], emoji: '🛤️', vibe: 'wholesome' },
+  { text: 'Collect 5 interesting leaves. Press them. Start a tiny herbarium.', tags: ['solo', 'free', 'outdoor'], emoji: '🍂', vibe: 'genius' },
 
-  // Individual + Paid
-  { text: 'Treat yourself to a fancy coffee ☕', tags: ['individual', 'paid', 'outdoor'], emoji: '☕', vibe: 'chill' },
-  { text: 'Buy a book you\'d never normally pick', tags: ['individual', 'paid', 'indoor'], emoji: '📚', vibe: 'creative' },
-  { text: 'Get a houseplant and name it', tags: ['individual', 'paid', 'indoor'], emoji: '🪴', vibe: 'chill' },
-  { text: 'Try a new restaurant — chef\'s choice', tags: ['individual', 'paid', 'outdoor'], emoji: '🍽️', vibe: 'adventurous' },
-  { text: 'Take a pottery or art class', tags: ['individual', 'paid', 'indoor'], emoji: '🏺', vibe: 'creative' },
-  { text: 'Go see a movie solo — pick the weirdest one', tags: ['individual', 'paid', 'indoor'], emoji: '🎬', vibe: 'adventurous' },
+  // Solo + Paid
+  { text: 'Buy a stranger\'s coffee. Leave before they can thank you.', tags: ['solo', 'paid', 'outdoor'], emoji: '☕', vibe: 'wholesome' },
+  { text: 'Go to a thrift store. Buy the weirdest mug you can find. It\'s your personality now.', tags: ['solo', 'paid', 'outdoor'], emoji: '🍵', vibe: 'unhinged' },
+  { text: 'Buy flowers for yourself. You\'ve been through a lot.', tags: ['solo', 'paid', 'outdoor'], emoji: '💐', vibe: 'wholesome' },
+  { text: 'Go to a restaurant alone. Order the chef\'s favorite, not yours.', tags: ['solo', 'paid', 'outdoor'], emoji: '🍽️', vibe: 'genius' },
+  { text: 'Buy a disposable camera. Use all 27 shots today. Develop them next month.', tags: ['solo', 'paid', 'outdoor'], emoji: '📷', vibe: 'genius' },
+  { text: 'Take a pottery class. Make something hideous. Love it unconditionally.', tags: ['solo', 'paid', 'indoor'], emoji: '🏺', vibe: 'wholesome' },
+  { text: 'Buy a notebook that costs more than you\'d normally spend. Write only important things in it.', tags: ['solo', 'paid', 'indoor'], emoji: '📓', vibe: 'genius' },
+
+  // Group + Free + Indoor — Collaborative chaos
+  { text: 'Host an awards ceremony for everyday objects in your house. Acceptance speeches mandatory.', tags: ['group', 'free', 'indoor'], emoji: '🏆', vibe: 'unhinged' },
+  { text: 'Everyone draws a portrait of the person to their left. Exhibition opening follows.', tags: ['group', 'free', 'indoor'], emoji: '🖼️', vibe: 'genius' },
+  { text: 'Build a blanket fort. No phones allowed inside. Talk like it\'s 2005.', tags: ['group', 'free', 'indoor'], emoji: '🏰', vibe: 'wholesome' },
+  { text: 'Each person pitches a business that should absolutely not exist. Vote on the worst.', tags: ['group', 'free', 'indoor'], emoji: '💼', vibe: 'unhinged' },
+  { text: 'Cook a meal where each person only controls one ingredient. No communication.', tags: ['group', 'free', 'indoor'], emoji: '🍳', vibe: 'genius' },
+  { text: 'Everyone writes a letter to their 10-year-ago self. Read them aloud or not.', tags: ['group', 'free', 'indoor'], emoji: '✉️', vibe: 'wholesome' },
+  { text: 'Create a Wikipedia page for your friend group. Include controversies.', tags: ['group', 'free', 'indoor'], emoji: '📰', vibe: 'unhinged' },
+  { text: 'Play "museum" — everyone brings one object and writes a plaque for it', tags: ['group', 'free', 'indoor'], emoji: '🏛️', vibe: 'genius' },
+  { text: 'Write and perform a 3-minute play about something that happened to the group', tags: ['group', 'free', 'indoor'], emoji: '🎭', vibe: 'genius' },
+  { text: 'Everyone teaches the group one skill in exactly 5 minutes. Timer is strict.', tags: ['group', 'free', 'indoor'], emoji: '⏱️', vibe: 'genius' },
 
   // Group + Free + Outdoor
-  { text: 'Have a picnic with whatever\'s in the fridge', tags: ['group', 'free', 'outdoor'], emoji: '🧺', vibe: 'chill' },
-  { text: 'Play frisbee or catch in a park', tags: ['group', 'free', 'outdoor'], emoji: '🥏', vibe: 'active' },
-  { text: 'Go on a photo walk — everyone shoots the same thing differently', tags: ['group', 'free', 'outdoor'], emoji: '📷', vibe: 'creative' },
-  { text: 'Organize a sunset-watching session', tags: ['group', 'free', 'outdoor'], emoji: '🌅', vibe: 'chill' },
-  { text: 'Play hide and seek — yes, as adults', tags: ['group', 'free', 'outdoor'], emoji: '🙈', vibe: 'active' },
-  { text: 'Have a walking debate about a silly topic', tags: ['group', 'free', 'outdoor'], emoji: '🗣️', vibe: 'social' },
-  { text: 'Stargaze and make up new constellations', tags: ['group', 'free', 'outdoor'], emoji: '⭐', vibe: 'chill' },
-
-  // Group + Free + Indoor
-  { text: 'Host a potluck with whatever everyone already has', tags: ['group', 'free', 'indoor'], emoji: '🍲', vibe: 'social' },
-  { text: 'Have a movie marathon — let a random number pick the films', tags: ['group', 'free', 'indoor'], emoji: '🎥', vibe: 'chill' },
-  { text: 'Play charades but only with movie villains', tags: ['group', 'free', 'indoor'], emoji: '🎭', vibe: 'social' },
-  { text: 'Cook a meal together where each person makes one course', tags: ['group', 'free', 'indoor'], emoji: '🧑‍🍳', vibe: 'creative' },
-  { text: 'Have a lip-sync battle', tags: ['group', 'free', 'indoor'], emoji: '🎤', vibe: 'active' },
-  { text: 'Build a blanket fort. No age limit.', tags: ['group', 'free', 'indoor'], emoji: '🏰', vibe: 'creative' },
-  { text: 'Play "two truths and a lie" and actually try to fool people', tags: ['group', 'free', 'indoor'], emoji: '🤥', vibe: 'social' },
+  { text: 'Do a photo walk where everyone shoots the same subject. Compare at the end. Art show.', tags: ['group', 'free', 'outdoor'], emoji: '📸', vibe: 'genius' },
+  { text: 'Each person navigates to a random spot on the map. Race to get there. Meet for food after.', tags: ['group', 'free', 'outdoor'], emoji: '🗺️', vibe: 'unhinged' },
+  { text: 'Have a walking debate on the most unserious topic possible. Judge declares winner.', tags: ['group', 'free', 'outdoor'], emoji: '⚖️', vibe: 'unhinged' },
+  { text: 'Stargaze and invent new constellations. Name them after inside jokes.', tags: ['group', 'free', 'outdoor'], emoji: '⭐', vibe: 'wholesome' },
+  { text: 'Film a 60-second mockumentary about a completely normal park. Narrate dramatically.', tags: ['group', 'free', 'outdoor'], emoji: '🎥', vibe: 'genius' },
 
   // Group + Paid
-  { text: 'Go bowling and loser buys snacks', tags: ['group', 'paid', 'indoor'], emoji: '🎳', vibe: 'active' },
-  { text: 'Book an escape room', tags: ['group', 'paid', 'indoor'], emoji: '🔐', vibe: 'adventurous' },
-  { text: 'Go thrift shopping and find the most ridiculous outfit', tags: ['group', 'paid', 'outdoor'], emoji: '🛍️', vibe: 'creative' },
-  { text: 'Rent kayaks or paddleboards', tags: ['group', 'paid', 'outdoor'], emoji: '🛶', vibe: 'active' },
-  { text: 'Take a cooking class together', tags: ['group', 'paid', 'indoor'], emoji: '👩‍🍳', vibe: 'creative' },
+  { text: 'Go thrift shopping. Everyone has $5 to find the most thoughtful gift for the person next to them.', tags: ['group', 'paid', 'outdoor'], emoji: '🎁', vibe: 'wholesome' },
+  { text: 'Book an escape room. Take it extremely seriously. Debrief afterward like it was a real mission.', tags: ['group', 'paid', 'indoor'], emoji: '🔐', vibe: 'unhinged' },
+  { text: 'Everyone buys one weird ingredient. You have 1 hour to make it into dinner.', tags: ['group', 'paid', 'indoor'], emoji: '🛒', vibe: 'genius' },
+  { text: 'Hit a flea market. Everyone finds one thing with a story. Best story wins.', tags: ['group', 'paid', 'outdoor'], emoji: '🏪', vibe: 'genius' },
 
-  // Charity / Volunteering
-  { text: 'Donate clothes you haven\'t worn in a year', tags: ['individual', 'charity', 'indoor', 'free'], emoji: '👕', vibe: 'productive' },
-  { text: 'Volunteer at a local food bank', tags: ['group', 'charity', 'outdoor', 'free'], emoji: '🥫', vibe: 'productive' },
-  { text: 'Write encouraging notes and leave them in library books', tags: ['individual', 'charity', 'indoor', 'free'], emoji: '💌', vibe: 'creative' },
-  { text: 'Help an elderly neighbor with groceries or chores', tags: ['individual', 'charity', 'outdoor', 'free'], emoji: '🤝', vibe: 'productive' },
-  { text: 'Organize a bake sale for a local cause', tags: ['group', 'charity', 'outdoor', 'paid'], emoji: '🧁', vibe: 'social' },
-  { text: 'Donate blood — it literally saves lives', tags: ['individual', 'charity', 'indoor', 'free'], emoji: '🩸', vibe: 'productive' },
-  { text: 'Teach someone a skill you have', tags: ['group', 'charity', 'indoor', 'free'], emoji: '📖', vibe: 'social' },
-  { text: 'Buy a stranger\'s coffee', tags: ['individual', 'charity', 'outdoor', 'paid'], emoji: '☕', vibe: 'social' },
-  { text: 'Organize a community meal for unhoused neighbors', tags: ['group', 'charity', 'outdoor', 'paid'], emoji: '🍛', vibe: 'social' },
+  // Charity — creative kindness
+  { text: 'Write 10 encouraging sticky notes. Hide them in library books for strangers to find.', tags: ['solo', 'charity', 'indoor', 'free'], emoji: '💌', vibe: 'wholesome' },
+  { text: 'Bake cookies. Knock on your neighbor\'s door. Just say "these are for you."', tags: ['solo', 'charity', 'outdoor', 'paid'], emoji: '🍪', vibe: 'wholesome' },
+  { text: 'Organize a skill swap — teach someone to cook, learn guitar in return', tags: ['group', 'charity', 'indoor', 'free'], emoji: '🔄', vibe: 'genius' },
+  { text: 'Fill a backpack with essentials (socks, snacks, water). Give it to someone who needs it.', tags: ['solo', 'charity', 'outdoor', 'paid'], emoji: '🎒', vibe: 'wholesome' },
+  { text: 'Organize a "pay what you can" neighborhood dinner. Everyone brings something.', tags: ['group', 'charity', 'outdoor', 'free'], emoji: '🍛', vibe: 'genius' },
+  { text: 'Write a glowing recommendation on LinkedIn for someone who helped you and never knew it', tags: ['solo', 'charity', 'indoor', 'free'], emoji: '✍️', vibe: 'wholesome' },
+  { text: 'Create care packages for a local shelter. Include a handwritten note in each.', tags: ['group', 'charity', 'indoor', 'paid'], emoji: '📦', vibe: 'wholesome' },
+  { text: 'Leave a $5 bill in a children\'s book at a bookstore. Tuck it in chapter one.', tags: ['solo', 'charity', 'outdoor', 'paid'], emoji: '💵', vibe: 'genius' },
+  { text: 'Compliment 5 strangers today. Specific compliments only. No "nice shirt" energy.', tags: ['solo', 'charity', 'outdoor', 'free'], emoji: '💬', vibe: 'wholesome' },
 
-  // Environment / Eco
-  { text: 'Do a 15-minute trash pickup in your neighborhood', tags: ['individual', 'environment', 'outdoor', 'free'], emoji: '🗑️', vibe: 'productive' },
-  { text: 'Plant a tree or start a small garden', tags: ['individual', 'environment', 'outdoor', 'paid'], emoji: '🌱', vibe: 'creative' },
-  { text: 'Organize a beach / park cleanup with friends', tags: ['group', 'environment', 'outdoor', 'free'], emoji: '🏖️', vibe: 'active' },
-  { text: 'Build a bird feeder from recycled materials', tags: ['individual', 'environment', 'outdoor', 'free'], emoji: '🐦', vibe: 'creative' },
-  { text: 'Start composting — even a small bin counts', tags: ['individual', 'environment', 'indoor', 'free'], emoji: '♻️', vibe: 'productive' },
-  { text: 'Swap single-use items for reusable ones today', tags: ['individual', 'environment', 'indoor', 'paid'], emoji: '🌍', vibe: 'productive' },
-  { text: 'Organize a clothing swap party', tags: ['group', 'environment', 'indoor', 'free'], emoji: '👗', vibe: 'social' },
-  { text: 'Take public transit or bike instead of driving today', tags: ['individual', 'environment', 'outdoor', 'free'], emoji: '🚲', vibe: 'active' },
-  { text: 'Set up a little free library box', tags: ['group', 'environment', 'outdoor', 'paid'], emoji: '📚', vibe: 'creative' },
+  // Environment — eco with style
+  { text: 'Do a 15-minute trash pickup. Post the haul. Make people feel something.', tags: ['solo', 'eco', 'outdoor', 'free'], emoji: '🗑️', vibe: 'genius' },
+  { text: 'Build a bird feeder from a milk carton. Paint it. Give it an address number.', tags: ['solo', 'eco', 'outdoor', 'free'], emoji: '🐦', vibe: 'genius' },
+  { text: 'Start a windowsill herb garden with seeds from the grocery store. Name each plant.', tags: ['solo', 'eco', 'indoor', 'paid'], emoji: '🌱', vibe: 'wholesome' },
+  { text: 'Organize a clothing swap party. Dress code: wear your swap.', tags: ['group', 'eco', 'indoor', 'free'], emoji: '👗', vibe: 'genius' },
+  { text: 'Plant a tree. Take a photo with it every year. Watch you both grow.', tags: ['solo', 'eco', 'outdoor', 'paid'], emoji: '🌳', vibe: 'wholesome' },
+  { text: 'Organize a beach cleanup and turn the best trash finds into an art installation', tags: ['group', 'eco', 'outdoor', 'free'], emoji: '🏖️', vibe: 'genius' },
+  { text: 'Start composting. Give your compost bin a name. It\'s family now.', tags: ['solo', 'eco', 'indoor', 'free'], emoji: '♻️', vibe: 'unhinged' },
+  { text: 'Set up a Little Free Library. Stock it with your favorites. Add handwritten reviews.', tags: ['group', 'eco', 'outdoor', 'paid'], emoji: '📚', vibe: 'genius' },
+  { text: 'Repair something you were about to throw away. Film the process. Oddly satisfying content.', tags: ['solo', 'eco', 'indoor', 'free'], emoji: '🔧', vibe: 'genius' },
 
-  // Adventurous / Wild
-  { text: 'Go somewhere you\'ve never been within 5 miles of home', tags: ['individual', 'free', 'outdoor'], emoji: '🗺️', vibe: 'adventurous' },
-  { text: 'Talk to a stranger (nicely) and learn one thing about them', tags: ['individual', 'free', 'outdoor'], emoji: '👋', vibe: 'adventurous' },
-  { text: 'Say yes to the next thing someone suggests', tags: ['individual', 'free', 'outdoor'], emoji: '✅', vibe: 'adventurous' },
-  { text: 'Learn 5 words in a language you don\'t speak', tags: ['individual', 'free', 'indoor'], emoji: '🌐', vibe: 'creative' },
-  { text: 'Call someone you haven\'t talked to in 6+ months', tags: ['individual', 'free', 'indoor'], emoji: '📞', vibe: 'social' },
-  { text: 'Go to a random bus stop and ride to the last stop', tags: ['individual', 'paid', 'outdoor'], emoji: '🚌', vibe: 'adventurous' },
-  { text: 'Explore a neighborhood you\'ve never walked through', tags: ['individual', 'free', 'outdoor'], emoji: '🏘️', vibe: 'adventurous' },
-  { text: 'Visit a museum — actually read the plaques this time', tags: ['individual', 'paid', 'indoor'], emoji: '🏛️', vibe: 'creative' },
+  // Adventurous — slightly unhinged but brilliant
+  { text: 'Go to a random floor of a library. Read the first book your hand touches for 30 min.', tags: ['solo', 'free', 'indoor'], emoji: '📕', vibe: 'genius' },
+  { text: 'Learn to say "this is a wonderful day" in 7 languages. Use all 7 today.', tags: ['solo', 'free', 'indoor'], emoji: '🌐', vibe: 'unhinged' },
+  { text: 'Call someone you haven\'t talked to in a year. Don\'t explain. Just ask how they are.', tags: ['solo', 'free', 'indoor'], emoji: '📞', vibe: 'wholesome' },
+  { text: 'Go to a random bus stop. Ride to the end. Document everything like a travel vlogger.', tags: ['solo', 'paid', 'outdoor'], emoji: '🚌', vibe: 'genius' },
+  { text: 'Explore a neighborhood you\'ve never been to. Rate it on vibes. Write a fake travel review.', tags: ['solo', 'free', 'outdoor'], emoji: '🏘️', vibe: 'unhinged' },
+  { text: 'Go to a museum. Pick one painting. Sit with it for 15 min. Write what it told you.', tags: ['solo', 'paid', 'indoor'], emoji: '🖼️', vibe: 'genius' },
+  { text: 'Write a letter to yourself at 80. Tell them what mattered today.', tags: ['solo', 'free', 'indoor'], emoji: '👴', vibe: 'wholesome' },
+  { text: 'Walk into a grocery store. Buy only things you\'ve never tried. Cook mystery dinner.', tags: ['solo', 'paid', 'indoor'], emoji: '🛒', vibe: 'genius' },
+  { text: 'Spend an hour learning a skill on YouTube that has zero practical use. Master it.', tags: ['solo', 'free', 'indoor'], emoji: '🎓', vibe: 'unhinged' },
+  { text: 'Take a photo of something ordinary every day for a week. See if it changes.', tags: ['solo', 'free', 'outdoor'], emoji: '📱', vibe: 'genius' },
 ]
 
 const FILTER_GROUPS = [
   {
     label: 'Who',
-    icon: '👤',
     options: [
-      { key: 'individual', label: 'Solo', emoji: '🧑' },
-      { key: 'group', label: 'Group', emoji: '👥' },
+      { key: 'solo', label: 'Solo', icon: '🧑' },
+      { key: 'group', label: 'Crew', icon: '👥' },
     ],
   },
   {
     label: 'Where',
-    icon: '📍',
     options: [
-      { key: 'indoor', label: 'Indoor', emoji: '🏠' },
-      { key: 'outdoor', label: 'Outdoor', emoji: '🌳' },
+      { key: 'indoor', label: 'Indoor', icon: '🏠' },
+      { key: 'outdoor', label: 'Outside', icon: '☀️' },
     ],
   },
   {
     label: 'Cost',
-    icon: '💰',
     options: [
-      { key: 'free', label: 'Free', emoji: '🆓' },
-      { key: 'paid', label: 'Paid', emoji: '💳' },
+      { key: 'free', label: 'Free', icon: '✌️' },
+      { key: 'paid', label: 'Worth it', icon: '💸' },
     ],
   },
   {
-    label: 'Purpose',
-    icon: '💡',
+    label: 'Energy',
     options: [
-      { key: 'charity', label: 'Charity', emoji: '❤️' },
-      { key: 'environment', label: 'Eco', emoji: '🌍' },
+      { key: 'charity', label: 'Kind', icon: '❤️' },
+      { key: 'eco', label: 'Eco', icon: '🌍' },
     ],
   },
 ]
 
-const VIBE_COLORS = {
-  chill: { bg: 'from-blue-500/20 to-indigo-500/20', border: 'border-blue-500/30', text: 'text-blue-400', label: '😌 Chill' },
-  active: { bg: 'from-orange-500/20 to-red-500/20', border: 'border-orange-500/30', text: 'text-orange-400', label: '⚡ Active' },
-  creative: { bg: 'from-purple-500/20 to-pink-500/20', border: 'border-purple-500/30', text: 'text-purple-400', label: '🎨 Creative' },
-  social: { bg: 'from-green-500/20 to-emerald-500/20', border: 'border-green-500/30', text: 'text-green-400', label: '💬 Social' },
-  adventurous: { bg: 'from-amber-500/20 to-yellow-500/20', border: 'border-amber-500/30', text: 'text-amber-400', label: '🧭 Adventurous' },
-  productive: { bg: 'from-teal-500/20 to-cyan-500/20', border: 'border-teal-500/30', text: 'text-teal-400', label: '✅ Productive' },
+const VIBE_META = {
+  unhinged: {
+    gradient: 'from-rose-500 via-pink-500 to-fuchsia-600',
+    glow: 'rgba(244,63,94,0.35)',
+    badge: '🫠 beautifully unhinged',
+    bg: 'from-rose-500/15 to-fuchsia-500/15',
+    border: 'border-rose-500/25',
+  },
+  genius: {
+    gradient: 'from-violet-500 via-purple-500 to-indigo-600',
+    glow: 'rgba(139,92,246,0.35)',
+    badge: '🧠 lowkey genius',
+    bg: 'from-violet-500/15 to-indigo-500/15',
+    border: 'border-violet-500/25',
+  },
+  wholesome: {
+    gradient: 'from-amber-400 via-orange-400 to-yellow-500',
+    glow: 'rgba(251,191,36,0.35)',
+    badge: '🥹 aggressively wholesome',
+    bg: 'from-amber-500/15 to-yellow-500/15',
+    border: 'border-amber-500/25',
+  },
 }
 
-/* ─── Shuffle text animation characters ─── */
-const SLOT_EMOJIS = ['🎲', '🎰', '✨', '🌟', '💫', '🎯', '🔮', '🎪', '🎨', '🚀', '⚡', '🌈', '🎭', '🎪', '🦋', '🌸']
+const SPIN_WORDS = [
+  'Consulting the multiverse...',
+  'Channeling chaotic energy...',
+  'Asking the universe politely...',
+  'Loading free will.exe...',
+  'Rolling the existential dice...',
+  'Deploying whimsy...',
+  'Calibrating spontaneity...',
+  'Summoning audacity...',
+]
+
+const SLOT_EMOJIS = ['🎲', '✨', '🌟', '💫', '🎯', '🔮', '🎪', '🚀', '⚡', '🌈', '🦋', '🌀', '💥', '🫧']
 
 export default function FreeWillUtilizer() {
   const [activeFilters, setActiveFilters] = useState(new Set())
-  const [currentActivity, setCurrentActivity] = useState(null)
+  const [current, setCurrent] = useState(null)
   const [isSpinning, setIsSpinning] = useState(false)
   const [slotEmoji, setSlotEmoji] = useState('🎲')
+  const [spinWord, setSpinWord] = useState(SPIN_WORDS[0])
   const [history, setHistory] = useState([])
   const [copied, setCopied] = useState(false)
   const [shakeCard, setShakeCard] = useState(false)
-  const spinInterval = useRef(null)
-  const cardRef = useRef(null)
+  const [showShareCard, setShowShareCard] = useState(false)
+  const spinRef = useRef(null)
+  const shareCardRef = useRef(null)
 
   const toggleFilter = (key) => {
     setActiveFilters((prev) => {
       const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
+      next.has(key) ? next.delete(key) : next.add(key)
       return next
     })
   }
 
-  const getFilteredActivities = useCallback(() => {
+  const getPool = useCallback(() => {
     if (activeFilters.size === 0) return ACTIVITIES
     return ACTIVITIES.filter((a) =>
       [...activeFilters].every((f) => a.tags.includes(f))
     )
   }, [activeFilters])
 
-  const filteredCount = getFilteredActivities().length
+  const poolSize = getPool().length
 
   const spin = useCallback(() => {
-    const pool = getFilteredActivities()
-    if (pool.length === 0) {
+    const pool = getPool()
+    if (!pool.length) {
       setShakeCard(true)
-      setTimeout(() => setShakeCard(false), 500)
+      setTimeout(() => setShakeCard(false), 600)
       return
     }
 
     setIsSpinning(true)
+    setShowShareCard(false)
+    setSpinWord(SPIN_WORDS[Math.floor(Math.random() * SPIN_WORDS.length)])
 
-    // Emoji slot animation
-    let count = 0
-    spinInterval.current = setInterval(() => {
+    let tick = 0
+    spinRef.current = setInterval(() => {
       setSlotEmoji(SLOT_EMOJIS[Math.floor(Math.random() * SLOT_EMOJIS.length)])
-      count++
-      if (count > 12) {
-        clearInterval(spinInterval.current)
-      }
-    }, 80)
+      tick++
+      if (tick > 14) clearInterval(spinRef.current)
+    }, 70)
 
     setTimeout(() => {
       const pick = pool[Math.floor(Math.random() * pool.length)]
-      setCurrentActivity(pick)
+      setCurrent(pick)
       setSlotEmoji(pick.emoji)
       setIsSpinning(false)
-      setHistory((prev) => [pick, ...prev.filter((h) => h.text !== pick.text)].slice(0, 10))
-    }, 1100)
-  }, [getFilteredActivities])
+      setHistory((prev) => [pick, ...prev.filter((h) => h.text !== pick.text)].slice(0, 12))
+    }, 1200)
+  }, [getPool])
 
-  useEffect(() => {
-    return () => { if (spinInterval.current) clearInterval(spinInterval.current) }
-  }, [])
+  useEffect(() => () => { if (spinRef.current) clearInterval(spinRef.current) }, [])
 
-  const shareText = currentActivity
-    ? `🎲 My free will says: "${currentActivity.text}"\n\nTry the Free Will Utilizer!`
+  const vibe = current ? VIBE_META[current.vibe] : null
+
+  /* ── share text ── */
+  const shareText = current
+    ? `"${current.text}"\n\namazing use of free will ✦\n\nTry it: `
     : ''
 
-  const shareToTwitter = () => {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`
-    window.open(url, '_blank', 'width=550,height=420')
-  }
+  const tweetUrl = () => `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`
 
-  const shareToFacebook = () => {
-    const url = `https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(shareText)}`
-    window.open(url, '_blank', 'width=550,height=420')
-  }
-
-  const copyToClipboard = async () => {
+  const copyText = async () => {
     try {
       await navigator.clipboard.writeText(shareText)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      /* clipboard may not be available */
-    }
+      setTimeout(() => setCopied(false), 2200)
+    } catch { /* */ }
   }
 
-  const vibeStyle = currentActivity ? VIBE_COLORS[currentActivity.vibe] : null
+  /* ── screenshot-ready share card via canvas ── */
+  const downloadShareCard = useCallback(() => {
+    if (!current) return
+    const v = VIBE_META[current.vibe]
+    const W = 1080, H = 1350 // IG story size
+    const c = document.createElement('canvas')
+    c.width = W; c.height = H
+    const ctx = c.getContext('2d')
+
+    // background
+    const bg = ctx.createLinearGradient(0, 0, W, H)
+    if (current.vibe === 'unhinged') { bg.addColorStop(0, '#1a0a1e'); bg.addColorStop(1, '#2d0a1e') }
+    else if (current.vibe === 'genius') { bg.addColorStop(0, '#0f0a2e'); bg.addColorStop(1, '#1a0a2e') }
+    else { bg.addColorStop(0, '#1e1405'); bg.addColorStop(1, '#1e1a05') }
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H)
+
+    // glow circle
+    const grd = ctx.createRadialGradient(W / 2, H * 0.38, 0, W / 2, H * 0.38, 380)
+    grd.addColorStop(0, v.glow); grd.addColorStop(1, 'transparent')
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H)
+
+    // emoji
+    ctx.font = '120px serif'
+    ctx.textAlign = 'center'
+    ctx.fillText(current.emoji, W / 2, H * 0.3)
+
+    // activity text — word wrap
+    ctx.fillStyle = '#f5f5f5'
+    ctx.font = 'bold 42px -apple-system, system-ui, sans-serif'
+    const words = current.text.split(' ')
+    let lines = [], line = ''
+    for (const w of words) {
+      const test = line ? line + ' ' + w : w
+      if (ctx.measureText(test).width > W - 160) { lines.push(line); line = w }
+      else line = test
+    }
+    if (line) lines.push(line)
+    const lineH = 56
+    const textY = H * 0.42
+    lines.forEach((l, i) => ctx.fillText(l, W / 2, textY + i * lineH))
+
+    // vibe badge
+    ctx.fillStyle = '#888'
+    ctx.font = '28px -apple-system, system-ui, sans-serif'
+    ctx.fillText(v.badge, W / 2, textY + lines.length * lineH + 50)
+
+    // divider
+    const divY = H * 0.72
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)'
+    ctx.lineWidth = 1
+    ctx.beginPath(); ctx.moveTo(W * 0.2, divY); ctx.lineTo(W * 0.8, divY); ctx.stroke()
+
+    // "amazing use of free will"
+    ctx.fillStyle = '#d4d4d4'
+    ctx.font = 'italic 32px Georgia, serif'
+    ctx.fillText('amazing use of free will', W / 2, divY + 60)
+
+    // branding
+    ctx.fillStyle = '#525252'
+    ctx.font = '22px -apple-system, system-ui, sans-serif'
+    ctx.fillText('✦ Free Will Utilizer ✦', W / 2, H - 80)
+
+    // download
+    const link = document.createElement('a')
+    link.download = 'free-will.png'
+    link.href = c.toDataURL('image/png')
+    link.click()
+  }, [current])
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 overflow-x-hidden">
-      {/* Ambient background blobs */}
+    <div className="min-h-screen bg-[#0a0a0f] text-neutral-100 overflow-x-hidden selection:bg-purple-500/30">
+      {/* Ambient */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-600/8 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -right-20 w-80 h-80 bg-blue-600/8 rounded-full blur-3xl" />
-        <div className="absolute -bottom-20 left-1/3 w-72 h-72 bg-pink-600/6 rounded-full blur-3xl" />
+        <div className="absolute -top-48 -left-48 w-[500px] h-[500px] bg-purple-600/[0.06] rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 -right-32 w-96 h-96 bg-rose-600/[0.05] rounded-full blur-[100px]" />
+        <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-amber-600/[0.04] rounded-full blur-[100px]" />
       </div>
 
-      <div className="relative z-10">
-        {/* Header */}
-        <header className="pt-10 pb-6 px-5 text-center">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-purple-400 border border-purple-400/30 rounded-full px-4 py-1.5 mb-5">
-            <span className="animate-pulse">✦</span> Use Your Free Will <span className="animate-pulse">✦</span>
-          </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] mb-4">
-            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-transparent">
+      <div className="relative z-10 max-w-xl mx-auto px-5">
+
+        {/* ── Header ── */}
+        <header className="pt-12 pb-8 text-center">
+          <p className="text-[11px] font-semibold tracking-[0.25em] uppercase text-neutral-600 mb-5">
+            ✦ you have free will ✦ might as well use it ✦
+          </p>
+          <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-[1.05] mb-4">
+            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 bg-clip-text text-transparent">
               Free Will
             </span>
             <br />
-            <span className="text-neutral-200">Utilizer</span>
+            <span className="text-neutral-300 text-4xl sm:text-5xl font-extrabold">Utilizer</span>
           </h1>
-          <p className="text-base sm:text-lg text-neutral-500 max-w-md mx-auto leading-relaxed">
-            You have free will — might as well use it.<br />
-            <span className="text-neutral-400">Spin for something to do right now.</span>
+          <p className="text-sm text-neutral-600 max-w-xs mx-auto leading-relaxed">
+            Wildly creative ideas you can actually do.<br />
+            The kind where people comment<br />
+            <span className="italic text-neutral-400">&quot;amazing use of free will&quot;</span>
           </p>
         </header>
 
-        {/* Filter controls */}
-        <section className="max-w-2xl mx-auto px-5 mb-8">
-          <div className="bg-neutral-900/60 border border-neutral-800/60 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-semibold tracking-widest uppercase text-neutral-500">Dial it in</span>
+        {/* ── Filters ── */}
+        <section className="mb-8">
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-neutral-600">Dial it in</span>
               {activeFilters.size > 0 && (
-                <button
-                  onClick={() => setActiveFilters(new Set())}
-                  className="text-xs text-neutral-600 hover:text-neutral-400 transition"
-                >
-                  Clear all
+                <button onClick={() => setActiveFilters(new Set())} className="text-[11px] text-neutral-700 hover:text-neutral-400 transition">
+                  Clear
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {FILTER_GROUPS.map((group) => (
-                <div key={group.label}>
-                  <div className="text-[11px] font-medium text-neutral-600 mb-1.5 pl-0.5">{group.icon} {group.label}</div>
-                  <div className="flex flex-col gap-1.5">
-                    {group.options.map((opt) => {
-                      const active = activeFilters.has(opt.key)
-                      return (
-                        <button
-                          key={opt.key}
-                          onClick={() => toggleFilter(opt.key)}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                            active
-                              ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/10'
-                              : 'bg-neutral-800/60 border border-neutral-700/40 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-300'
-                          }`}
-                        >
-                          <span>{opt.emoji}</span>
-                          <span>{opt.label}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {FILTER_GROUPS.map((g) => (
+                <div key={g.label} className="space-y-1.5">
+                  <div className="text-[10px] font-medium text-neutral-700 pl-0.5">{g.label}</div>
+                  {g.options.map((o) => {
+                    const on = activeFilters.has(o.key)
+                    return (
+                      <button
+                        key={o.key}
+                        onClick={() => toggleFilter(o.key)}
+                        className={`w-full flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
+                          on
+                            ? 'bg-purple-500/15 border border-purple-400/30 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.08)]'
+                            : 'bg-white/[0.03] border border-white/[0.06] text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-300'
+                        }`}
+                      >
+                        <span className="text-sm">{o.icon}</span>
+                        <span>{o.label}</span>
+                      </button>
+                    )
+                  })}
                 </div>
               ))}
             </div>
             <div className="mt-3 text-center">
-              <span className="text-[11px] text-neutral-600">
-                {filteredCount} {filteredCount === 1 ? 'activity' : 'activities'} available
+              <span className="text-[10px] text-neutral-700">
+                {poolSize} idea{poolSize !== 1 ? 's' : ''} in the pool
               </span>
             </div>
           </div>
         </section>
 
-        {/* Main card / result */}
-        <section className="max-w-lg mx-auto px-5 mb-8">
+        {/* ── Main card ── */}
+        <section className="mb-6">
           <div
-            ref={cardRef}
-            className={`relative rounded-3xl border p-8 sm:p-10 text-center min-h-[260px] flex flex-col items-center justify-center transition-all duration-500 ${
-              shakeCard ? 'animate-[shake_0.5s_ease-in-out]' : ''
-            } ${
-              currentActivity && !isSpinning
-                ? `bg-gradient-to-br ${vibeStyle.bg} ${vibeStyle.border}`
-                : 'bg-neutral-900/60 border-neutral-800/60'
+            className={`relative rounded-3xl border min-h-[280px] sm:min-h-[320px] flex flex-col items-center justify-center p-8 sm:p-10 text-center transition-all duration-700 ${
+              current && !isSpinning
+                ? `bg-gradient-to-br ${vibe.bg} ${vibe.border}`
+                : 'bg-white/[0.02] border-white/[0.06]'
             }`}
             style={{
-              animation: shakeCard
-                ? 'shake 0.5s ease-in-out'
-                : isSpinning
-                ? 'pulse-glow 0.3s ease-in-out infinite alternate'
-                : 'none',
+              animation: shakeCard ? 'shake 0.6s ease' : isSpinning ? 'pulse-glow 0.35s ease infinite alternate' : 'none',
+              boxShadow: current && !isSpinning ? `0 0 60px ${vibe.glow.replace('0.35', '0.12')}` : 'none',
             }}
           >
-            {/* Spinning / idle / result */}
             {isSpinning ? (
-              <div className="flex flex-col items-center gap-4">
-                <div className="text-6xl sm:text-7xl animate-bounce">{slotEmoji}</div>
-                <div className="flex gap-1">
-                  {[0, 1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="w-2 h-2 rounded-full bg-purple-400"
-                      style={{
-                        animation: `bounce 0.6s ease-in-out ${i * 0.15}s infinite alternate`,
-                      }}
-                    />
+              <div className="flex flex-col items-center gap-5">
+                <div className="text-7xl" style={{ animation: 'spin-wobble 0.4s ease infinite' }}>{slotEmoji}</div>
+                <div className="flex gap-1.5">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-400/60" style={{ animation: `dot-bounce 0.5s ease ${i * 0.1}s infinite alternate` }} />
                   ))}
                 </div>
-                <p className="text-sm text-neutral-500 animate-pulse">Consulting the universe...</p>
+                <p className="text-xs text-neutral-600 italic">{spinWord}</p>
               </div>
-            ) : currentActivity ? (
-              <div className="flex flex-col items-center gap-4 animate-[fadeUp_0.5s_ease-out]">
-                <div className="text-5xl sm:text-6xl mb-1">{currentActivity.emoji}</div>
-                <p className="text-lg sm:text-xl font-semibold leading-snug text-neutral-100 max-w-sm">
-                  {currentActivity.text}
+            ) : current ? (
+              <div className="flex flex-col items-center gap-5" style={{ animation: 'card-reveal 0.6s cubic-bezier(0.16,1,0.3,1)' }}>
+                <div className="text-6xl sm:text-7xl">{current.emoji}</div>
+                <p className="text-lg sm:text-xl font-bold leading-snug text-neutral-100 max-w-sm">
+                  {current.text}
                 </p>
-                <div className="flex flex-wrap gap-2 justify-center mt-1">
-                  <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${vibeStyle.border} ${vibeStyle.text} bg-black/20`}>
-                    {vibeStyle.label}
-                  </span>
-                  {currentActivity.tags.map((t) => (
-                    <span
-                      key={t}
-                      className="text-[11px] font-medium px-2.5 py-1 rounded-full border border-neutral-700/50 text-neutral-500 bg-black/20"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
+                <span className={`text-[11px] font-semibold tracking-wide px-3 py-1.5 rounded-full ${vibe.border} bg-black/30 text-neutral-300`}>
+                  {vibe.badge}
+                </span>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-3 text-neutral-600">
-                <div className="text-5xl sm:text-6xl opacity-40">🎲</div>
-                <p className="text-base">Your destiny awaits</p>
-                <p className="text-xs text-neutral-700">Hit the button below ↓</p>
+              <div className="flex flex-col items-center gap-3">
+                <div className="text-6xl opacity-20" style={{ animation: 'float 3s ease-in-out infinite' }}>🎲</div>
+                <p className="text-sm text-neutral-600">Your next amazing use of free will</p>
+                <p className="text-[11px] text-neutral-800">is one tap away ↓</p>
               </div>
             )}
           </div>
@@ -372,133 +444,156 @@ export default function FreeWillUtilizer() {
             <button
               onClick={spin}
               disabled={isSpinning}
-              className={`group relative px-8 sm:px-10 py-4 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 ${
+              className={`relative px-10 py-4 rounded-2xl font-bold text-base transition-all duration-300 ${
                 isSpinning
-                  ? 'bg-neutral-800 text-neutral-600 cursor-wait'
-                  : filteredCount === 0
-                  ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.03] active:scale-[0.98]'
+                  ? 'bg-neutral-900 text-neutral-700 cursor-wait'
+                  : poolSize === 0
+                  ? 'bg-neutral-900 text-neutral-700 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-[length:200%_100%] text-white shadow-[0_4px_30px_rgba(168,85,247,0.25)] hover:shadow-[0_4px_40px_rgba(168,85,247,0.4)] hover:scale-[1.03] active:scale-[0.97]'
               }`}
+              style={!isSpinning && poolSize > 0 ? { animation: 'shimmer 3s ease infinite' } : {}}
             >
-              {isSpinning ? (
-                '✨ Spinning...'
-              ) : currentActivity ? (
-                <>🎲 Spin Again</>
-              ) : filteredCount === 0 ? (
-                'No activities match'
-              ) : (
-                <>🎲 Use Your Free Will</>
-              )}
+              {isSpinning
+                ? '✨ Spinning...'
+                : current
+                ? '🎲 Use It Again'
+                : poolSize === 0
+                ? 'No ideas match'
+                : '🎲 Use Your Free Will'}
             </button>
           </div>
         </section>
 
-        {/* Share section — visible when there's a result */}
-        {currentActivity && !isSpinning && (
-          <section className="max-w-lg mx-auto px-5 mb-10 animate-[fadeUp_0.4s_ease-out]">
-            <div className="bg-neutral-900/40 border border-neutral-800/40 rounded-2xl p-5">
-              <p className="text-xs font-semibold tracking-widest uppercase text-neutral-600 mb-3 text-center">
-                Share your decision with the world
+        {/* ── Share section ── */}
+        {current && !isSpinning && (
+          <section className="mb-8" style={{ animation: 'card-reveal 0.4s ease' }}>
+            <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-5">
+              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-neutral-700 mb-4 text-center">
+                Post it. Own it. Let them comment.
               </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <button
-                  onClick={shareToTwitter}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-800/80 border border-neutral-700/50 text-sm font-medium text-neutral-300 hover:bg-neutral-700/80 hover:text-white transition-all"
+
+              <div className="flex flex-wrap gap-2 justify-center mb-4">
+                {/* Twitter / X */}
+                <a
+                  href={tweetUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium text-neutral-400 hover:bg-white/[0.08] hover:text-white transition-all"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                   Post
-                </button>
+                </a>
+
+                {/* Download for IG story */}
                 <button
-                  onClick={shareToFacebook}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-800/80 border border-neutral-700/50 text-sm font-medium text-neutral-300 hover:bg-neutral-700/80 hover:text-white transition-all"
+                  onClick={downloadShareCard}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium text-neutral-400 hover:bg-white/[0.08] hover:text-white transition-all"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                  Share
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1.5"/></svg>
+                  Story Card
                 </button>
+
+                {/* Copy */}
                 <button
-                  onClick={copyToClipboard}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-800/80 border border-neutral-700/50 text-sm font-medium text-neutral-300 hover:bg-neutral-700/80 hover:text-white transition-all"
+                  onClick={copyText}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium text-neutral-400 hover:bg-white/[0.08] hover:text-white transition-all"
                 >
-                  {copied ? '✅' : '📋'}
-                  {copied ? 'Copied!' : 'Copy'}
+                  {copied ? '✅ Copied!' : '📋 Copy'}
                 </button>
-                {typeof navigator !== 'undefined' && navigator.share && (
-                  <button
-                    onClick={() => navigator.share({ text: shareText }).catch(() => {})}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-800/80 border border-neutral-700/50 text-sm font-medium text-neutral-300 hover:bg-neutral-700/80 hover:text-white transition-all"
-                  >
-                    📤 Share
-                  </button>
-                )}
+
+                {/* Native share (mobile) */}
+                <button
+                  onClick={() => {
+                    if (typeof navigator !== 'undefined' && navigator.share) {
+                      navigator.share({ text: shareText }).catch(() => {})
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium text-neutral-400 hover:bg-white/[0.08] hover:text-white transition-all sm:hidden"
+                >
+                  📤 Share
+                </button>
               </div>
-              {/* Preview card for social */}
-              <div className="mt-4 bg-neutral-950/60 border border-neutral-800/40 rounded-xl p-4 text-center">
-                <p className="text-xs text-neutral-600 mb-2">Preview</p>
-                <p className="text-sm text-neutral-400">
-                  🎲 My free will says: &quot;{currentActivity.text}&quot;
+
+              {/* Preview */}
+              <div className="bg-black/30 border border-white/[0.05] rounded-xl p-5 text-center space-y-2">
+                <p className="text-sm text-neutral-300 font-medium leading-relaxed">
+                  &quot;{current.text}&quot;
                 </p>
-                <p className="text-xs text-neutral-600 mt-1">Try the Free Will Utilizer!</p>
+                <p className="text-xs text-neutral-500 italic">amazing use of free will ✦</p>
               </div>
             </div>
           </section>
         )}
 
-        {/* History */}
+        {/* ── History ── */}
         {history.length > 1 && (
-          <section className="max-w-lg mx-auto px-5 mb-10">
-            <div className="bg-neutral-900/30 border border-neutral-800/30 rounded-2xl p-5">
-              <p className="text-xs font-semibold tracking-widest uppercase text-neutral-600 mb-3">
-                🕐 Your free will history
-              </p>
-              <div className="space-y-2">
-                {history.slice(1).map((item, i) => (
-                  <div
-                    key={item.text}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-neutral-900/40 border border-neutral-800/30 text-sm text-neutral-500"
-                    style={{ opacity: 1 - i * 0.08 }}
-                  >
-                    <span>{item.emoji}</span>
-                    <span className="truncate">{item.text}</span>
-                  </div>
-                ))}
-              </div>
+          <section className="mb-10">
+            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-neutral-700 mb-3">
+              Free will log
+            </p>
+            <div className="space-y-1.5">
+              {history.slice(1).map((item, i) => (
+                <div
+                  key={item.text}
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04] text-sm text-neutral-600"
+                  style={{ opacity: 1 - i * 0.07 }}
+                >
+                  <span className="text-base flex-shrink-0">{item.emoji}</span>
+                  <span className="truncate">{item.text}</span>
+                  <span className="text-[10px] ml-auto flex-shrink-0 text-neutral-800">{VIBE_META[item.vibe].badge.split(' ')[0]}</span>
+                </div>
+              ))}
             </div>
           </section>
         )}
 
-        {/* Fun bottom section */}
-        <section className="max-w-lg mx-auto px-5 pb-12 text-center">
-          <div className="border-t border-neutral-800/40 pt-8">
-            <p className="text-xs text-neutral-700 leading-relaxed max-w-sm mx-auto">
-              You have approximately 2.5 billion seconds in your life. Each spin is one second well spent deciding how to spend the next few thousand. No pressure.
-            </p>
-            <p className="text-xs text-neutral-800 mt-3">
-              Built with ✦ free will ✦
-            </p>
-          </div>
-        </section>
+        {/* ── Footer ── */}
+        <footer className="pb-14 text-center border-t border-white/[0.04] pt-8">
+          <p className="text-[11px] text-neutral-800 leading-relaxed max-w-xs mx-auto mb-3">
+            ~2.5 billion seconds in a life. You just spent 1 deciding how to use the next few thousand. Pretty efficient, honestly.
+          </p>
+          <p className="text-[10px] text-neutral-900">
+            ✦ built with free will ✦
+          </p>
+        </footer>
       </div>
 
-      {/* Animations */}
+      {/* ── Keyframes ── */}
       <style jsx>{`
         @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-8px) rotate(-1deg); }
-          40% { transform: translateX(8px) rotate(1deg); }
-          60% { transform: translateX(-5px) rotate(-0.5deg); }
-          80% { transform: translateX(5px) rotate(0.5deg); }
+          0%, 100% { transform: translateX(0) rotate(0); }
+          15% { transform: translateX(-10px) rotate(-2deg); }
+          30% { transform: translateX(10px) rotate(2deg); }
+          45% { transform: translateX(-6px) rotate(-1deg); }
+          60% { transform: translateX(6px) rotate(1deg); }
+          75% { transform: translateX(-2px) rotate(-0.5deg); }
         }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes card-reveal {
+          from { opacity: 0; transform: translateY(16px) scale(0.97); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes pulse-glow {
-          from { box-shadow: 0 0 20px rgba(168, 85, 247, 0.1); }
-          to { box-shadow: 0 0 40px rgba(168, 85, 247, 0.25); }
+          from { box-shadow: 0 0 30px rgba(168, 85, 247, 0.08); }
+          to { box-shadow: 0 0 50px rgba(168, 85, 247, 0.2); }
         }
-        @keyframes bounce {
-          from { transform: translateY(0); }
-          to { transform: translateY(-6px); }
+        @keyframes dot-bounce {
+          from { transform: translateY(0); opacity: 0.4; }
+          to { transform: translateY(-8px); opacity: 1; }
+        }
+        @keyframes spin-wobble {
+          0% { transform: rotate(0) scale(1); }
+          25% { transform: rotate(8deg) scale(1.05); }
+          50% { transform: rotate(-8deg) scale(0.95); }
+          75% { transform: rotate(4deg) scale(1.02); }
+          100% { transform: rotate(0) scale(1); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
         }
       `}</style>
     </div>
