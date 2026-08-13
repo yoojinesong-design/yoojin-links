@@ -83,34 +83,34 @@ const CHALLENGES = [
   { text: "Send 'I finally did it' to five people. Do not elaborate.", tags: ['solo','free','indoor'], emoji: '📱', vibe: 'unhinged', tier: 1 },
   { text: "Open your camera roll. The 7th photo is now your lock screen for a week. No appeals.", tags: ['solo','free','indoor'], emoji: '🔒', vibe: 'unhinged', tier: 1 },
   { text: "Text someone you haven't talked to in over a year. Just 'I was thinking about you.' Nothing else.", tags: ['solo','free','indoor'], emoji: '💬', vibe: 'wholesome', tier: 1 },
-  { text: "Go outside. Find the best stick within 100 feet. Bring it home. It lives here now.", tags: ['solo','free','outdoor'], emoji: '🌿', vibe: 'unhinged', tier: 1 },
+  { text: "Order delivery to a park bench. Set up a tablecloth and a candle. Eat a full three-course meal there.", tags: ['solo','paid','outdoor'], emoji: '🕯️', vibe: 'unhinged', tier: 1 },
   { text: "Take a photo of exactly what's in front of you right now. Post it captioned 'It's done.'", tags: ['solo','free','indoor'], emoji: '📸', vibe: 'unhinged', tier: 1 },
   { text: "Google 'events near me tonight.' Go to the weirdest one.", tags: ['solo','free','outdoor'], emoji: '🎯', vibe: 'genius', tier: 1 },
   { text: "Walk into a bakery. Ask what their personal favorite is. Buy two. Give them one.", tags: ['solo','paid','outdoor'], emoji: '🥐', vibe: 'wholesome', tier: 1 },
-  { text: "Call someone you haven't talked to in a year. Don't explain why. Just ask how they are.", tags: ['solo','free','indoor'], emoji: '📞', vibe: 'wholesome', tier: 1 },
+  { text: "Walk into the nicest hotel lobby in your city. Sit at the bar. Order one drink. Talk to whoever's next to you.", tags: ['solo','paid','outdoor'], emoji: '🥃', vibe: 'genius', tier: 1 },
   { text: "Go to a restaurant alone. Order the chef's favorite, not yours.", tags: ['solo','paid','outdoor'], emoji: '🍽️', vibe: 'genius', tier: 1 },
   { text: "Wear something you've been saving 'for a special occasion.' Today is the occasion.", tags: ['solo','free','indoor'], emoji: '👔', vibe: 'genius', tier: 1 },
   { text: "Walk into a store you've never entered. Buy the third thing you touch.", tags: ['solo','paid','outdoor'], emoji: '🚪', vibe: 'genius', tier: 1 },
-  { text: "Find the nearest body of water. Skip a rock. If you can't, this is now a rock-skipping lesson.", tags: ['solo','free','outdoor'], emoji: '🪨', vibe: 'wholesome', tier: 1 },
+  { text: "Go to a live show tonight for a genre you've never listened to. Stay for the whole thing. Talk to the band after.", tags: ['solo','paid','outdoor'], emoji: '🎵', vibe: 'genius', tier: 1 },
   { text: "Go to a bookstore. Buy the book with the best cover. No reading the summary.", tags: ['solo','paid','outdoor'], emoji: '📖', vibe: 'genius', tier: 1 },
   { text: "Pick a direction. Walk for exactly 20 minutes. Whatever you find, eat there.", tags: ['solo','paid','outdoor'], emoji: '🧭', vibe: 'genius', tier: 1 },
   { text: "Ask a barista to make you 'whatever they wish people would order.' Tip well.", tags: ['solo','paid','outdoor'], emoji: '☕', vibe: 'wholesome', tier: 1 },
-  { text: "Bake something. Knock on a neighbor's door. 'These are for you.' Leave.", tags: ['solo','paid','indoor'], emoji: '🍪', vibe: 'wholesome', tier: 1 },
+  { text: "Buy a lottery ticket. Before you scratch it, write down exactly what you'd do with the money. Keep the note regardless.", tags: ['solo','paid','indoor'], emoji: '🎰', vibe: 'genius', tier: 1 },
   { text: "Go to a flea market. $10 budget. Buy the one thing that tells the best story.", tags: ['solo','paid','outdoor'], emoji: '🪆', vibe: 'genius', tier: 1 },
   { text: "Put your phone face-down. First notification you get — fully act on it. No matter what.", tags: ['solo','free','indoor'], emoji: '🔔', vibe: 'unhinged', tier: 1 },
   { text: "Hand your phone to a friend. They pick your wallpaper, ringtone, and profile photo. 48 hours.", tags: ['group','free','indoor'], emoji: '🤝', vibe: 'unhinged', tier: 1 },
-  { text: "Find the highest point near you that you can walk to. Go there. Sit for 10 minutes.", tags: ['solo','free','outdoor'], emoji: '⛰️', vibe: 'genius', tier: 1 },
+  { text: "Go to an art supply store. Buy something you have no idea how to use. Make something with it tonight. Frame it.", tags: ['solo','paid','outdoor'], emoji: '🎨', vibe: 'genius', tier: 1 },
   { text: "Go to a thrift store. Buy the weirdest painting there. Hang it prominently. Tell guests it's an original.", tags: ['solo','paid','outdoor'], emoji: '🎨', vibe: 'unhinged', tier: 1 },
   { text: "Learn three phrases in a language you'll never need. Use all three in conversation today.", tags: ['solo','free','indoor'], emoji: '🗣️', vibe: 'genius', tier: 1 },
-  { text: "Write a letter to yourself in 2035. Seal it. Hide it somewhere you'll forget about.", tags: ['solo','free','indoor'], emoji: '✉️', vibe: 'wholesome', tier: 1 },
-  { text: "Order something you've never tried at a place you go all the time.", tags: ['solo','paid','outdoor'], emoji: '🍜', vibe: 'genius', tier: 1 },
+  { text: "Sit at a coffee shop window. Write down the imagined life story of every person who walks by for 30 minutes.", tags: ['solo','paid','outdoor'], emoji: '✍️', vibe: 'genius', tier: 1 },
+  { text: "Find a flight under $100. Book it. You leave this week. Figure out the rest on the plane.", tags: ['solo','paid','outdoor'], emoji: '✈️', vibe: 'unhinged', tier: 1 },
   { text: "Leave a $5 bill tucked into chapter one of a kids' book at a bookstore.", tags: ['solo','paid','outdoor'], emoji: '💵', vibe: 'wholesome', tier: 1 },
 
   // ── MAKE SOMETHING ──
   { text: "Write a Yelp review of your own apartment. 3 stars. Be fair but harsh.", tags: ['solo','free','indoor'], emoji: '⭐', vibe: 'unhinged', tier: 2 },
   { text: "Film a full house tour of your place like it's a $4 million listing. Use the voice.", tags: ['solo','free','indoor'], emoji: '🏠', vibe: 'unhinged', tier: 2 },
-  { text: "Build a LinkedIn profile for your pet. Real skills. Get someone to endorse them.", tags: ['solo','free','indoor'], emoji: '💼', vibe: 'unhinged', tier: 2 },
-  { text: "Make a 30-second commercial for the oldest item in your fridge. Production value matters.", tags: ['solo','free','indoor'], emoji: '🎬', vibe: 'unhinged', tier: 2 },
+  { text: "Write a fake Wikipedia article about yourself. Include an 'Early Life,' 'Controversies,' and 'Legacy' section.", tags: ['solo','free','indoor'], emoji: '📖', vibe: 'unhinged', tier: 2 },
+  { text: "Make a fake documentary trailer about your roommate's most mundane habit. Film festival submission quality.", tags: ['solo','free','indoor'], emoji: '🎬', vibe: 'unhinged', tier: 2 },
   { text: "Create a restaurant menu for meals you can make right now. Name the restaurant. Design a logo.", tags: ['solo','free','indoor'], emoji: '📋', vibe: 'genius', tier: 2 },
   { text: "Design a movie poster for the most boring day of your life. Tagline and everything.", tags: ['solo','free','indoor'], emoji: '🎞️', vibe: 'genius', tier: 2 },
   { text: "Recreate a famous painting with what's in your kitchen. Photograph both side by side.", tags: ['solo','free','indoor'], emoji: '🖼️', vibe: 'genius', tier: 2 },
@@ -124,7 +124,7 @@ const CHALLENGES = [
   { text: "Go to a café. Write one page about whatever's on your mind. Leave it folded on the table.", tags: ['solo','paid','outdoor'], emoji: '✍️', vibe: 'genius', tier: 2 },
   { text: "Go to an open house for a home you can't afford. Take it very seriously.", tags: ['solo','free','outdoor'], emoji: '🏡', vibe: 'unhinged', tier: 2 },
   { text: "Go to a restaurant you've walked past 100 times but never entered. Get the server's pick.", tags: ['solo','paid','outdoor'], emoji: '🚶', vibe: 'genius', tier: 2 },
-  { text: "Walk into a pet store. Spend 20 minutes with an animal you'd never own. Name it.", tags: ['solo','free','outdoor'], emoji: '🐾', vibe: 'wholesome', tier: 2 },
+  { text: "Walk into a random building's lobby. Take the elevator to the highest floor. See what's up there.", tags: ['solo','free','outdoor'], emoji: '🛗', vibe: 'unhinged', tier: 2 },
   { text: "Go to a museum. Pick one piece. Sit with it for 15 minutes. Write what it said to you.", tags: ['solo','paid','indoor'], emoji: '🏛️', vibe: 'genius', tier: 2 },
 
   // ── WITH PEOPLE ──
@@ -134,7 +134,7 @@ const CHALLENGES = [
   { text: "Host a dinner where every dish must be someone's cultural comfort food. No repeats.", tags: ['group','paid','indoor'], emoji: '🍛', vibe: 'wholesome', tier: 2 },
   { text: "Each person teaches the group one skill in exactly 5 minutes. Timer is law.", tags: ['group','free','indoor'], emoji: '⏱️', vibe: 'genius', tier: 1 },
   { text: "Go thrift shopping. $5 budget. Buy the most thoughtful gift for the person next to you.", tags: ['group','paid','outdoor'], emoji: '🎁', vibe: 'wholesome', tier: 1 },
-  { text: "Everyone brings one weird ingredient. You have 1 hour to make a meal. Document everything.", tags: ['group','paid','indoor'], emoji: '🛒', vibe: 'genius', tier: 2 },
+  { text: "Everyone writes one secret on a piece of paper. Shuffle. Read them out loud. Nobody claims theirs. Ever.", tags: ['group','free','indoor'], emoji: '🤫', vibe: 'unhinged', tier: 2 },
   { text: "Watch a movie none of you have seen. Pause it halfway. Everyone writes how it ends.", tags: ['group','free','indoor'], emoji: '📺', vibe: 'genius', tier: 1 },
   { text: "Take the same photo of the same subject. Compare. Crown a winner. Winner picks dinner.", tags: ['group','free','outdoor'], emoji: '📷', vibe: 'genius', tier: 1 },
 
@@ -145,13 +145,13 @@ const CHALLENGES = [
   { text: "Set an alarm for 4am. Watch the entire sunrise. Don't bring your phone.", tags: ['solo','free','outdoor'], emoji: '🌅', vibe: 'genius', tier: 2 },
   { text: "Learn to solve a Rubik's cube this week. Post your final time.", tags: ['solo','paid','indoor'], emoji: '🧊', vibe: 'genius', tier: 2 },
   { text: "Text everyone in your recent contacts one specific memory you have with them. No context.", tags: ['solo','free','indoor'], emoji: '💭', vibe: 'wholesome', tier: 2 },
-  { text: "Fill a backpack with essentials. Give it to someone who needs it.", tags: ['solo','paid','outdoor'], emoji: '🎒', vibe: 'wholesome', tier: 2 },
-  { text: "Pick a skill you were obsessed with as a kid. Spend an afternoon getting back into it.", tags: ['solo','free','indoor'], emoji: '🧩', vibe: 'wholesome', tier: 2 },
+  { text: "Bring a chess set to a park. Challenge strangers. Play at least five games. Lose gracefully.", tags: ['solo','free','outdoor'], emoji: '♟️', vibe: 'genius', tier: 2 },
+  { text: "Learn to moonwalk this week. Film daily progress. Post only the final video.", tags: ['solo','free','indoor'], emoji: '🕺', vibe: 'genius', tier: 2 },
   { text: "Learn to cook one dish from your grandparents' culture. Call them for the recipe.", tags: ['solo','paid','indoor'], emoji: '🍲', vibe: 'wholesome', tier: 2 },
-  { text: "Walk into a grocery store. Buy only things you've never tried. Cook a mystery dinner.", tags: ['solo','paid','indoor'], emoji: '🫕', vibe: 'genius', tier: 2 },
+  { text: "Show up to a pickup basketball game. Play your hardest even if you're terrible. Buy everyone drinks after.", tags: ['solo','paid','outdoor'], emoji: '🏀', vibe: 'wholesome', tier: 2 },
   { text: "Go to a karaoke bar alone. Sing one song. Leave immediately after.", tags: ['solo','paid','outdoor'], emoji: '🎤', vibe: 'unhinged', tier: 2 },
-  { text: "Do a 15-minute trash sweep of your block. Sort the weird finds. Crown a winner.", tags: ['solo','free','outdoor'], emoji: '🗑️', vibe: 'genius', tier: 1 },
-  { text: "Hand-letter a lyric that's been stuck in your head. Give it to someone who'd get it.", tags: ['solo','free','indoor'], emoji: '✒️', vibe: 'wholesome', tier: 1 },
+  { text: "Pick a random Wikipedia article. Become an expert on it. Bring it up in every conversation for 24 hours.", tags: ['solo','free','indoor'], emoji: '🧠', vibe: 'genius', tier: 1 },
+  { text: "Make a time capsule with someone you care about. Seal it. GPS mark it. Calendar reminder: 5 years.", tags: ['group','free','outdoor'], emoji: '⏳', vibe: 'wholesome', tier: 1 },
 
   // ── LIFE EVENT ──
   { text: "Buy a disposable camera. Use all 27 shots in one day. Develop them next month.", tags: ['solo','paid','outdoor'], emoji: '📷', vibe: 'genius', tier: 3 },
@@ -346,10 +346,25 @@ export default function FreeWillUtilizer() {
       {/* Ambient */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full blur-[120px]"
-          style={{ background: 'radial-gradient(ellipse, rgba(129,140,248,0.04), transparent 70%)' }} />
+          style={{ background: 'radial-gradient(ellipse, rgba(129,140,248,0.06), transparent 70%)', animation: 'ambient-drift 12s ease-in-out infinite alternate' }} />
         <div className="absolute bottom-[-100px] left-1/4 w-[400px] h-[300px] rounded-full blur-[100px]"
-          style={{ background: 'radial-gradient(ellipse, rgba(244,63,94,0.02), transparent 70%)' }} />
+          style={{ background: 'radial-gradient(ellipse, rgba(244,63,94,0.03), transparent 70%)', animation: 'ambient-drift 15s ease-in-out infinite alternate-reverse' }} />
+        <div className="absolute top-1/3 right-[-100px] w-[300px] h-[400px] rounded-full blur-[100px]"
+          style={{ background: 'radial-gradient(ellipse, rgba(251,191,36,0.02), transparent 70%)', animation: 'ambient-drift 18s ease-in-out infinite alternate' }} />
         <div className="absolute inset-0" style={{ backgroundImage: `url("${noiseUrl}")`, backgroundRepeat: 'repeat', opacity: 0.6, mixBlendMode: 'overlay' }} />
+        {/* Floating particles */}
+        {[...Array(20)].map((_, i) => (
+          <div key={i} className="absolute w-px h-px rounded-full bg-white/20"
+            style={{
+              left: `${5 + (i * 47) % 90}%`,
+              top: `${3 + (i * 31) % 94}%`,
+              animation: `particle-float ${6 + (i % 5) * 2}s ease-in-out ${(i % 7) * -1.5}s infinite alternate`,
+              width: i % 3 === 0 ? '2px' : '1px',
+              height: i % 3 === 0 ? '2px' : '1px',
+              opacity: 0.15 + (i % 4) * 0.05,
+            }}
+          />
+        ))}
       </div>
 
       {/* Streak toast */}
@@ -362,16 +377,22 @@ export default function FreeWillUtilizer() {
       <div className="relative z-10 max-w-lg mx-auto px-5">
         {/* Header */}
         <header className="pt-16 pb-10 text-center">
-          <p className="text-[10px] font-medium tracking-[0.4em] uppercase text-neutral-700 mb-6">
+          <p className="text-[10px] font-medium tracking-[0.4em] uppercase text-neutral-700 mb-6" style={{ animation: 'card-reveal 0.8s ease' }}>
             you have free will · might as well use it
           </p>
-          <h1 className="text-5xl sm:text-[3.75rem] font-black tracking-[-0.04em] leading-[0.85] mb-3">
-            <span className="text-neutral-100">free will</span>
+          <h1 className="text-5xl sm:text-[3.75rem] font-black tracking-[-0.04em] leading-[0.85] mb-3" style={{ animation: 'card-reveal 0.6s ease' }}>
+            <span style={{
+              background: 'linear-gradient(135deg, #e0e7ff 0%, #818cf8 40%, #c4b5fd 60%, #f0f0f0 100%)',
+              backgroundSize: '200% 200%',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              animation: 'gradient-shift 8s ease infinite',
+            }}>free will</span>
           </h1>
-          <div className="text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-neutral-600 mb-7">
-            utilizer <span className="text-indigo-400/60">✦</span>
+          <div className="text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-neutral-600 mb-7" style={{ animation: 'card-reveal 0.7s ease' }}>
+            utilizer <span className="text-indigo-400/60" style={{ animation: 'star-pulse 3s ease-in-out infinite' }}>✦</span>
           </div>
-          <p className="text-[13px] text-neutral-600 max-w-[250px] mx-auto leading-relaxed">
+          <p className="text-[13px] text-neutral-600 max-w-[250px] mx-auto leading-relaxed" style={{ animation: 'card-reveal 0.9s ease' }}>
             the kind where people comment<br />
             <span className="text-neutral-400 italic">&quot;amazing use of free will&quot;</span>
           </p>
@@ -455,10 +476,11 @@ export default function FreeWillUtilizer() {
         <section className="mb-8">
           <div className="rounded-[1.75rem] p-px" style={{
             background: current && !isSpinning
-              ? `linear-gradient(135deg, ${vibe.accent}30, transparent 40%, transparent 60%, ${vibe.accent}18)`
+              ? `conic-gradient(from var(--border-angle, 0deg), ${vibe.accent}30, transparent 30%, transparent 70%, ${vibe.accent}18)`
               : isSpinning
-              ? 'linear-gradient(135deg, rgba(129,140,248,0.12), transparent 40%, transparent 60%, rgba(129,140,248,0.08))'
+              ? 'conic-gradient(from var(--border-angle, 0deg), rgba(129,140,248,0.15), transparent 30%, transparent 70%, rgba(129,140,248,0.10))'
               : 'linear-gradient(135deg, rgba(255,255,255,0.04), transparent 40%, transparent 60%, rgba(255,255,255,0.02))',
+            animation: current || isSpinning ? 'border-rotate 4s linear infinite' : 'none',
           }}>
             <div
               onClick={!current && !isSpinning ? spin : undefined}
@@ -527,7 +549,7 @@ export default function FreeWillUtilizer() {
             className={`w-full py-4 rounded-2xl font-semibold text-[15px] tracking-[-0.01em] transition-all duration-300 ${
               isSpinning ? 'bg-white/[0.02] text-neutral-800 cursor-wait'
               : poolSize === 0 ? 'bg-white/[0.02] text-neutral-800 cursor-not-allowed'
-              : 'bg-white/[0.05] border border-white/[0.07] text-neutral-300 hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-neutral-100 active:scale-[0.98] shadow-[0_0_40px_rgba(129,140,248,0.04)]'
+              : 'bg-white/[0.05] border border-white/[0.07] text-neutral-300 hover:bg-white/[0.08] hover:border-white/[0.12] hover:text-neutral-100 active:scale-[0.97] shadow-[0_0_60px_rgba(129,140,248,0.06),0_0_120px_rgba(129,140,248,0.02)]'
             }`}>
             {isSpinning ? 'Spinning…' : current ? 'Spin again' : poolSize === 0 ? 'No matches' : 'Use your free will'}
           </button>
@@ -564,10 +586,17 @@ export default function FreeWillUtilizer() {
         )}
 
         {/* Footer */}
-        <footer className="pb-16 text-center border-t border-white/[0.02] pt-10">
-          <p className="text-[11px] text-neutral-800 leading-relaxed max-w-[240px] mx-auto">
+        <footer className="pb-16 text-center border-t border-white/[0.03] pt-10">
+          <p className="text-[11px] text-neutral-700 leading-relaxed max-w-[260px] mx-auto mb-3">
             ~2.5 billion seconds in a life.<br />
-            You just used one to decide how to spend the next few thousand.
+            You just used one to decide how<br />to spend the next few thousand.
+          </p>
+          <p className="text-[10px] text-neutral-800">
+            <span style={{
+              background: 'linear-gradient(90deg, rgba(129,140,248,0.4), rgba(244,63,94,0.4), rgba(251,191,36,0.4))',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>✦</span>
           </p>
         </footer>
       </div>
@@ -602,6 +631,31 @@ export default function FreeWillUtilizer() {
         @keyframes float {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-10px); }
+        }
+        @property --border-angle {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
+        }
+        @keyframes border-rotate {
+          to { --border-angle: 360deg; }
+        }
+        @keyframes gradient-shift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes star-pulse {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.15); }
+        }
+        @keyframes ambient-drift {
+          0% { transform: translate(0, 0) scale(1); }
+          100% { transform: translate(30px, -20px) scale(1.1); }
+        }
+        @keyframes particle-float {
+          0% { transform: translateY(0) translateX(0); opacity: 0.1; }
+          50% { opacity: 0.25; }
+          100% { transform: translateY(-30px) translateX(15px); opacity: 0.05; }
         }
       `}</style>
     </div>
