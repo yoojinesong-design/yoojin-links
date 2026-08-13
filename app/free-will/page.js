@@ -178,7 +178,7 @@ const TIER_FILTERS = [{ key: 1, label: '5 min', icon: '⚡' }, { key: 2, label: 
 
 const VIBE_META = {
   unhinged: { glow: 'rgba(244,63,94,0.10)', badge: '🫠 unhinged', border: 'border-rose-500/20', accent: '#f43f5e', canvasBg: ['#1a0612','#12061a'], canvasAccent: '#f43f5e' },
-  genius: { glow: 'rgba(129,140,248,0.10)', badge: '🧠 genius', border: 'border-indigo-400/20', accent: '#818cf8', canvasBg: ['#08082e','#0e082e'], canvasAccent: '#818cf8' },
+  genius: { glow: 'rgba(129,140,248,0.10)', badge: '🧠 big brain', border: 'border-indigo-400/20', accent: '#818cf8', canvasBg: ['#08082e','#0e082e'], canvasAccent: '#818cf8' },
   wholesome: { glow: 'rgba(251,191,36,0.10)', badge: '🥹 wholesome', border: 'border-amber-500/20', accent: '#fbbf24', canvasBg: ['#1a1405','#1a1005'], canvasAccent: '#fbbf24' },
 }
 const TIER_META = {
@@ -186,7 +186,7 @@ const TIER_META = {
   2: { label: 'commit to it', color: 'text-sky-400', border: 'border-sky-500/15' },
   3: { label: 'life event', color: 'text-rose-400', border: 'border-rose-500/15' },
 }
-const SPIN_WORDS = ['Consulting the multiverse…','Rolling the existential dice…','Loading free will…','Asking the void…','Calibrating spontaneity…','Summoning audacity…','Your future self approved this…']
+const SPIN_WORDS = ['hold on let me ask the void…','manifesting rn…','the algorithm is thinking…','loading your roman empire…','consulting your future self…','ok wait this one hits…','the universe is typing…']
 const SLOT_EMOJIS = ['🎲','✨','🌟','💫','🎯','🔮','🎪','🚀','⚡','🌀','💥','🫧','🪄','🌈','🦋']
 
 function getDailyChallenge() {
@@ -195,11 +195,11 @@ function getDailyChallenge() {
   return CHALLENGES[seed % CHALLENGES.length]
 }
 const STREAK_MILESTONES = {
-  3: { msg: '3 days strong 🔥', emoji: '🔥' },
-  7: { msg: 'One whole week ⚡', emoji: '⚡' },
-  14: { msg: 'Two weeks 💪', emoji: '💪' },
-  30: { msg: '30 days. Legend. 👑', emoji: '👑' },
-  100: { msg: '100 days. You are free will. 🏆', emoji: '🏆' },
+  3: { msg: '3 days in. no one can stop you.', emoji: '🔥' },
+  7: { msg: 'a whole week of main character energy', emoji: '⚡' },
+  14: { msg: 'two weeks. this is a lifestyle now.', emoji: '💅' },
+  30: { msg: '30 days. you are genuinely unhinged.', emoji: '👑' },
+  100: { msg: '100 days. you ARE free will.', emoji: '🏆' },
 }
 
 export default function FreeWillUtilizer() {
@@ -294,8 +294,8 @@ export default function FreeWillUtilizer() {
 
   const vibe = current ? VIBE_META[current.vibe] : null
   const tier = current ? TIER_META[current.tier] : null
-  const dayLabel = dayStreak > 0 ? `Day ${dayStreak} of using my free will:` : 'Today I chose to:'
-  const shareText = current ? `${dayLabel}\n\n${current.text}\n\namazing use of free will ✦\n#amazinguseoffreewill` : ''
+  const dayLabel = dayStreak > 0 ? `day ${dayStreak} of using my free will:` : 'today i chose to:'
+  const shareText = current ? `${dayLabel}\n\n${current.text}\n\namazing use of free will ✦` : ''
   const tweetUrl = () => `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`
   const whatsappUrl = () => `https://wa.me/?text=${encodeURIComponent(shareText)}`
   const copyText = async () => { try { await navigator.clipboard.writeText(shareText); setCopied(true); setTimeout(() => setCopied(false), 2200) } catch { /* */ } }
@@ -316,9 +316,9 @@ export default function FreeWillUtilizer() {
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H)
     ctx.textAlign = 'center'
     ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.font = '500 18px system-ui, sans-serif'
-    ctx.fillText('✦  FREE WILL UTILIZER  ✦', W / 2, 70)
+    ctx.fillText('✦  free will utilizer  ✦', W / 2, 70)
     ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '400 26px system-ui, sans-serif'
-    ctx.fillText(dayStreak > 0 ? `Day ${dayStreak}` : 'Today I chose to:', W / 2, 120)
+    ctx.fillText(dayStreak > 0 ? `day ${dayStreak}` : 'today i chose to:', W / 2, 120)
     ctx.font = '140px serif'; ctx.fillText(current.emoji, W / 2, H * 0.3 + 20)
     ctx.fillStyle = '#f0f0f0'; ctx.font = 'bold 44px system-ui, sans-serif'
     const words = current.text.split(' '); let lines = [], line = ''
@@ -377,8 +377,8 @@ export default function FreeWillUtilizer() {
       <div className="relative z-10 max-w-lg mx-auto px-5">
         {/* Header */}
         <header className="pt-16 pb-10 text-center">
-          <p className="text-[10px] font-medium tracking-[0.4em] uppercase text-neutral-700 mb-6" style={{ animation: 'card-reveal 0.8s ease' }}>
-            you have free will · might as well use it
+          <p className="text-[10px] font-medium tracking-[0.35em] uppercase text-neutral-600 mb-6" style={{ animation: 'card-reveal 0.8s ease' }}>
+            you have free will · use it or lose it
           </p>
           <h1 className="text-5xl sm:text-[3.75rem] font-black tracking-[-0.04em] leading-[0.85] mb-3" style={{ animation: 'card-reveal 0.6s ease' }}>
             <span style={{
@@ -392,8 +392,8 @@ export default function FreeWillUtilizer() {
           <div className="text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-neutral-600 mb-7" style={{ animation: 'card-reveal 0.7s ease' }}>
             utilizer <span className="text-indigo-400/60" style={{ animation: 'star-pulse 3s ease-in-out infinite' }}>✦</span>
           </div>
-          <p className="text-[13px] text-neutral-600 max-w-[250px] mx-auto leading-relaxed" style={{ animation: 'card-reveal 0.9s ease' }}>
-            the kind where people comment<br />
+          <p className="text-[13px] text-neutral-600 max-w-[260px] mx-auto leading-relaxed" style={{ animation: 'card-reveal 0.9s ease' }}>
+            for when someone comments<br />
             <span className="text-neutral-400 italic">&quot;amazing use of free will&quot;</span>
           </p>
         </header>
@@ -419,7 +419,7 @@ export default function FreeWillUtilizer() {
                 <span className="text-2xl">{daily.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-indigo-400/60">Today&apos;s challenge</span>
+                    <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-indigo-400/60">today&apos;s move</span>
                     <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${dailyTier.border} ${dailyTier.color} bg-white/[0.02]`}>{dailyTier.label}</span>
                   </div>
                   <p className="text-[13px] text-neutral-500 leading-snug truncate group-hover:text-neutral-400 transition-colors">{daily.text}</p>
@@ -436,7 +436,7 @@ export default function FreeWillUtilizer() {
             className="w-full flex items-center justify-between px-4 py-2.5 bg-white/[0.015] border border-white/[0.04] rounded-xl text-xs text-neutral-700 hover:bg-white/[0.03] transition-all">
             <span className="flex items-center gap-2">
               <span className="text-[10px] font-medium tracking-[0.15em] uppercase">
-                {anyFilterActive ? `${poolSize} match${poolSize !== 1 ? 'es' : ''}` : 'Filter'}
+                {anyFilterActive ? `${poolSize} match${poolSize !== 1 ? 'es' : ''}` : 'filter'}
               </span>
               {anyFilterActive && <button onClick={(e) => { e.stopPropagation(); setActiveFilters(new Set()); setTierFilter(null) }} className="text-[10px] text-neutral-800 hover:text-neutral-500 underline ml-1">clear</button>}
             </span>
@@ -536,7 +536,7 @@ export default function FreeWillUtilizer() {
                 <div className="flex flex-col items-center gap-5">
                   <div className="text-7xl" style={{ animation: 'float 3s ease-in-out infinite' }}>🎲</div>
                   <p className="text-[15px] text-neutral-600 font-medium">tap to spin</p>
-                  <p className="text-[11px] text-neutral-800">{poolSize} challenges</p>
+                  <p className="text-[11px] text-neutral-800">{poolSize} ways to use it</p>
                 </div>
               )}
             </div>
@@ -551,7 +551,7 @@ export default function FreeWillUtilizer() {
               : poolSize === 0 ? 'bg-white/[0.02] text-neutral-800 cursor-not-allowed'
               : 'bg-white/[0.05] border border-white/[0.07] text-neutral-300 hover:bg-white/[0.08] hover:border-white/[0.12] hover:text-neutral-100 active:scale-[0.97] shadow-[0_0_60px_rgba(129,140,248,0.06),0_0_120px_rgba(129,140,248,0.02)]'
             }`}>
-            {isSpinning ? 'Spinning…' : current ? 'Spin again' : poolSize === 0 ? 'No matches' : 'Use your free will'}
+            {isSpinning ? 'one sec…' : current ? 'spin again' : poolSize === 0 ? 'no matches' : 'use your free will'}
           </button>
           {current && !isSpinning && (
             <button onClick={acceptChallenge}
@@ -559,7 +559,7 @@ export default function FreeWillUtilizer() {
                 challengeAccepted ? 'bg-emerald-500/10 border border-emerald-400/20 text-emerald-400'
                 : 'bg-white/[0.02] border border-white/[0.05] text-neutral-600 hover:bg-white/[0.05] hover:text-neutral-400'
               }`} style={{ animation: 'card-reveal 0.3s ease' }}>
-              {challengeAccepted ? '✓ Accepted' : 'Accept challenge'}
+              {challengeAccepted ? '✓ locked in' : 'i\'m doing this'}
             </button>
           )}
           <button onClick={() => { setSoundOn(!soundOn); try { localStorage.setItem('fwu-stats', JSON.stringify({ spins: totalSpins, accepted, streak: dayStreak, lastDay, soundOn: !soundOn })) } catch { /* */ } }}
@@ -588,8 +588,8 @@ export default function FreeWillUtilizer() {
         {/* Footer */}
         <footer className="pb-16 text-center border-t border-white/[0.03] pt-10">
           <p className="text-[11px] text-neutral-700 leading-relaxed max-w-[260px] mx-auto mb-3">
-            ~2.5 billion seconds in a life.<br />
-            You just used one to decide how<br />to spend the next few thousand.
+            you get ~2.5 billion seconds.<br />
+            you just spent one deciding<br />how to use the next few thousand.
           </p>
           <p className="text-[10px] text-neutral-800">
             <span style={{
