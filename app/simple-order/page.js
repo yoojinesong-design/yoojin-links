@@ -36,8 +36,9 @@ export default function SimpleOrderLanding() {
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <span className="text-xl font-bold tracking-tight">simple<span className="text-blue-600">order</span></span>
           <div className="flex items-center gap-4">
-            <Link href="/simple-order/demo" className="text-sm text-neutral-500 hover:text-neutral-900 transition font-medium">데모</Link>
-            <a href="#waitlist" className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full font-semibold transition">시작하기</a>
+            <Link href="/simple-order/store/demo" className="text-sm text-neutral-500 hover:text-neutral-900 transition font-medium">데모</Link>
+            <Link href="/simple-order/dashboard" className="text-sm text-neutral-500 hover:text-neutral-900 transition font-medium">대시보드</Link>
+            <Link href="/simple-order/create" className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full font-semibold transition">시작하기</Link>
           </div>
         </div>
       </nav>
@@ -58,10 +59,10 @@ export default function SimpleOrderLanding() {
             거래처가 직접 골라서 주문합니다.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="#waitlist" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold text-lg transition shadow-lg shadow-blue-600/20">
+            <Link href="/simple-order/create" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold text-lg transition shadow-lg shadow-blue-600/20">
               무료로 시작 →
-            </a>
-            <Link href="/simple-order/demo" className="border-2 border-neutral-200 hover:border-neutral-300 text-neutral-700 px-8 py-4 rounded-2xl font-bold text-lg transition">
+            </Link>
+            <Link href="/simple-order/store/demo" className="border-2 border-neutral-200 hover:border-neutral-300 text-neutral-700 px-8 py-4 rounded-2xl font-bold text-lg transition">
               데모 보기
             </Link>
           </div>
@@ -254,7 +255,8 @@ export default function SimpleOrderLanding() {
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-neutral-400">
           <span>simpleorder — B2B 주문을 링크 하나로</span>
           <div className="flex gap-6">
-            <Link href="/simple-order/demo" className="hover:text-neutral-600 transition">데모</Link>
+            <Link href="/simple-order/store/demo" className="hover:text-neutral-600 transition">데모</Link>
+            <Link href="/simple-order/dashboard" className="hover:text-neutral-600 transition">대시보드</Link>
             <Link href="/" className="hover:text-neutral-600 transition">홈</Link>
           </div>
         </div>
