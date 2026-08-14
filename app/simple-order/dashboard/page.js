@@ -1,68 +1,27 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
-function formatWon(n) {
-  return '₩' + n.toLocaleString('ko-KR')
-}
-
+function formatWon(n) { return '₩' + n.toLocaleString('ko-KR') }
 function formatDate(iso) {
   const d = new Date(iso)
-  const month = d.getMonth() + 1
-  const day = d.getDate()
-  const hour = d.getHours()
-  const min = String(d.getMinutes()).padStart(2, '0')
-  return `${month}/${day} ${hour}:${min}`
+  return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 const DEMO_ORDERS = [
-  {
-    id: 'ORD-A1B2C',
-    customer: { name: '순이네 감자탕', contact: '010-1234-5678', note: '들기름 2병은 다음주 화요일에 배송 부탁드려요' },
-    items: [
-      { name: '유기농 들기름', price: 18000, qty: 5 },
-      { name: '고춧가루 1kg', price: 35000, qty: 2 },
-      { name: '된장 2kg', price: 15000, qty: 3 },
-    ],
-    total: 205000,
-    date: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    status: 'pending',
-  },
-  {
-    id: 'ORD-D3E4F',
-    customer: { name: '맛나분식', contact: '010-9876-5432', note: '' },
-    items: [
-      { name: '참기름 (대)', price: 22000, qty: 3 },
-      { name: '간장 1.8L', price: 12000, qty: 5 },
-      { name: '쌀 10kg', price: 45000, qty: 2 },
-    ],
-    total: 216000,
-    date: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    status: 'confirmed',
-  },
-  {
-    id: 'ORD-G5H6I',
-    customer: { name: '행복한 밥상', contact: '010-5555-1234', note: '정문 앞에 놓아주세요' },
-    items: [
-      { name: '콩기름 1.8L', price: 8500, qty: 10 },
-      { name: '천일염 3kg', price: 9000, qty: 5 },
-    ],
-    total: 130000,
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    status: 'delivered',
-  },
-  {
-    id: 'ORD-J7K8L',
-    customer: { name: '김사장 식당', contact: '010-3333-7777', note: '' },
-    items: [
-      { name: '들깨가루 500g', price: 16000, qty: 4 },
-      { name: '식초 1.8L', price: 5500, qty: 6 },
-      { name: '미숫가루 1kg', price: 12000, qty: 2 },
-    ],
-    total: 121000,
-    date: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    status: 'delivered',
-  },
+  { id:'demo-1', order_number:'ORD-A1B2C', customer:{name:'순이네 감자탕',contact:'010-1234-5678',note:'들기름 2병은 다음주 화요일에 배송 부탁드려요'},
+    items:[{name:'유기농 들기름',price:18000,qty:5},{name:'고춧가루 1kg',price:35000,qty:2},{name:'된장 2kg',price:15000,qty:3}],
+    total:205000, date:new Date(Date.now()-1800000).toISOString(), status:'pending' },
+  { id:'demo-2', order_number:'ORD-D3E4F', customer:{name:'맛나분식',contact:'010-9876-5432',note:''},
+    items:[{name:'참기름 (대)',price:22000,qty:3},{name:'간장 1.8L',price:12000,qty:5},{name:'쌀 10kg',price:45000,qty:2}],
+    total:216000, date:new Date(Date.now()-10800000).toISOString(), status:'confirmed' },
+  { id:'demo-3', order_number:'ORD-G5H6I', customer:{name:'행복한 밥상',contact:'010-5555-1234',note:'정문 앞에 놓아주세요'},
+    items:[{name:'콩기름 1.8L',price:8500,qty:10},{name:'천일염 3kg',price:9000,qty:5}],
+    total:130000, date:new Date(Date.now()-86400000).toISOString(), status:'delivered' },
+  { id:'demo-4', order_number:'ORD-J7K8L', customer:{name:'김사장 식당',contact:'010-3333-7777',note:''},
+    items:[{name:'들깨가루 500g',price:16000,qty:4},{name:'식초 1.8L',price:5500,qty:6},{name:'미숫가루 1kg',price:12000,qty:2}],
+    total:121000, date:new Date(Date.now()-172800000).toISOString(), status:'delivered' },
 ]
 
 const STATUS_MAP = {
@@ -73,45 +32,117 @@ const STATUS_MAP = {
 }
 
 export default function Dashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-neutral-50 flex items-center justify-center"><div className="animate-pulse text-neutral-400">로딩 중...</div></div>}>
+      <DashboardContent />
+    </Suspense>
+  )
+}
+
+function DashboardContent() {
+  const searchParams = useSearchParams()
+  const storeSlug = searchParams.get('store') || ''
+
   const [tab, setTab] = useState('orders')
   const [orders, setOrders] = useState([])
   const [stores, setStores] = useState({})
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [isDemo, setIsDemo] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [lastRefresh, setLastRefresh] = useState(null)
 
-  useEffect(() => {
-    // Load from localStorage, fallback to demo
+  const loadOrders = useCallback(async () => {
+    const slug = storeSlug || Object.keys(stores)[0]
+
+    // API에서 주문 가져오기
+    if (slug) {
+      try {
+        const res = await fetch(`/api/simple-order/orders?store_slug=${slug}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (!data.demo && data.orders.length > 0) {
+            setOrders(data.orders)
+            setIsDemo(false)
+            setLoading(false)
+            setLastRefresh(new Date())
+            return
+          }
+        }
+      } catch {}
+    }
+
+    // localStorage 폴백
     try {
       const savedOrders = JSON.parse(localStorage.getItem('simpleorder_orders') || '[]')
-      const savedStores = JSON.parse(localStorage.getItem('simpleorder_stores') || '{}')
-      setOrders(savedOrders.length > 0 ? savedOrders : DEMO_ORDERS)
-      setStores(savedStores)
-    } catch {
-      setOrders(DEMO_ORDERS)
-    }
-  }, [])
+      if (savedOrders.length > 0) {
+        setOrders(savedOrders.map(o => ({
+          ...o,
+          customer: o.customer || { name: o.customer_name, contact: o.customer_contact, note: o.customer_note },
+          date: o.date || o.created_at,
+        })))
+        setIsDemo(false)
+        setLoading(false)
+        setLastRefresh(new Date())
+        return
+      }
+    } catch {}
 
-  const updateOrderStatus = (orderId, newStatus) => {
+    // 데모 데이터
+    setOrders(DEMO_ORDERS)
+    setIsDemo(true)
+    setLoading(false)
+    setLastRefresh(new Date())
+  }, [storeSlug, stores])
+
+  useEffect(() => {
+    // 가게 목록 로드
+    try {
+      const savedStores = JSON.parse(localStorage.getItem('simpleorder_stores') || '{}')
+      setStores(savedStores)
+    } catch {}
+    loadOrders()
+  }, [loadOrders])
+
+  // 30초마다 자동 새로고침
+  useEffect(() => {
+    const interval = setInterval(loadOrders, 30000)
+    return () => clearInterval(interval)
+  }, [loadOrders])
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    // API로 상태 변경
+    try {
+      await fetch(`/api/simple-order/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+    } catch {}
+
+    // 로컬 상태 업데이트
     setOrders(prev => {
-      const next = prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
+      const next = prev.map(o => (o.id === orderId ? { ...o, status: newStatus } : o))
       try { localStorage.setItem('simpleorder_orders', JSON.stringify(next)) } catch {}
       return next
     })
   }
 
-  const todayOrders = orders.filter(o => {
-    const d = new Date(o.date)
-    const now = new Date()
-    return d.toDateString() === now.toDateString()
-  })
-
+  const todayOrders = orders.filter(o => new Date(o.date).toDateString() === new Date().toDateString())
   const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0)
   const pendingCount = orders.filter(o => o.status === 'pending').length
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0)
   const storeList = Object.values(stores)
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="animate-pulse text-neutral-400">로딩 중...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-neutral-200">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/simple-order" className="text-xl font-bold tracking-tight">
@@ -119,6 +150,12 @@ export default function Dashboard() {
             <span className="text-xs text-neutral-400 ml-2 font-normal">대시보드</span>
           </Link>
           <div className="flex items-center gap-3">
+            {isDemo && (
+              <span className="text-xs bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-bold">데모 모드</span>
+            )}
+            <button onClick={loadOrders} className="text-sm text-neutral-400 hover:text-neutral-600 transition" title="새로고침">
+              🔄
+            </button>
             <Link href="/simple-order/create"
               className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full font-semibold transition">
               + 새 가게
@@ -144,19 +181,23 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* Auto refresh indicator */}
+        {lastRefresh && (
+          <div className="text-xs text-neutral-300 text-right mb-4">
+            마지막 갱신: {formatDate(lastRefresh.toISOString())} · 30초마다 자동 갱신
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex gap-1 bg-neutral-100 rounded-xl p-1 mb-6">
           {[
             { key: 'orders', label: '주문 관리', icon: '📋' },
             { key: 'stores', label: '내 가게', icon: '🏪' },
           ].map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
+            <button key={t.key} onClick={() => setTab(t.key)}
               className={`flex-1 py-3 rounded-lg text-sm font-bold transition ${
                 tab === t.key ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
-              }`}
-            >
+              }`}>
               {t.icon} {t.label}
             </button>
           ))}
@@ -174,33 +215,39 @@ export default function Dashboard() {
             ) : (
               orders.map(order => {
                 const status = STATUS_MAP[order.status] || STATUS_MAP.pending
+                const isNew = order.status === 'pending' && (Date.now() - new Date(order.date).getTime()) < 3600000
                 return (
                   <div key={order.id}
-                    className="bg-white border border-neutral-200 rounded-2xl p-5 hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => setSelectedOrder(selectedOrder?.id === order.id ? null : order)}>
+                    className={`bg-white border rounded-2xl p-5 hover:shadow-md transition-shadow cursor-pointer ${
+                      isNew ? 'border-amber-200 ring-1 ring-amber-100' : 'border-neutral-200'
+                    }`}
+                    onClick={() => setSelectedOrder(selectedOrder === order.id ? null : order.id)}>
+                    {isNew && (
+                      <div className="text-xs font-bold text-amber-600 mb-2 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                        새 주문
+                      </div>
+                    )}
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <div className="font-bold text-neutral-900">{order.customer.name}</div>
-                        <div className="text-xs text-neutral-400 mt-0.5">{formatDate(order.date)} · {order.customer.contact}</div>
+                        <div className="font-bold text-neutral-900">{order.customer?.name || order.customer_name}</div>
+                        <div className="text-xs text-neutral-400 mt-0.5">{formatDate(order.date)} · {order.customer?.contact || order.customer_contact}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-extrabold text-neutral-900">{formatWon(order.total)}</span>
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${status.color}`}>{status.label}</span>
                       </div>
                     </div>
-
                     <div className="text-sm text-neutral-500">
                       {order.items.map(i => `${i.name} ×${i.qty}`).join(', ')}
                     </div>
-
-                    {order.customer.note && (
+                    {(order.customer?.note || order.customer_note) && (
                       <div className="mt-2 text-xs text-neutral-400 bg-neutral-50 rounded-lg px-3 py-2">
-                        💬 {order.customer.note}
+                        💬 {order.customer?.note || order.customer_note}
                       </div>
                     )}
 
-                    {/* Expanded detail */}
-                    {selectedOrder?.id === order.id && (
+                    {selectedOrder === order.id && (
                       <div className="mt-4 pt-4 border-t border-neutral-100">
                         <div className="space-y-2 mb-4">
                           {order.items.map((item, i) => (
@@ -210,24 +257,20 @@ export default function Dashboard() {
                             </div>
                           ))}
                         </div>
-
                         {order.status === 'pending' && (
                           <div className="flex gap-2">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'confirmed') }}
+                            <button onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'confirmed') }}
                               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-sm transition">
                               ✓ 주문 확인
                             </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'cancelled') }}
+                            <button onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'cancelled') }}
                               className="px-4 py-2.5 border border-neutral-200 hover:border-red-300 text-neutral-400 hover:text-red-500 rounded-xl font-bold text-sm transition">
                               취소
                             </button>
                           </div>
                         )}
                         {order.status === 'confirmed' && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'delivered') }}
+                          <button onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'delivered') }}
                             className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl font-bold text-sm transition">
                             📦 배송 완료
                           </button>
@@ -265,47 +308,35 @@ export default function Dashboard() {
                       </div>
                       <span className="text-xs bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full">활성</span>
                     </div>
-
                     <div className="flex items-center gap-3 text-sm mb-4">
                       <span className="text-neutral-400">📦 상품 {s.products?.length || 0}개</span>
                       <span className="text-neutral-400">·</span>
                       <span className="text-neutral-400">🏷️ {s.type}</span>
                     </div>
-
                     <div className="bg-neutral-50 rounded-xl px-4 py-3 mb-4">
                       <div className="text-xs text-neutral-400 mb-1">주문 링크</div>
                       <div className="text-blue-600 font-bold text-sm">{s.slug}.simpleorder.kr</div>
                     </div>
-
                     <div className="flex gap-2">
                       <Link href={`/simple-order/store/${s.slug}`}
                         className="flex-1 text-center border border-neutral-200 hover:border-neutral-300 text-neutral-700 py-2.5 rounded-xl font-bold text-sm transition">
                         페이지 보기
                       </Link>
-                      <button
-                        onClick={() => {
-                          const url = `${window.location.origin}/simple-order/store/${s.slug}`
-                          navigator.clipboard.writeText(url)
-                        }}
+                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/simple-order/store/${s.slug}`) }}
                         className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-sm transition">
                         📋 링크 복사
                       </button>
                     </div>
                   </div>
                 ))}
-
                 <Link href="/simple-order/create"
                   className="block text-center border-2 border-dashed border-neutral-200 hover:border-blue-300 text-neutral-400 hover:text-blue-600 py-6 rounded-2xl font-bold transition">
                   + 가게 추가
                 </Link>
               </div>
             )}
-
-            {/* Demo store link */}
             <div className="mt-8 text-center">
-              <Link href="/simple-order/store/demo" className="text-sm text-neutral-400 hover:text-blue-600 transition">
-                데모 가게 보기 →
-              </Link>
+              <Link href="/simple-order/store/demo" className="text-sm text-neutral-400 hover:text-blue-600 transition">데모 가게 보기 →</Link>
             </div>
           </div>
         )}
