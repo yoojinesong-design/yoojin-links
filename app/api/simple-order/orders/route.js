@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServer } from '../../../../lib/supabase-server'
+import { createSquareOrder } from '../../../../lib/square'
 
-// POST /api/simple-order/orders — 주문 생성 + 알림
+// POST /api/simple-order/orders — 주문 생성 + 알림 + Square POS 연동
 export async function POST(request) {
   const body = await request.json()
   const { store_slug, customer_name, customer_contact, customer_note, items, total } = body
@@ -20,10 +21,10 @@ export async function POST(request) {
     })
   }
 
-  // 가게 조회
+  // 가게 조회 (Square 연동 정보 포함)
   const { data: store } = await supabase
     .from('stores')
-    .select('id, name, notification_email')
+    .select('id, name, notification_email, square_access_token, square_location_id')
     .eq('slug', store_slug)
     .single()
 
@@ -55,6 +56,37 @@ export async function POST(request) {
     return NextResponse.json({ error: '주문 저장에 실패했어요.' }, { status: 500 })
   }
 
+  let squareOrderId = null
+
+  // Square POS 연동 — 토큰이 있으면 자동으로 Square에 주문 전송
+  if (store.square_access_token && store.square_location_id) {
+    try {
+      const squareOrder = await createSquareOrder(
+        store.square_access_token,
+        store.square_location_id,
+        {
+          id: order.id,
+          order_number: orderNumber,
+          customer_name,
+          customer_contact,
+          customer_note: customer_note || '',
+          items,
+          total,
+        }
+      )
+      squareOrderId = squareOrder.id
+
+      // Square 주문 ID를 DB에 저장
+      await supabase
+        .from('orders')
+        .update({ square_order_id: squareOrderId })
+        .eq('id', order.id)
+    } catch (e) {
+      console.error('Square order sync error:', e)
+      // Square 실패해도 주문 자체는 성공 — 다음 번에 재시도 가능
+    }
+  }
+
   // 이메일 알림 (notification_email이 있으면)
   if (store.notification_email) {
     try {
@@ -65,7 +97,11 @@ export async function POST(request) {
     }
   }
 
-  return NextResponse.json({ ok: true, order: { id: order.id, order_number: orderNumber } })
+  return NextResponse.json({
+    ok: true,
+    order: { id: order.id, order_number: orderNumber },
+    square_synced: !!squareOrderId,
+  })
 }
 
 // GET /api/simple-order/orders?store_slug=xxx — 가게 주문 목록
