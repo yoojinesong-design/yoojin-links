@@ -1,33 +1,9 @@
 'use client'
-import { useState } from 'react'
 import Link from 'next/link'
+import { useWaitlist } from '@/hooks/useWaitlist'
 
 export default function SimpleOrderLanding() {
-  const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!email || submitting) return
-    setSubmitting(true)
-    setError('')
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, product: 'simple-order' }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || '오류가 발생했어요')
-      setSubmitted(true)
-    } catch (err) {
-      setError(err.message || '다시 시도해 주세요')
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const { email, setEmail, submitted, submitting, error, handleSubmit } = useWaitlist('simple-order')
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">

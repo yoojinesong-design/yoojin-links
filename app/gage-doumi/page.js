@@ -1,6 +1,6 @@
 'use client'
-import { useState } from 'react'
 import Link from 'next/link'
+import { useWaitlist } from '@/hooks/useWaitlist'
 
 const PAIN_POINTS = [
   { pain: '배달앱 주문 놓쳐서 별점 떨어짐', fix: '모든 배달앱 주문 한 화면에' },
@@ -32,31 +32,7 @@ const STEPS = [
 ]
 
 export default function GageDoumiLanding() {
-  const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!email || submitting) return
-    setSubmitting(true)
-    setError('')
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, product: 'gage-doumi' }),
-      })
-      const data = await res.json()
-      if (!res.ok && res.status !== 200) throw new Error(data.error || '오류가 발생했어요')
-      setSubmitted(true)
-    } catch (err) {
-      setError(err.message || '네트워크 오류 — 다시 시도해 주세요')
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const { email, setEmail, submitted, submitting, error, handleSubmit } = useWaitlist('gage-doumi')
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">

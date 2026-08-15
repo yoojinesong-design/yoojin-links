@@ -22,9 +22,5 @@
     "square": "^45.0.1",
     "tailwindcss": "^4.3.3"
   },
-  "devDependencies": {
-    "@types/node": "26.1.2",
-    "@types/react": "19.2.17",
-    "typescript": "7.0.2"
-  }
+  "devDependencies": {}
 }

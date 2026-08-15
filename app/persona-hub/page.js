@@ -1,6 +1,6 @@
 'use client'
-import { useState } from 'react'
 import Link from 'next/link'
+import { useWaitlist } from '@/hooks/useWaitlist'
 
 const FEATURES = [
   {
@@ -44,32 +44,7 @@ const PAIN_POINTS = [
 ]
 
 export default function PersonaHubLanding() {
-  const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!email || submitting) return
-    setSubmitting(true)
-    setError('')
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, product: 'persona-hub' }),
-      })
-      const data = await res.json()
-      if (!res.ok && res.status !== 200) throw new Error(data.error || 'Something went wrong')
-      setSubmitted(true)
-    } catch (err) {
-      setError(err.message || 'Network error — please try again')
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const { email, setEmail, submitted, submitting, error, handleSubmit } = useWaitlist('persona-hub')
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">

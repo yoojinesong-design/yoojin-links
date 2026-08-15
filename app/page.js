@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useWaitlist } from '@/hooks/useWaitlist'
 
 const FEATURES = [
   {
@@ -48,31 +49,7 @@ export default function Home() {
     { q: 'Is there a contract?', a: 'No. Month-to-month, cancel anytime. 14-day free trial to start.' },
   ]
 
-  const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [waitlistError, setWaitlistError] = useState('')
-
-  const handleWaitlist = async (e) => {
-    e.preventDefault()
-    if (!email || submitting) return
-    setSubmitting(true)
-    setWaitlistError('')
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, product: 'detailbook' }),
-      })
-      const data = await res.json()
-      if (!res.ok && res.status !== 200) throw new Error(data.error || 'Something went wrong')
-      setSubmitted(true)
-    } catch (err) {
-      setWaitlistError(err.message || 'Network error — please try again')
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const { email, setEmail, submitted, submitting, error: waitlistError, handleSubmit: handleWaitlist } = useWaitlist('detailbook')
 
   return (
     <div className="min-h-screen">
