@@ -1,0 +1,22 @@
+node_modules/
+.next/
+out/
+
+# iOS build artifacts
+ios/App/Pods/
+ios/App/build/
+ios/App/App.xcworkspace/xcuserdata/
+*.xcuserstate
+
+# Android build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+android/local.properties
+*.jks
+*.keystore
+
+# IDE
+.idea/
+*.iml

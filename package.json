@@ -1,19 +1,44 @@
 {
-  "name": "yoojin-links",
+  "name": "imprint",
   "version": "1.0.0",
-  "description": "",
+  "description": "Find your purpose, make your mark — discover volunteer opportunities and social impact causes near you.",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "build:mobile": "MOBILE_BUILD=1 next build && npx cap sync",
+    "cap:sync": "npx cap sync",
+    "cap:ios": "npx cap open ios",
+    "cap:android": "npx cap open android",
+    "cap:run:ios": "npx cap run ios",
+    "cap:run:android": "npx cap run android"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "social-impact",
+    "volunteer",
+    "nonprofit",
+    "purpose"
+  ],
+  "author": "Yoojin Song",
   "license": "ISC",
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/geolocation": "^8.2.1",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/share": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "next": "^16.2.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }
