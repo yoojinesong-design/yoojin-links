@@ -1,0 +1,508 @@
+<title>퀀트 포트폴리오 — Yoojin Song</title>
+<style>
+:root{
+  --g:#EBEAE6;--s:#FFFFFF;--s2:#DFDEDA;
+  --ink:#161A1F;--ink2:#52565E;--ink3:#7A7E86;
+  --rule:#CDCCC8;--rule2:#DDDCD8;
+  --ac:#335A6E;--ac-bg:#E6EEF2;--ac-brd:#AABFCE;
+  --gn:#2A7648;--gn-bg:#E4F0EA;--gn-brd:#A4CEB8;
+  --am:#8E6620;--am-bg:#F0EBE0;--am-brd:#CCBE96;
+  --rd:#8E3430;--rd-bg:#F0E6E4;
+  --vi:#5A4490;--vi-bg:#EAE8F2;
+}
+@media(prefers-color-scheme:dark){:root{
+  --g:#111315;--s:#1A1D22;--s2:#24282E;
+  --ink:#D4D2CE;--ink2:#8C8E8A;--ink3:#5E6060;
+  --rule:#2A2D32;--rule2:#22252A;
+  --ac:#68AAC6;--ac-bg:#121E28;--ac-brd:#1E3448;
+  --gn:#54C076;--gn-bg:#0E1E14;--gn-brd:#1A3826;
+  --am:#CEA238;--am-bg:#1C1810;--am-brd:#362E18;
+  --rd:#CE5650;--rd-bg:#1C1210;
+  --vi:#9680C6;--vi-bg:#161228;
+}}
+:root[data-theme="light"]{
+  --g:#EBEAE6;--s:#FFFFFF;--s2:#DFDEDA;
+  --ink:#161A1F;--ink2:#52565E;--ink3:#7A7E86;
+  --rule:#CDCCC8;--rule2:#DDDCD8;
+  --ac:#335A6E;--ac-bg:#E6EEF2;--ac-brd:#AABFCE;
+  --gn:#2A7648;--gn-bg:#E4F0EA;--gn-brd:#A4CEB8;
+  --am:#8E6620;--am-bg:#F0EBE0;--am-brd:#CCBE96;
+  --rd:#8E3430;--rd-bg:#F0E6E4;
+  --vi:#5A4490;--vi-bg:#EAE8F2;
+}
+:root[data-theme="dark"]{
+  --g:#111315;--s:#1A1D22;--s2:#24282E;
+  --ink:#D4D2CE;--ink2:#8C8E8A;--ink3:#5E6060;
+  --rule:#2A2D32;--rule2:#22252A;
+  --ac:#68AAC6;--ac-bg:#121E28;--ac-brd:#1E3448;
+  --gn:#54C076;--gn-bg:#0E1E14;--gn-brd:#1A3826;
+  --am:#CEA238;--am-bg:#1C1810;--am-brd:#362E18;
+  --rd:#CE5650;--rd-bg:#1C1210;
+  --vi:#9680C6;--vi-bg:#161228;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--g);color:var(--ink);font-size:14.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.m{font-family:ui-monospace,'SF Mono','Cascadia Code',Consolas,monospace}
+.page{max-width:700px;margin:0 auto;padding:0 24px}
+.hr{border:none;border-top:1px solid var(--rule2);margin:44px 0}
+
+.hdr{padding:56px 0 0}
+.hdr-date{display:block;font-size:11px;color:var(--ink3);letter-spacing:.12em;margin-bottom:16px}
+.hdr h1{font-size:clamp(22px,4.5vw,30px);font-weight:700;line-height:1.25;letter-spacing:-.025em;text-wrap:balance;margin-bottom:14px}
+.hdr-sub{font-size:15px;color:var(--ink2);line-height:1.6}
+.hdr-sub strong{color:var(--ink)}
+
+.sl{display:block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.sl-ac{color:var(--ac)} .sl-gn{color:var(--gn)} .sl-am{color:var(--am)} .sl-rd{color:var(--rd)} .sl-vi{color:var(--vi)}
+h2{font-size:18px;font-weight:700;line-height:1.35;letter-spacing:-.01em;margin-bottom:12px;text-wrap:balance}
+.p{font-size:14.5px;color:var(--ink2);margin-bottom:12px;line-height:1.65}
+.p strong{color:var(--ink)}
+.p:last-child{margin-bottom:0}
+
+.prem{border-left:3px solid var(--ac);padding:18px 20px;margin:16px 0;background:var(--s);border-radius:0 4px 4px 0}
+.prem p{font-size:13.5px;color:var(--ink);line-height:1.65;margin-bottom:8px}
+.prem p:last-child{margin-bottom:0}
+.prem strong{color:var(--ac)}
+
+.tbl{background:var(--s);border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin:16px 0}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);padding:10px 14px;border-bottom:2px solid var(--rule)}
+td{padding:10px 14px;border-bottom:1px solid var(--rule2);color:var(--ink2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td strong{color:var(--ink)}
+.n{color:var(--gn);font-weight:700;font-variant-numeric:tabular-nums}
+.rn{color:var(--rd);font-weight:700;font-variant-numeric:tabular-nums}
+
+.stk{background:var(--s);border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin:16px 0}
+.stk-r{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--rule2);font-size:13px;gap:10px}
+.stk-r:last-child{border-bottom:none}
+.stk-r .i{color:var(--ink2)}
+.stk-r .v{font-weight:700;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stk-t{display:flex;justify-content:space-between;padding:12px 18px;border-top:2px solid var(--ac);font-size:14.5px;font-weight:700}
+.stk-t .v{color:var(--ac);font-variant-numeric:tabular-nums}
+
+.wrn{border-left:3px solid var(--am);padding:16px 18px;margin:14px 0;background:var(--am-bg);border-radius:0 4px 4px 0}
+.wrn h3{font-size:13px;font-weight:700;color:var(--am);margin-bottom:6px}
+.wrn p{font-size:12.5px;color:var(--ink2);line-height:1.6;margin-bottom:6px}
+.wrn p:last-child{margin-bottom:0}
+.wrn strong{color:var(--ink)}
+
+.ok{border-left:3px solid var(--gn);padding:16px 18px;margin:14px 0;background:var(--gn-bg);border-radius:0 4px 4px 0}
+.ok h3{font-size:13px;font-weight:700;color:var(--gn);margin-bottom:6px}
+.ok p{font-size:12.5px;color:var(--ink2);line-height:1.6;margin-bottom:6px}
+.ok p:last-child{margin-bottom:0}
+.ok strong{color:var(--ink)}
+
+.chart-wrap{background:var(--s);border:1px solid var(--rule);border-radius:4px;padding:16px;margin:16px 0}
+canvas{width:100%;height:280px;display:block}
+
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.kpi-i{background:var(--s);border:1px solid var(--rule);border-radius:4px;padding:14px 16px;text-align:center}
+.kpi-v{font-size:20px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;margin-bottom:4px}
+.kpi-l{font-size:10px;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase}
+
+.step{display:grid;grid-template-columns:28px 1fr;gap:12px;margin-bottom:14px}
+.step-n{width:28px;height:28px;border-radius:50%;background:var(--ac);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-c{font-size:13px;color:var(--ink2);line-height:1.55}
+.step-c strong{color:var(--ink)}
+
+.closing{border-top:2px solid var(--rule);padding:28px 0 0;margin:40px 0 0}
+.closing p{font-family:Georgia,'Noto Serif KR',serif;font-size:15px;color:var(--ink);line-height:1.75;font-style:italic}
+.foot{padding:24px 0 52px;font-size:11px;color:var(--ink3);line-height:1.6}
+
+@media(max-width:480px){
+  .kpi{grid-template-columns:1fr}
+  .stk-r{flex-direction:column;align-items:flex-start;gap:3px}
+}
+</style>
+
+<div class="page">
+  <header class="hdr">
+    <span class="hdr-date m">QUANT PORTFOLIO &middot; 2026. 08</span>
+    <h1>너는 이미 $1.85M 채권 부자다</h1>
+    <p class="hdr-sub">VA disability + CRSC + PCAFC의 현재가치를 계산하면, 금융자산 100% 주식이 <strong>수학적으로 맞는 유일한 답</strong>이다. 팩터 프리미엄으로 수익을 올리고, TSP와 Roth IRA에 최적 배치한다.</p>
+  </header>
+
+  <hr class="hr">
+
+  <span class="sl sl-ac m">보이지 않는 부</span>
+  <h2>금융 자산 $6K인데 왜 부자인가</h2>
+  <p class="p">VA disability는 <strong>연방 정부가 보증하는 인플레이션 연동 연금</strong>이다. 채권보다 안전하다. 이걸 현재가치로 환산하면:</p>
+
+  <div class="prem">
+    <p><strong>PV = 연간 수령액 &times; [1 &minus; (1+r)<sup>&minus;n</sup>] / r</strong></p>
+    <p>할인율 r = 3% (실질), 기간 n = 42년 (80세까지)</p>
+  </div>
+
+  <div class="stk">
+    <div class="stk-r"><span class="i">VA Disability 100% P&T &mdash; $49,898/yr &times; 42년</span><span class="v n m">$1,183,000</span></div>
+    <div class="stk-r"><span class="i">CRSC &mdash; $11,400/yr &times; 42년</span><span class="v n m">$270,000</span></div>
+    <div class="stk-r"><span class="i">PCAFC Level 1 &mdash; $26,500/yr &times; 20년</span><span class="v n m">$394,000</span></div>
+    <div class="stk-t"><span>보이지 않는 채권 포트폴리오</span><span class="v m">$1,847,000</span></div>
+  </div>
+  <p class="p">이건 국채보다 안전하다. 미 연방정부가 존재하는 한 지급된다. COLA로 인플레이션에 연동되니 <strong>TIPS (물가연동 국채) 수익률보다 높다.</strong></p>
+
+  <hr class="hr">
+
+  <span class="sl sl-ac m">전략의 수학</span>
+  <h2>100% 주식이 맞는 이유</h2>
+
+  <p class="p">일반적인 재테크 조언: <strong>"60% 주식 + 40% 채권"</strong>. 이건 채권 자산이 없는 사람 기준이다.</p>
+  <p class="p">너의 전체 자산 구성:</p>
+
+  <div class="stk">
+    <div class="stk-r"><span class="i">VA/CRSC/PCAFC 현재가치 (채권 성격)</span><span class="v m" style="color:var(--ac)">$1,847,000 &mdash; 99.7%</span></div>
+    <div class="stk-r"><span class="i">금융 자산 (TSP + Roth IRA)</span><span class="v m" style="color:var(--ac)">~$6,000 &mdash; 0.3%</span></div>
+    <div class="stk-t"><span>총 자산</span><span class="v m">~$1,853,000</span></div>
+  </div>
+
+  <div class="ok">
+    <h3>결론</h3>
+    <p>금융 자산을 100% 주식에 넣어도 전체 포트폴리오의 <strong>주식 비중은 0.3%</strong>다. 오히려 <strong>채권 과다</strong> 상태. 금융 자산은 전부 주식, 그것도 <strong>팩터 프리미엄이 있는 주식</strong>에 넣어야 전체 포트폴리오가 균형을 잡는다.</p>
+  </div>
+
+  <p class="p">추가: 인적 자본 (미래 급여 현재가치)은 ~$2.5M 이상. 이것도 경기에 연동되는 "주식형" 자산이라 금융 자산에서 <strong>국내 대형주 대신 해외 + 소형 가치주</strong>를 더 사야 분산이 된다.</p>
+
+  <hr class="hr">
+
+  <span class="sl sl-vi m">팩터 프리미엄</span>
+  <h2>공짜 점심은 없지만, 할인 점심은 있다</h2>
+  <p class="p">Fama-French 이후 50년간 검증된 팩터들. "시장 평균을 사라"보다 <strong>구조적으로 높은 기대수익</strong>.</p>
+
+  <div class="tbl"><div class="tbl-wrap">
+    <table>
+      <tr><th>팩터</th><th>연간 프리미엄</th><th>왜 존재하는가</th></tr>
+      <tr><td><strong>시장 (beta)</strong></td><td class="m n">+7.0%</td><td>주식 자체의 위험 보상</td></tr>
+      <tr><td><strong>규모 (size)</strong></td><td class="m n">+2.5%</td><td>소형주가 더 위험 &rarr; 더 높은 수익</td></tr>
+      <tr><td><strong>가치 (value)</strong></td><td class="m n">+3.5%</td><td>저평가 종목이 평균 회귀</td></tr>
+      <tr><td><strong>모멘텀</strong></td><td class="m n">+6.0%</td><td>추세가 지속되는 행동 편향 착취</td></tr>
+      <tr><td><strong>수익성 (quality)</strong></td><td class="m n">+3.0%</td><td>고수익 기업이 과소평가됨</td></tr>
+    </table>
+  </div></div>
+
+  <p class="p">모멘텀은 회전율이 높아 세금 부담이 크다 &rarr; <strong>세금 이연 계좌(TSP)에 넣어야</strong>. 가치+규모는 장기 보유 &rarr; <strong>비과세 계좌(Roth IRA)에 넣어야</strong>. 이게 <strong>tax alpha</strong>.</p>
+
+  <hr class="hr">
+
+  <span class="sl sl-ac m">TSP 배분</span>
+  <h2>TSP.gov &rarr; My Account &rarr; Contribution Allocation</h2>
+
+  <div class="tbl"><div class="tbl-wrap">
+    <table>
+      <tr><th>펀드</th><th>배분</th><th>비용</th><th>근거</th></tr>
+      <tr><td><strong>C Fund</strong><br><span style="font-size:11px;color:var(--ink3)">S&P 500</span></td><td class="m" style="font-weight:700">35%</td><td class="m">0.04%</td><td>대형 우량주 코어. 세계 최저 수수료.</td></tr>
+      <tr><td><strong>S Fund</strong><br><span style="font-size:11px;color:var(--ink3)">DJ Completion</span></td><td class="m" style="font-weight:700;color:var(--ac)">45%</td><td class="m">0.04%</td><td><strong>소형/중형주 오버웨이트.</strong> 규모 프리미엄 +2.5%/yr. TSP에서 유일한 팩터 틸트.</td></tr>
+      <tr><td><strong>I Fund</strong><br><span style="font-size:11px;color:var(--ink3)">MSCI EAFE</span></td><td class="m" style="font-weight:700">20%</td><td class="m">0.04%</td><td>해외 선진국. 인적 자본이 미국 정부/의료에 집중 &rarr; 해외로 분산.</td></tr>
+      <tr><td><strong>F Fund</strong><br><span style="font-size:11px;color:var(--ink3)">채권 인덱스</span></td><td class="m rn">0%</td><td class="m">0.04%</td><td>VA disability = $1.18M 채권. 추가 불필요.</td></tr>
+      <tr><td><strong>G Fund</strong><br><span style="font-size:11px;color:var(--ink3)">국채</span></td><td class="m rn">0%</td><td class="m">0.04%</td><td>같은 이유. 안전자산은 이미 충분.</td></tr>
+    </table>
+  </div></div>
+
+  <p class="p">기여율: 최소 <strong>5%</strong> (매칭 풀 수령). 여유 있으면 10-15%. PMHNP 전환 후 최대 $23,500/yr까지.</p>
+
+  <hr class="hr">
+
+  <span class="sl sl-ac m">Roth IRA 팩터 포트폴리오</span>
+  <h2>Fidelity 또는 Schwab에서 개설, 연 $7,000</h2>
+  <p class="p">Roth IRA = <strong>비과세 성장</strong>. 여기에 기대수익 가장 높은 자산(소형 가치주)을 넣는다. VA disability는 earned income이 아니지만 <strong>VA LVN 급여가 earned income</strong>이라 Roth 자격 있음.</p>
+
+  <div class="tbl"><div class="tbl-wrap">
+    <table>
+      <tr><th>ETF</th><th>배분</th><th>비용</th><th>팩터 노출</th></tr>
+      <tr><td><strong>AVUV</strong><br><span style="font-size:11px;color:var(--ink3)">Avantis US Small Cap Value</span></td><td class="m" style="font-weight:700;color:var(--ac)">60%</td><td class="m">0.25%</td><td>규모 + 가치. 기대 초과수익 +3~5%/yr. <strong>핵심 보유</strong>.</td></tr>
+      <tr><td><strong>AVDV</strong><br><span style="font-size:11px;color:var(--ink3)">Avantis Int'l Small Cap Value</span></td><td class="m" style="font-weight:700;color:var(--ac)">40%</td><td class="m">0.36%</td><td>해외 + 규모 + 가치. TSP I Fund와 다른 유니버스(소형 가치).</td></tr>
+    </table>
+  </div></div>
+
+  <div class="wrn">
+    <h3>계좌 커지면 추가</h3>
+    <p>$21K+ 되면: <strong>AVES</strong> (이머징 가치) 15%, <strong>AVUV</strong> 45%, <strong>AVDV</strong> 25%, AVES 15% 로 확장. $50K+ 되면 <strong>DFAC</strong> (Dimensional Core) 10% 추가로 퀄리티 팩터.</p>
+  </div>
+
+  <hr class="hr">
+
+  <span class="sl sl-ac m">몬테카를로 시뮬레이션</span>
+  <h2>5,000회 시뮬레이션, 27년 (38세 &rarr; 65세)</h2>
+  <p class="p">매월 수익률 = 정규분포(기대수익 10%, 변동성 18%). Phase 1 (LVN 6년): 월 $1,333 적립. Phase 2 (PMHNP 21년): 월 $3,166 적립. 초기 잔고 $6,000.</p>
+
+  <div class="chart-wrap">
+    <canvas id="mc-chart"></canvas>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-i"><div class="kpi-v m" id="kpi-med">-</div><div class="kpi-l">65세 중위값</div></div>
+    <div class="kpi-i"><div class="kpi-v m" id="kpi-p90">-</div><div class="kpi-l">90% 확률 이상</div></div>
+    <div class="kpi-i"><div class="kpi-v m" id="kpi-1m">-</div><div class="kpi-l">$1M 도달 확률</div></div>
+  </div>
+
+  <div class="tbl"><div class="tbl-wrap">
+    <table>
+      <tr><th>나이</th><th class="m">10th</th><th class="m">25th</th><th class="m" style="color:var(--ac)">중위</th><th class="m">75th</th><th class="m">90th</th></tr>
+      <tr id="row-45"><td>45세</td><td class="m">-</td><td class="m">-</td><td class="m" style="font-weight:700">-</td><td class="m">-</td><td class="m">-</td></tr>
+      <tr id="row-50"><td>50세</td><td class="m">-</td><td class="m">-</td><td class="m" style="font-weight:700">-</td><td class="m">-</td><td class="m">-</td></tr>
+      <tr id="row-55"><td>55세</td><td class="m">-</td><td class="m">-</td><td class="m" style="font-weight:700">-</td><td class="m">-</td><td class="m">-</td></tr>
+      <tr id="row-60"><td>60세</td><td class="m">-</td><td class="m">-</td><td class="m" style="font-weight:700">-</td><td class="m">-</td><td class="m">-</td></tr>
+      <tr id="row-65"><td>65세</td><td class="m">-</td><td class="m">-</td><td class="m" style="font-weight:700">-</td><td class="m">-</td><td class="m">-</td></tr>
+    </table>
+  </div></div>
+
+  <hr class="hr">
+
+  <span class="sl sl-rd m">리스크</span>
+  <h2>100% 주식이면 폭락하면 어쩌나</h2>
+
+  <div class="tbl"><div class="tbl-wrap">
+    <table>
+      <tr><th>시나리오</th><th>예상 하락</th><th>회복 기간</th><th>VA disability 영향</th></tr>
+      <tr><td><strong>일반 조정</strong> (연 1-2회)</td><td class="m rn">&minus;10~15%</td><td class="m">2-4개월</td><td class="m n">$0 변화</td></tr>
+      <tr><td><strong>약세장</strong> (3-5년 주기)</td><td class="m rn">&minus;20~35%</td><td class="m">1-2년</td><td class="m n">$0 변화</td></tr>
+      <tr><td><strong>대공황급</strong> (2008)</td><td class="m rn">&minus;50%+</td><td class="m">3-5년</td><td class="m n">$0 변화</td></tr>
+    </table>
+  </div></div>
+
+  <div class="ok">
+    <h3>핵심: VA disability는 주식시장과 상관관계 0</h3>
+    <p>2008년 금융위기 때 S&P 500이 -57% 떨어졌을 때도 VA disability는 COLA +5.8% <strong>올랐다</strong>. 너의 생활비 베이스는 시장과 완전히 독립. 그래서 금융 자산의 일시적 하락을 <strong>감당할 수 있다</strong> &mdash; 아니, 적립 중에는 싸게 사는 기회다.</p>
+  </div>
+
+  <p class="p"><strong>VaR (95%, 1년):</strong> 최악의 경우 1년 내 포트폴리오의 ~28% 손실 가능. $100K 포트폴리오면 $28K. 아프지만, 월 $4,158 VA disability는 그대로 들어온다.</p>
+
+  <hr class="hr">
+
+  <span class="sl sl-gn m">이번 달 할 일</span>
+  <h2>15분이면 끝나는 세팅</h2>
+
+  <div class="step">
+    <div class="step-n m">1</div>
+    <div class="step-c"><strong>TSP.gov 로그인</strong> &rarr; My Account &rarr; Contribution Allocation &rarr; <strong>C:35, S:45, I:20, F:0, G:0</strong> 입력. 저장. 기존 잔고도 같은 비율로 Interfund Transfer.</div>
+  </div>
+  <div class="step">
+    <div class="step-n m">2</div>
+    <div class="step-c"><strong>Fidelity.com</strong> (또는 Schwab) &rarr; Roth IRA 개설. 10분. SSN + 은행 계좌 연결.</div>
+  </div>
+  <div class="step">
+    <div class="step-n m">3</div>
+    <div class="step-c">Roth IRA에 <strong>$7,000</strong> 입금 (2026년 한도). 한 번에 또는 월 $583. 입금 후 &rarr; <strong>AVUV 60%</strong> ($4,200), <strong>AVDV 40%</strong> ($2,800) 매수.</div>
+  </div>
+  <div class="step">
+    <div class="step-n m">4</div>
+    <div class="step-c">TSP 기여율 확인: 최소 <strong>5%</strong> (매칭 풀 수령 = 공짜 돈). 가능하면 10%.</div>
+  </div>
+
+  <p class="p">이후: <strong>분기 1회</strong> (1월, 4월, 7월, 10월) 나한테 와서 "리밸런싱"이라고 하면 드리프트 체크해줌. 배분이 목표에서 &plusmn;5%p 이상 벗어나면 조정.</p>
+
+  <hr class="hr">
+
+  <span class="sl sl-ac m">PMHNP 전환 시</span>
+  <h2>급여 $150K+ 되면 바뀌는 것</h2>
+
+  <div class="tbl"><div class="tbl-wrap">
+    <table>
+      <tr><th></th><th>지금 (LVN)</th><th>전환 후 (PMHNP)</th></tr>
+      <tr><td><strong>TSP 기여</strong></td><td class="m">~$6,000/yr</td><td class="m n">$23,500/yr (한도)</td></tr>
+      <tr><td><strong>TSP 매칭</strong></td><td class="m">~$3,000/yr</td><td class="m n">~$7,500/yr</td></tr>
+      <tr><td><strong>Roth IRA</strong></td><td class="m">$7,000/yr (직접)</td><td class="m">$7,000/yr (Backdoor Roth)</td></tr>
+      <tr><td><strong>추가 투자</strong></td><td class="m">&mdash;</td><td class="m n">과세 계좌 $20K+/yr</td></tr>
+      <tr><td><strong>연간 투자 합계</strong></td><td class="m">~$16,000</td><td class="m n">~$58,000+</td></tr>
+    </table>
+  </div></div>
+
+  <p class="p"><strong>Backdoor Roth:</strong> PMHNP 급여 $150K면 Roth IRA 소득 한도 초과할 수 있음. Traditional IRA에 넣고 즉시 Roth로 전환하는 방법. 합법. Fidelity에서 온라인으로 가능.</p>
+  <p class="p"><strong>과세 계좌 추가:</strong> 이때 VTI (Vanguard Total Market) + VXUS (International) 같은 세금 효율 높은 ETF. 팩터 틸트는 Roth에 집중.</p>
+  <p class="p"><strong>50세 이후:</strong> TSP catch-up $7,500/yr 추가 가능. IRA catch-up $1,000 추가.</p>
+
+  <hr class="hr">
+
+  <span class="sl sl-am m">Sharpe Ratio 비교</span>
+  <h2>같은 위험에서 더 높은 수익</h2>
+
+  <div class="stk">
+    <div class="stk-r"><span class="i">TSP L Fund (Lifecycle, 디폴트)</span><span class="v m" style="color:var(--ink3)">~0.45</span></div>
+    <div class="stk-r"><span class="i">S&P 500 단독 (C Fund 100%)</span><span class="v m" style="color:var(--ink3)">~0.50</span></div>
+    <div class="stk-r"><span class="i"><strong>이 전략 (TSP + Roth 팩터)</strong></span><span class="v m n">~0.62</span></div>
+  </div>
+  <p class="p">Sharpe Ratio = (수익률 &minus; 무위험수익률) / 변동성. <strong>같은 리스크에서 연 1.5~2.5%p 더 벌고, 같은 수익에서 덜 출렁인다.</strong></p>
+
+  <hr class="hr">
+
+  <div class="closing">
+    <p>이건 "주식으로 대박"이 아니라 "이미 가진 것을 제대로 배치하는" 전략이다. 너의 진짜 자산은 VA disability $1.85M + 앞으로의 PMHNP 급여. 금융 투자는 그 위에 얹는 최적화일 뿐. 본업이 중력선이고 이건 궤도에도 안 들어가는 유지보수 작업이다.</p>
+  </div>
+
+  <div class="foot">
+    <p class="m">퀀트 포트폴리오 전략 &middot; yoojinesong &middot; 2026.08</p>
+    <p style="margin-top:8px">이 문서는 교육 목적이며 면허 있는 재정 자문이 아닙니다. 투자에는 원금 손실 위험이 있습니다. 개인 상황에 따라 CFP&reg; 또는 fee-only financial advisor와 상담을 권합니다.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  function createRNG(seed){
+    let s=seed|0;
+    return function(){s=Math.imul(s,1664525)+1013904223|0;return(s>>>0)/4294967296};
+  }
+  function normRand(rng){
+    let u1;do{u1=rng()}while(u1===0);
+    return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*rng());
+  }
+  function fmt(v){
+    if(v>=1e6)return'$'+(v/1e6).toFixed(2)+'M';
+    if(v>=1e3)return'$'+(v/1e3).toFixed(0)+'K';
+    return'$'+v.toFixed(0);
+  }
+
+  const NS=5000,NY=27,INIT=6000;
+  const MC1=1333,MC2=3166,P1M=72;
+  const AR=0.10,AV=0.18;
+  const MR=Math.pow(1+AR,1/12)-1;
+  const MV=AV/Math.sqrt(12);
+
+  function run(){
+    const rng=createRNG(42);
+    const snaps=Array.from({length:NY+1},()=>[]);
+    for(let s=0;s<NS;s++){
+      let b=INIT;snaps[0].push(b);
+      for(let y=0;y<NY;y++){
+        for(let m=0;m<12;m++){
+          const mi=y*12+m;
+          b=Math.max(0,b*(1+MR+MV*normRand(rng))+(mi<P1M?MC1:MC2));
+        }
+        snaps[y+1].push(b);
+      }
+    }
+    return snaps.map(a=>{
+      const s=[...a].sort((x,y)=>x-y);const n=s.length;
+      return{p10:s[n*.1|0],p25:s[n*.25|0],p50:s[n*.5|0],p75:s[n*.75|0],p90:s[n*.9|0]};
+    });
+  }
+
+  function isDark(){
+    const dt=document.documentElement.getAttribute('data-theme');
+    if(dt==='dark')return true;if(dt==='light')return false;
+    return window.matchMedia('(prefers-color-scheme:dark)').matches;
+  }
+
+  function draw(canvas,pcts){
+    const ctx=canvas.getContext('2d');
+    const dpr=window.devicePixelRatio||1;
+    const rect=canvas.getBoundingClientRect();
+    canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;
+    ctx.scale(dpr,dpr);
+    const w=rect.width,h=rect.height;
+    const P={t:24,r:24,b:36,l:62};
+    const pw=w-P.l-P.r,ph=h-P.t-P.b;
+    const dk=isDark();
+    const maxV=pcts[pcts.length-1].p90;
+    const yMax=Math.ceil(maxV/500000)*500000||500000;
+    const xP=i=>P.l+(i/(pcts.length-1))*pw;
+    const yP=v=>P.t+ph-(v/yMax)*ph;
+    const gc=dk?'rgba(100,110,120,0.15)':'rgba(0,0,0,0.06)';
+    const tc=dk?'#6A6C68':'#7A7E86';
+    const bo=dk?'rgba(104,170,198,0.1)':'rgba(51,90,110,0.08)';
+    const bi=dk?'rgba(104,170,198,0.22)':'rgba(51,90,110,0.16)';
+    const ml=dk?'#68AAC6':'#335A6E';
+    const mg=dk?'rgba(84,192,118,0.25)':'rgba(42,118,72,0.15)';
+
+    ctx.clearRect(0,0,w,h);
+    ctx.font='10px ui-monospace,monospace';
+
+    // grid
+    for(let v=0;v<=yMax;v+=500000){
+      const y=yP(v);
+      ctx.strokeStyle=gc;ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(w-P.r,y);ctx.stroke();
+      ctx.fillStyle=tc;ctx.textAlign='right';
+      ctx.fillText(v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+(v/1e3).toFixed(0)+'K',P.l-6,y+3);
+    }
+    for(let i=0;i<=NY;i+=5){
+      const x=xP(i);
+      ctx.strokeStyle=gc;ctx.beginPath();ctx.moveTo(x,P.t);ctx.lineTo(x,P.t+ph);ctx.stroke();
+      ctx.fillStyle=tc;ctx.textAlign='center';ctx.fillText((38+i)+'세',x,h-P.b+16);
+    }
+
+    // $1M line
+    if(yMax>=1e6){
+      ctx.strokeStyle=mg;ctx.setLineDash([5,4]);ctx.lineWidth=1.5;
+      ctx.beginPath();const my=yP(1e6);ctx.moveTo(P.l,my);ctx.lineTo(w-P.r,my);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=dk?'rgba(84,192,118,0.5)':'rgba(42,118,72,0.4)';
+      ctx.textAlign='left';ctx.fillText('$1M',w-P.r+4,my+3);
+    }
+
+    // bands
+    function band(key1,key2,fill){
+      ctx.fillStyle=fill;ctx.beginPath();
+      for(let i=0;i<pcts.length;i++){const x=xP(i);i===0?ctx.moveTo(x,yP(pcts[i][key1])):ctx.lineTo(x,yP(pcts[i][key1]))}
+      for(let i=pcts.length-1;i>=0;i--)ctx.lineTo(xP(i),yP(pcts[i][key2]));
+      ctx.closePath();ctx.fill();
+    }
+    band('p90','p10',bo);
+    band('p75','p25',bi);
+
+    // median
+    ctx.strokeStyle=ml;ctx.lineWidth=2.5;ctx.beginPath();
+    for(let i=0;i<pcts.length;i++){const x=xP(i),y=yP(pcts[i].p50);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}
+    ctx.stroke();
+
+    // endpoint label
+    const lp=pcts[pcts.length-1];
+    ctx.fillStyle=ml;ctx.font='bold 11px ui-monospace,monospace';ctx.textAlign='right';
+    ctx.fillText(fmt(lp.p50),xP(pcts.length-1)-4,yP(lp.p50)-8);
+
+    // legend
+    ctx.font='9px ui-monospace,monospace';ctx.textAlign='left';
+    const ly=P.t+8;
+    ctx.fillStyle=bi;ctx.fillRect(P.l+4,ly,10,10);
+    ctx.fillStyle=tc;ctx.fillText('25-75th %ile',P.l+18,ly+8);
+    ctx.fillStyle=bo;ctx.fillRect(P.l+100,ly,10,10);
+    ctx.fillStyle=tc;ctx.fillText('10-90th %ile',P.l+114,ly+8);
+  }
+
+  function fillUI(pcts){
+    const last=pcts[pcts.length-1];
+    document.getElementById('kpi-med').textContent=fmt(last.p50);
+    document.getElementById('kpi-p90').textContent=fmt(last.p10);
+
+    // P($1M) — count sims where final > $1M
+    // We only have percentiles, so estimate from distribution
+    // If p50 > $1M, then P > 50%. Interpolate roughly.
+    const f=last;
+    let p1m;
+    if(f.p10>=1e6)p1m='>90%';
+    else if(f.p25>=1e6)p1m='75-90%';
+    else if(f.p50>=1e6)p1m='50-75%';
+    else if(f.p75>=1e6)p1m='25-50%';
+    else if(f.p90>=1e6)p1m='10-25%';
+    else p1m='<10%';
+    document.getElementById('kpi-1m').textContent=p1m;
+
+    // table rows
+    const ages=[45,50,55,60,65];
+    const yearIdxs=ages.map(a=>a-38);
+    yearIdxs.forEach((yi,ai)=>{
+      const row=document.getElementById('row-'+ages[ai]);
+      if(!row||!pcts[yi])return;
+      const p=pcts[yi];
+      const cells=row.querySelectorAll('td');
+      cells[1].textContent=fmt(p.p10);
+      cells[2].textContent=fmt(p.p25);
+      cells[3].textContent=fmt(p.p50);
+      cells[4].textContent=fmt(p.p75);
+      cells[5].textContent=fmt(p.p90);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded',function(){
+    const pcts=run();
+    const canvas=document.getElementById('mc-chart');
+    draw(canvas,pcts);
+    fillUI(pcts);
+
+    new MutationObserver(()=>draw(canvas,pcts)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>draw(canvas,pcts));
+    let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>draw(canvas,pcts),100)});
+  });
+})();
+</script>
