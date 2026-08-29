@@ -53,9 +53,8 @@ const AD_APP_REVENUE = AD_GROSS_REVENUE * APP_SPLIT;     // $0.005 to imprint
 
 /* imprint+ monthly membership */
 const PREMIUM_PRICE = 4.99; // $/month
-const PREMIUM_CAUSE_FUND = 3.00; // $3 of $4.99 goes to causes each month
 const PREMIUM_PERKS = [
-  { emoji: "💚", name: "Monthly Cause Fund", desc: "$3/mo auto-donated to your chosen causes", hero: true },
+  { emoji: "🚫", name: "Ad-Free Experience", desc: "No ads — your $4.99 replaces ad revenue entirely", hero: true },
   { emoji: "⚡", name: "2× Impact Points", desc: "Double points on every action you take" },
   { emoji: "📊", name: "Impact Reports", desc: "Monthly & yearly summaries of your total impact" },
   { emoji: "🌍", name: "Expanded Causes", desc: "Access all cause categories + nominate new ones" },
@@ -1746,7 +1745,7 @@ export default function ImprintApp() {
               <span className="premium-cta-badge">imprint+</span>
               <div className="premium-cta-text">
                 <strong>Go premium</strong>
-                <span>$3/mo auto-donated to causes + 2× points</span>
+                <span>Ad-free + 2× points + impact reports</span>
               </div>
               <span className="offer-cta-arrow">→</span>
             </button>
@@ -1754,7 +1753,7 @@ export default function ImprintApp() {
           {isPremium && (
             <div className="premium-active-badge">
               <span className="premium-active-icon">⚡</span>
-              <span>imprint+ member — $3/mo to causes + 2× points</span>
+              <span>imprint+ member — ad-free + 2× points</span>
             </div>
           )}
 
@@ -2329,7 +2328,7 @@ export default function ImprintApp() {
                 <div className="premium-badge-large">imprint+</div>
                 <h2 className="premium-title">Do more good</h2>
                 <p className="premium-subtitle">
-                  $3 of every $4.99 goes directly to causes you choose.<br />The rest keeps imprint free for everyone.
+                  Skip the ads. Double your impact. Get insights on the good you do.
                 </p>
               </div>
 
@@ -2357,8 +2356,8 @@ export default function ImprintApp() {
                 <span className="premium-revenue-icon">💡</span>
                 <p>
                   <strong>Where does $4.99 go?</strong><br />
-                  $3.00 → your chosen causes via Every.org (tax-deductible).<br />
-                  $1.99 → keeps imprint free, ad-supported, and running for all.
+                  100% keeps imprint free for everyone and funds platform development.<br />
+                  Want to donate to causes? Use the donate button — every dollar goes directly.
                 </p>
               </div>
 
@@ -2411,8 +2410,8 @@ export default function ImprintApp() {
                   <span>${PREMIUM_PRICE}/mo</span>
                 </div>
                 <div className="receipt-row">
-                  <span>Monthly cause fund</span>
-                  <span style={{ color: "var(--accent)" }}>${PREMIUM_CAUSE_FUND.toFixed(2)}/mo → causes</span>
+                  <span>Ad-free</span>
+                  <span style={{ color: "var(--accent)" }}>✓ No more ads</span>
                 </div>
                 <div className="receipt-row">
                   <span>Impact Points</span>
@@ -2499,7 +2498,7 @@ export default function ImprintApp() {
                 <div className="account-section">
                   <button className="premium-cta-small" onClick={() => { setPremiumPhase("info"); switchView("premium"); }}>
                     <span className="premium-badge-small">imprint+</span>
-                    <span>Upgrade — $3/mo to causes + 2× points</span>
+                    <span>Upgrade — ad-free + 2× points</span>
                   </button>
                 </div>
               )}
