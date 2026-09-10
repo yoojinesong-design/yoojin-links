@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Interactive decision tree for the Central Specialty Clinics 04-90 screening flowsheet.">
+<style>img{max-width:100%}[hidden]{display:none!important}</style>
+<title>04-90 Screening Pathway</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#eef2f0; --card:#ffffff; --card-2:#f7faf9;
+    --ink:#14201f; --ink-2:#55645f; --ink-3:#7c8b86;
+    --line:#d3ddd8; --line-2:#e4ebe8;
+    --accent:#0e6b63; --accent-ink:#0a4f49; --accent-soft:#dcecea;
+    --urgent:#a3231b; --urgent-ink:#a3231b; --urgent-soft:#fbe7e4; --urgent-line:#e9b7b0;
+    --caution:#845100; --caution-soft:#f8eeda; --caution-line:#e2c894;
+    --ok:#2c6b41; --ok-soft:#e0efe4; --ok-line:#b3d5bd;
+    --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --r:10px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d1413; --card:#161f1d; --card-2:#1b2624;
+      --ink:#e7edeb; --ink-2:#98a8a3; --ink-3:#7a8a85;
+      --line:#28352f; --line-2:#1f2b28;
+      --accent:#4fbdb0; --accent-ink:#8ad9cd; --accent-soft:#11302d;
+      --urgent:#ff8f81; --urgent-ink:#ff8f81; --urgent-soft:#361a16; --urgent-line:#6b2c25;
+      --caution:#e2b060; --caution-soft:#31250f; --caution-line:#5c451c;
+      --ok:#71cb8e; --ok-soft:#132a1c; --ok-line:#2d4d38;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d1413; --card:#161f1d; --card-2:#1b2624;
+    --ink:#e7edeb; --ink-2:#98a8a3; --ink-3:#7a8a85;
+    --line:#28352f; --line-2:#1f2b28;
+    --accent:#4fbdb0; --accent-ink:#8ad9cd; --accent-soft:#11302d;
+    --urgent:#ff8f81; --urgent-ink:#ff8f81; --urgent-soft:#361a16; --urgent-line:#6b2c25;
+    --caution:#e2b060; --caution-soft:#31250f; --caution-line:#5c451c;
+    --ok:#71cb8e; --ok-soft:#132a1c; --ok-line:#2d4d38;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px; margin:0 auto; padding-inline:20px; padding-block:0 48px}
+
+  /* ---------- header ---------- */
+  .masthead{
+    border-bottom:1px solid var(--line);
+    background:var(--card);
+  }
+  .masthead .wrap{padding-block:18px 16px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap}
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 4px;
+  }
+  h1{font-size:25px; font-weight:600; letter-spacing:-.015em; margin:0; text-wrap:balance}
+  .masthead p{margin:5px 0 0; color:var(--ink-2); font-size:13.5px; max-width:56ch}
+  .stamp{
+    font-family:var(--mono); font-size:11px; color:var(--ink-3); text-align:right;
+    line-height:1.7; white-space:nowrap;
+  }
+
+  /* ---------- safety bar ---------- */
+  .safety{
+    display:none; background:var(--urgent-soft); border-bottom:1px solid var(--urgent-line);
+  }
+  .safety.on{display:block}
+  .safety .wrap{
+    padding-block:12px; display:flex; gap:12px; align-items:center;
+  }
+  .safety strong{
+    font-family:var(--mono); font-size:12.5px; font-weight:600; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--urgent-ink);
+  }
+  .safety span{color:var(--ink); font-size:14px}
+  .pulse{
+    flex:0 0 auto; width:9px; height:9px; border-radius:50%; background:var(--urgent);
+    animation:beat 1.6s ease-in-out infinite;
+  }
+  @keyframes beat{0%,100%{opacity:1}50%{opacity:.25}}
+  @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+
+  /* ---------- layout ---------- */
+  .cols{display:grid; grid-template-columns:minmax(0,1fr) 316px; gap:28px; align-items:start; margin-top:24px}
+  @media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr); gap:22px}}
+
+  /* ---------- trail ---------- */
+  .trail{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 14px; padding:0; list-style:none}
+  .trail li{
+    font-family:var(--mono); font-size:11px; letter-spacing:.02em;
+    background:var(--card); border:1px solid var(--line); border-radius:999px;
+    padding:3px 10px; color:var(--ink-2);
+  }
+  .trail li b{font-weight:600; color:var(--ink)}
+  .trail li.crisis{background:var(--urgent-soft); border-color:var(--urgent-line); color:var(--urgent-ink)}
+  .trail li.crisis b{color:var(--urgent-ink)}
+
+  /* ---------- step card ---------- */
+  .step{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+    padding:26px 26px 22px;
+  }
+  .step-kicker{
+    font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-3); margin:0 0 10px;
+  }
+  .step h2{font-size:22px; font-weight:600; line-height:1.28; letter-spacing:-.012em; margin:0; text-wrap:balance}
+  .hint{
+    margin:12px 0 0; font-size:13.5px; color:var(--ink-2); max-width:62ch;
+    border-left:2px solid var(--line); padding-left:12px;
+  }
+  .hint code{font-family:var(--mono); font-size:12.5px; color:var(--accent-ink)}
+
+  /* now-do block inside step */
+  .nowdo{
+    margin-top:20px; border:1px solid var(--line-2); background:var(--card-2);
+    border-radius:8px; padding:14px 16px;
+  }
+  .nowdo.urgent{background:var(--urgent-soft); border-color:var(--urgent-line)}
+  .nowdo.caution{background:var(--caution-soft); border-color:var(--caution-line)}
+  .nowdo.good{background:var(--ok-soft); border-color:var(--ok-line)}
+  .nowdo h3{
+    font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.14em;
+    text-transform:uppercase; margin:0 0 10px; color:var(--ink-2);
+  }
+  .nowdo.urgent h3{color:var(--urgent-ink)}
+  .nowdo.caution h3{color:var(--caution)}
+  .nowdo.good h3{color:var(--ok)}
+  .nowdo ol{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:7px}
+  .nowdo li{font-size:14.5px; line-height:1.45}
+  .nowdo li em{font-style:normal; font-weight:600}
+  .nowdo li .num{font-family:var(--mono); font-weight:600; letter-spacing:.02em; font-variant-numeric:tabular-nums}
+
+  /* ---------- options ---------- */
+  .opts{display:flex; flex-direction:column; gap:10px; margin-top:20px}
+  .opt{
+    display:grid; grid-template-columns:1fr auto; align-items:center; gap:14px; width:100%;
+    text-align:left; font:inherit; color:inherit; cursor:pointer;
+    background:var(--card); border:1px solid var(--line); border-radius:8px;
+    padding:14px 16px; transition:border-color .12s, background .12s, transform .12s;
+  }
+  .opt:hover{border-color:var(--accent); background:var(--accent-soft)}
+  .opt:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .opt:active{transform:translateY(1px)}
+  .opt .lab{font-size:16px; font-weight:600; letter-spacing:-.008em; display:block}
+  .opt .sub{font-size:13px; color:var(--ink-2); display:block; margin-top:3px}
+  .opt .go{font-family:var(--mono); font-size:15px; color:var(--ink-3)}
+  .opt:hover .go{color:var(--accent-ink)}
+  .opt.crisis{border-color:var(--urgent-line); background:var(--urgent-soft)}
+  .opt.crisis .lab{color:var(--urgent-ink)}
+  .opt.crisis:hover{border-color:var(--urgent); background:var(--urgent-soft)}
+  .opt.crisis .go{color:var(--urgent-ink)}
+
+  /* ---------- nav ---------- */
+  .nav{display:flex; gap:10px; flex-wrap:wrap; margin-top:20px}
+  .btn{
+    font:inherit; font-size:13.5px; font-weight:500; cursor:pointer;
+    background:transparent; color:var(--ink-2);
+    border:1px solid var(--line); border-radius:7px; padding:8px 14px;
+    transition:color .12s, border-color .12s;
+  }
+  .btn:hover{color:var(--ink); border-color:var(--ink-3)}
+  .btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .btn[hidden]{display:none}
+  .btn-go{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600}
+  :root[data-theme="dark"] .btn-go, :root:not([data-theme="light"]) .btn-go{color:#07211f}
+  @media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .btn-go{color:#fff}}
+  .btn-go:hover{color:#fff; opacity:.9}
+  :root[data-theme="dark"] .btn-go:hover{color:#07211f}
+
+  /* ---------- sidebar ---------- */
+  .side{display:flex; flex-direction:column; gap:16px; position:sticky; top:16px}
+  @media (max-width:860px){.side{position:static}}
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px 18px}
+  .panel h3{
+    font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-3); margin:0 0 12px;
+  }
+  .empty{font-size:13.5px; color:var(--ink-3); margin:0}
+
+  .log{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px}
+  .log li{display:flex; gap:9px; align-items:flex-start; padding:5px 0; border-top:1px solid var(--line-2)}
+  .log li:first-child{border-top:0}
+  .log input{margin:3px 0 0; accent-color:var(--accent); flex:0 0 auto; width:15px; height:15px}
+  .log label{font-size:13.5px; line-height:1.42; cursor:pointer}
+  .log input:checked + label{color:var(--ink-3); text-decoration:line-through}
+  .log li.urgent label{color:var(--urgent-ink); font-weight:600}
+  .log li.urgent input:checked + label{color:var(--ink-3); font-weight:400}
+
+  .calls{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:0}
+  .calls li{
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    padding:8px 0; border-top:1px solid var(--line-2);
+  }
+  .calls li:first-child{border-top:0}
+  .calls .who{font-size:13.5px}
+  .calls .num{font-family:var(--mono); font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--accent-ink)}
+  .calls li.top{background:var(--urgent-soft); margin:0 -18px; padding-inline:18px; border-top-color:var(--urgent-line)}
+  .calls li.top .num, .calls li.top .who{color:var(--urgent-ink)}
+  .calls a{color:inherit}
+
+  /* ---------- outline ---------- */
+  .outline{margin-top:28px; background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:6px 20px}
+  .outline summary{
+    cursor:pointer; font-family:var(--mono); font-size:11px; font-weight:600;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-2); padding:14px 0;
+  }
+  .outline summary:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .outline[open] summary{border-bottom:1px solid var(--line-2); margin-bottom:14px}
+  .tree, .tree ul{list-style:none; margin:0; padding:0}
+  .tree ul{margin-left:8px; padding-left:16px; border-left:1px solid var(--line)}
+  .tree li{padding:4px 0}
+  .tree .q{font-weight:600; font-size:14px}
+  .tree .a{font-family:var(--mono); font-size:11.5px; color:var(--accent-ink); letter-spacing:.02em}
+  .tree .end{font-size:13.5px; color:var(--ink-2)}
+  .tree .end b{color:var(--ink); font-weight:600}
+  .outline .foot{padding-bottom:18px}
+
+  /* ---------- notes ---------- */
+  .notes{margin-top:28px; display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width:860px){.notes{grid-template-columns:1fr}}
+  .note{border:1px solid var(--line); border-radius:var(--r); padding:16px 18px; background:var(--card-2)}
+  .note.flag{border-color:var(--caution-line); background:var(--caution-soft)}
+  .note h3{font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; margin:0 0 10px; color:var(--ink-2)}
+  .note.flag h3{color:var(--caution)}
+  .note p{margin:0 0 8px; font-size:13px; line-height:1.55; color:var(--ink-2)}
+  .note ul{margin:0; padding-left:18px; font-size:13px; line-height:1.55; color:var(--ink-2); display:flex; flex-direction:column; gap:5px}
+  .note li b{color:var(--ink); font-weight:600}
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    background:var(--ink); color:var(--paper); font-size:13px; font-weight:500;
+    padding:9px 16px; border-radius:999px; opacity:0; pointer-events:none;
+    transition:opacity .18s;
+  }
+  .toast.on{opacity:1}
+
+  /* ---------- print: the path + the actions, nothing else ---------- */
+  @media print{
+    :root{--paper:#fff; --card:#fff; --card-2:#fff; --ink:#000; --ink-2:#333; --line:#bbb; --line-2:#ddd}
+    body{font-size:11pt}
+    .opts, .nav, .outline, .notes, .safety .pulse, .side .panel:last-child{display:none}
+    .cols{grid-template-columns:1fr}
+    .step, .panel{border:1px solid #bbb; break-inside:avoid}
+    .log input{-webkit-appearance:none; appearance:none; border:1px solid #666; border-radius:2px}
+  }
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Central Specialty Clinics</p>
+      <h1>04-90 Screening Pathway</h1>
+      <p>Clinical reminders — alcohol, depression, PTSD, suicide, tobacco. Answer each step; the actions you owe build up on the right.</p>
+    </div>
+    <div class="stamp">FLOWSHEET 04-90<br>RN / LVN USE</div>
+  </div>
+</header>
+
+<div class="safety" id="safety">
+  <div class="wrap">
+    <span class="pulse"></span>
+    <strong>Stay with the Veteran</strong>
+    <span>Do not leave them alone. Provide for the safety of the Veteran and of staff.</span>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="cols">
+    <div>
+      <ul class="trail" id="trail"></ul>
+
+      <section class="step" id="step" aria-live="polite">
+        <p class="step-kicker" id="kicker">Start</p>
+        <h2 id="question">Loading…</h2>
+        <p class="hint" id="hint" hidden></p>
+        <div class="nowdo" id="nowdo" hidden>
+          <h3 id="nowdo-title">Do this now</h3>
+          <ol id="nowdo-list"></ol>
+        </div>
+        <div class="opts" id="opts"></div>
+        <div class="nav">
+          <button class="btn" id="back" type="button" hidden>← Back one step</button>
+          <button class="btn" id="restart" type="button" hidden>Start over</button>
+          <button class="btn btn-go" id="copy" type="button" hidden>Copy note summary</button>
+          <button class="btn" id="print" type="button" hidden>Print this path</button>
+        </div>
+      </section>
+
+      <details class="outline">
+        <summary>See the whole flowsheet</summary>
+        <ul class="tree" id="tree"></ul>
+        <p class="foot"></p>
+      </details>
+
+      <div class="notes">
+        <div class="note">
+          <h3>How to use it</h3>
+          <p>One reminder at a time. If two screens are positive, finish the pathway for the first, then start over for the second.</p>
+          <p>Tick actions off in the checklist as you complete them. <b>Copy note summary</b> gives you the path and the actions as plain text you can paste into the CPRS note.</p>
+        </div>
+        <div class="note flag">
+          <h3>Verify before this goes live</h3>
+          <p>Transcribed from the handwritten 04-90 flowsheet. Four items were hard to read — confirm them against the original before staff rely on this:</p>
+          <ul>
+            <li><b>PACT referral list</b> — read as "PCP, OM/RN, SW". Confirm what OM stands for on your unit.</li>
+            <li><b>ED Mental Health backup</b> — read as pager 5117 / ext. 2613. Confirm the pairing.</li>
+            <li><b>MHTC</b> — read as Mental Health Treatment Coordinator, and as required on every decline.</li>
+            <li><b>Suicide risk levels</b> — low / moderate / high all route to the same offer of discussion on the sheet. Confirm that high risk is not meant to skip straight to ED Mental Health.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="panel">
+        <h3>Actions owed</h3>
+        <p class="empty" id="log-empty">Nothing yet — answer the first question.</p>
+        <ul class="log" id="log"></ul>
+      </div>
+      <div class="panel">
+        <h3>Who to call</h3>
+        <ul class="calls">
+          <li class="top"><span class="who">Veterans Crisis Line</span><span class="num"><a href="tel:988">988</a> → 1</span></li>
+          <li><span class="who">ED Mental Health</span><span class="num">ext. 5606</span></li>
+          <li><span class="who">ED MH backup</span><span class="num">pgr 5117</span></li>
+          <li><span class="who">ED MH backup 2</span><span class="num">ext. 2613</span></li>
+          <li><span class="who">Access Clinic</span><span class="num">ext. 1775</span></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var DISTRESS = {
+    q: "Is the Veteran in distress right now?",
+    hint: "Distress means suicidal ideation, homicidal ideation, or behaviorally disruptive — anything needing same-day mental health follow-up.",
+    opts: [
+      {lab:"Yes — in distress", sub:"SI, HI, or behaviorally disruptive", to:"ed_mh", crisis:true},
+      {lab:"No — stable, needs follow-up", sub:"Route through the Access Clinic", to:"access_clinic"}
+    ]
+  };
+
+  var NODES = {
+    encounter: {
+      kicker:"Start",
+      q:"How is this Veteran in front of you?",
+      hint:"Clinical reminders due: alcohol, depression, PTSD, suicide, tobacco.",
+      opts:[
+        {lab:"In the clinic", sub:"Face-to-face specialty clinic visit", to:"offered"},
+        {lab:"On the phone", sub:"Telephone screening or follow-up call", to:"phone_screen"}
+      ]
+    },
+
+    offered: {
+      kicker:"Screening",
+      q:"Did the Veteran complete the clinical reminder screening?",
+      opts:[
+        {lab:"Completed", sub:"They answered the reminder questions", to:"result"},
+        {lab:"Declined", sub:"They refused the screening", to:"declined"}
+      ]
+    },
+
+    declined: {
+      kicker:"Declined screening",
+      tone:"caution",
+      do:["Document the decline in the CPRS note."],
+      q:"Offer mental health follow-up. Does the Veteran accept?",
+      opts:[
+        {lab:"Accepts follow-up", sub:"Willing to be seen by mental health", to:"declined_yes"},
+        {lab:"Declines follow-up too", sub:"Refuses the offer", to:"declined_no"}
+      ]
+    },
+    declined_yes: {
+      kicker:"Declined screening · accepted follow-up",
+      end:true, tone:"good",
+      do:["Place the mental health consult.","Notify the provider.","Sign the CPRS note."]
+    },
+    declined_no: {
+      kicker:"Declined screening · declined follow-up",
+      end:true, tone:"caution",
+      do:[
+        "Document the refusal in the CPRS note.",
+        "Give the Veteran the printed mental health resources.",
+        "Page the provider or the Mental Health Treatment Coordinator — this page is required, not optional.",
+        "Sign the CPRS note."
+      ]
+    },
+
+    result: {
+      kicker:"Results",
+      q:"What did the screening show?",
+      opts:[
+        {lab:"All negative", sub:"No reminder screened positive", to:"negative"},
+        {lab:"One or more positive", sub:"Alcohol, depression, PTSD, suicide, or tobacco", to:"which"}
+      ]
+    },
+    negative: {
+      kicker:"All negative",
+      end:true, tone:"good",
+      do:["Sign the CPRS note. Nothing further is owed."]
+    },
+
+    which: {
+      kicker:"Positive screen",
+      q:"Which reminder screened positive?",
+      hint:"Take one at a time. If more than one is positive, finish this pathway, then start over for the next.",
+      opts:[
+        {lab:"Suicide", sub:"Positive suicide risk screen", to:"suicide_risk", crisis:true},
+        {lab:"Depression or PTSD", sub:"Positive PHQ / PC-PTSD screen", to:"dep_ptsd"},
+        {lab:"Alcohol", sub:"Positive alcohol screen", to:"alcohol"},
+        {lab:"Tobacco", sub:"Current tobacco use", to:"tobacco"}
+      ]
+    },
+
+    tobacco: {
+      kicker:"Tobacco positive",
+      do:[
+        "Tobacco follow-up is completed by the RN.",
+        "LVN: notify the RN now — do not complete the follow-up yourself."
+      ],
+      q:"Does the Veteran accept tobacco follow-up?",
+      opts:[
+        {lab:"Accepts", sub:"Willing to talk about quitting", to:"tobacco_yes"},
+        {lab:"Declines", sub:"Not interested today", to:"refused_followup"}
+      ]
+    },
+    tobacco_yes: {
+      kicker:"Tobacco follow-up",
+      end:true, tone:"good",
+      do:[
+        "Work through the tobacco talking points.",
+        "Offer and refer to the PACT team — PCP, OM/RN, SW.",
+        "Place the tobacco cessation consult.",
+        "Give the Veteran the tobacco cessation leaflet.",
+        "Sign the CPRS note."
+      ]
+    },
+
+    alcohol: {
+      kicker:"Alcohol positive",
+      do:[
+        "Alcohol follow-up is completed by the RN.",
+        "LVN: notify the RN now — do not complete the follow-up yourself."
+      ],
+      q:"Does the Veteran accept alcohol follow-up?",
+      opts:[
+        {lab:"Accepts", sub:"Willing to talk about drinking", to:"alcohol_yes"},
+        {lab:"Declines", sub:"Not interested today", to:"refused_followup"}
+      ]
+    },
+    alcohol_yes: {
+      kicker:"Alcohol follow-up",
+      end:true, tone:"good",
+      do:[
+        "Work through the alcohol talking points.",
+        "Offer and refer to the PACT team — PCP, OM/RN, SW.",
+        "Sign the CPRS note."
+      ]
+    },
+
+    refused_followup: {
+      kicker:"Follow-up refused",
+      end:true, tone:"caution",
+      do:[
+        "Document the refusal of follow-up in the CPRS note.",
+        "Notify the RN and the provider.",
+        "Give the Veteran the printed resources.",
+        "Sign the CPRS note."
+      ]
+    },
+
+    dep_ptsd: {
+      kicker:"Depression / PTSD positive",
+      do:["Notify the follow-up team — provider, PCP, SW, mental health."],
+      q:DISTRESS.q, hint:DISTRESS.hint, opts:DISTRESS.opts
+    },
+
+    suicide_risk: {
+      kicker:"Suicide screen positive",
+      tone:"caution",
+      do:["Notify the mental health team — provider, PCP, SW."],
+      q:"What is the risk level?",
+      hint:"From the completed risk evaluation (C-SSRS / CSRE), not from the screen alone.",
+      opts:[
+        {lab:"High", sub:"Acute risk", to:"suicide_talk", crisis:true},
+        {lab:"Moderate", sub:"Intermediate risk", to:"suicide_talk"},
+        {lab:"Low", sub:"Low acute risk", to:"suicide_talk"}
+      ]
+    },
+    suicide_talk: {
+      kicker:"Suicide · offer discussion",
+      q:"Offer a discussion of the positive screen and same-day mental health follow-up. Does the Veteran accept?",
+      opts:[
+        {lab:"Accepts", sub:"Willing to talk and be seen", to:"suicide_yes"},
+        {lab:"Declines", sub:"Refuses the discussion or the follow-up", to:"suicide_no"}
+      ]
+    },
+    suicide_yes: {
+      kicker:"Suicide · discussion accepted",
+      do:[
+        "Document the discussion and the Veteran's response in the CPRS note.",
+        "Notify the mental health team — provider, PCP, SW."
+      ],
+      q:DISTRESS.q, hint:DISTRESS.hint, opts:DISTRESS.opts
+    },
+    suicide_no: {
+      kicker:"Suicide · discussion declined",
+      tone:"caution",
+      do:[
+        "Document the refusal in the CPRS note.",
+        "Page the provider or the Mental Health Treatment Coordinator — this page is required, not optional.",
+        "Give the Veteran the printed mental health resources."
+      ],
+      q:DISTRESS.q, hint:DISTRESS.hint, opts:DISTRESS.opts
+    },
+
+    ed_mh: {
+      kicker:"Same-day mental health",
+      end:true, tone:"urgent", crisis:true,
+      do:[
+        "Stay with the Veteran. Do not leave them alone.",
+        "Provide for the safety of the Veteran and of staff.",
+        "Call ED Mental Health — ext. 5606.",
+        "No answer? Use the backup — pager 5117, then ext. 2613.",
+        "Hand off in person to the responding mental health clinician.",
+        "Document the time, who you called, and the handoff in the CPRS note."
+      ]
+    },
+    access_clinic: {
+      kicker:"Access Clinic referral",
+      end:true,
+      do:[
+        "Call the Access Clinic — ext. 1775 — and arrange the follow-up appointment.",
+        "Document the referral and sign the CPRS note."
+      ]
+    },
+
+    phone_screen: {
+      kicker:"Telephone encounter",
+      do:["Keep the Veteran on the line while you work through this."],
+      q:"Is the screen positive for suicide, or is the Veteran in distress on the call?",
+      opts:[
+        {lab:"Yes — positive or in distress", sub:"SI, HI, or acute distress on the phone", to:"phone_crisis", crisis:true},
+        {lab:"No — needs routine follow-up", sub:"Stable on the call", to:"access_clinic"}
+      ]
+    },
+    phone_crisis: {
+      kicker:"Telephone crisis",
+      end:true, tone:"urgent", crisis:true,
+      do:[
+        "Do not hang up. Keep the Veteran talking.",
+        "Have a second staff member call the Veterans Crisis Line — 988, then press 1.",
+        "Give the Crisis Line the Veteran's identifying information, physical location, and the situation.",
+        "Notify the provider and the mental health team.",
+        "Document the call, the time, and everyone notified in the CPRS note."
+      ]
+    }
+  };
+
+  var TONE_TITLE = {urgent:"Do this now — in this order", caution:"Do this now", good:"Close it out", plain:"Do this now"};
+
+  // ---- state ----
+  var path = [];        // [{id, answer, crisis}]
+  var current = "encounter";
+  var checked = {};     // action key -> bool
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  function visited(){
+    var ids = path.map(function(s){ return s.id; });
+    ids.push(current);
+    return ids;
+  }
+
+  function isCrisis(){
+    if (NODES[current].crisis) return true;
+    return path.some(function(s){ return s.crisis || NODES[s.id].crisis; });
+  }
+
+  function render(){
+    var n = NODES[current];
+
+    $("safety").classList.toggle("on", isCrisis());
+    $("kicker").textContent = n.kicker;
+    $("question").textContent = n.end ? "You're done — here's what you owe." : n.q;
+
+    var hint = $("hint");
+    if (n.hint && !n.end){ hint.textContent = n.hint; hint.hidden = false; }
+    else { hint.hidden = true; }
+
+    // do-now block
+    var nowdo = $("nowdo"), list = $("nowdo-list");
+    list.innerHTML = "";
+    if (n.do && n.do.length){
+      nowdo.hidden = false;
+      nowdo.className = "nowdo" + (n.tone ? " " + n.tone : "");
+      $("nowdo-title").textContent = TONE_TITLE[n.tone || "plain"];
+      n.do.forEach(function(t){
+        var li = document.createElement("li");
+        li.textContent = t;
+        list.appendChild(li);
+      });
+    } else {
+      nowdo.hidden = true;
+    }
+
+    // options
+    var opts = $("opts");
+    opts.innerHTML = "";
+    (n.opts || []).forEach(function(o){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "opt" + (o.crisis ? " crisis" : "");
+      b.innerHTML = '<span><span class="lab"></span><span class="sub"></span></span><span class="go">→</span>';
+      b.querySelector(".lab").textContent = o.lab;
+      b.querySelector(".sub").textContent = o.sub;
+      b.addEventListener("click", function(){
+        path.push({id:current, answer:o.lab, crisis:!!o.crisis});
+        current = o.to;
+        render();
+        $("step").scrollIntoView({block:"nearest", behavior:"smooth"});
+      });
+      opts.appendChild(b);
+    });
+
+    $("back").hidden = path.length === 0;
+    $("restart").hidden = path.length === 0;
+    $("copy").hidden = !n.end;
+    $("print").hidden = !n.end;
+
+    renderTrail();
+    renderLog();
+  }
+
+  function renderTrail(){
+    var t = $("trail");
+    t.innerHTML = "";
+    path.forEach(function(s){
+      var li = document.createElement("li");
+      if (s.crisis) li.className = "crisis";
+      li.innerHTML = "<b></b> · <span></span>";
+      li.querySelector("b").textContent = NODES[s.id].kicker;
+      li.querySelector("span").textContent = s.answer;
+      t.appendChild(li);
+    });
+  }
+
+  function renderLog(){
+    var ul = $("log");
+    ul.innerHTML = "";
+    var any = false, seenText = {};
+    visited().forEach(function(id){
+      var n = NODES[id];
+      if (!n.do) return;
+      n.do.forEach(function(text, i){
+        if (seenText[text]) return;
+        seenText[text] = true;
+        any = true;
+        var key = id + ":" + i;
+        var li = document.createElement("li");
+        if (n.tone === "urgent") li.className = "urgent";
+        var box = document.createElement("input");
+        box.type = "checkbox";
+        box.id = "act-" + key.replace(":", "-");
+        box.checked = !!checked[key];
+        box.addEventListener("change", function(){ checked[key] = box.checked; });
+        var lab = document.createElement("label");
+        lab.setAttribute("for", box.id);
+        lab.textContent = text;
+        li.appendChild(box); li.appendChild(lab);
+        ul.appendChild(li);
+      });
+    });
+    $("log-empty").hidden = any;
+  }
+
+  function summary(){
+    var lines = ["04-90 SCREENING PATHWAY", ""];
+    path.forEach(function(s){
+      lines.push("· " + NODES[s.id].kicker + ": " + s.answer);
+    });
+    lines.push("· Outcome: " + NODES[current].kicker);
+    lines.push("", "ACTIONS:");
+    var seenText = {};
+    visited().forEach(function(id){
+      var n = NODES[id];
+      if (!n.do) return;
+      n.do.forEach(function(text, i){
+        if (seenText[text]) return;
+        seenText[text] = true;
+        lines.push("  [" + (checked[id + ":" + i] ? "x" : " ") + "] " + text);
+      });
+    });
+    return lines.join("\n");
+  }
+
+  function toast(msg){
+    var el = $("toast");
+    el.textContent = msg;
+    el.classList.add("on");
+    setTimeout(function(){ el.classList.remove("on"); }, 1800);
+  }
+
+  $("back").addEventListener("click", function(){
+    if (!path.length) return;
+    current = path.pop().id;
+    render();
+  });
+  $("restart").addEventListener("click", function(){
+    path = []; current = "encounter"; checked = {};
+    render();
+  });
+  $("print").addEventListener("click", function(){ window.print(); });
+  $("copy").addEventListener("click", function(){
+    var text = summary();
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(
+        function(){ toast("Summary copied"); },
+        function(){ fallbackCopy(text); }
+      );
+    } else { fallbackCopy(text); }
+  });
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast("Summary copied"); }
+    catch(e){ toast("Copy failed — select the text manually"); }
+    document.body.removeChild(ta);
+  }
+
+  // ---- static outline, built from the same data ----
+  function buildTree(id, answer, seen, depth){
+    var n = NODES[id];
+    var li = document.createElement("li");
+    if (answer){
+      var a = document.createElement("span");
+      a.className = "a";
+      a.textContent = answer.toUpperCase() + "  ";
+      li.appendChild(a);
+    }
+    if (n.end){
+      var e = document.createElement("span");
+      e.className = "end";
+      e.innerHTML = "<b></b> — ";
+      e.querySelector("b").textContent = n.kicker;
+      e.appendChild(document.createTextNode(n.do.join(" ")));
+      li.appendChild(e);
+      return li;
+    }
+    var q = document.createElement("span");
+    q.className = "q";
+    q.textContent = n.q;
+    li.appendChild(q);
+    if (seen.indexOf(id) !== -1 || depth > 9){ return li; }
+    var ul = document.createElement("ul");
+    n.opts.forEach(function(o){
+      ul.appendChild(buildTree(o.to, o.lab, seen.concat([id]), depth + 1));
+    });
+    li.appendChild(ul);
+    return li;
+  }
+  $("tree").appendChild(buildTree("encounter", null, [], 0));
+
+  render();
+})();
+</script>
+</head>
+<body>
+</body>
+</html>
