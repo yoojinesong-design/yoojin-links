@@ -1,0 +1,61 @@
+# =============================================================================
+# DEMO config: zero setup. No API keys, no internet, no real money.
+# 데모 설정: 키 없이, 인터넷 없이, 가짜 돈으로 바로 실행해 볼 수 있어요.
+#
+#   python -m bot run  -c configs/demo.yaml     # trade forever (Ctrl-C to stop)
+#   python -m bot once -c configs/demo.yaml     # run a single check and exit
+#
+# Prices come from a built-in simulator ("sim" broker), so nothing here touches
+# a real market. Use it to see how the bot behaves before connecting a broker.
+# =============================================================================
+
+# paper = simulated money (모의 투자). The "sim" broker can ONLY run in paper mode.
+mode: paper
+
+broker:
+  type: sim               # built-in simulator with made-up prices (가상 시세)
+  starting_cash: 10000    # fake starting balance, in USD
+  fee_pct: 0.1            # simulated fee per trade, in % (0.1 = 0.1%) / 수수료
+  slippage_pct: 0.05      # simulated price slippage per trade, in % / 슬리피지
+  sim_seed: 42            # change it to get a different (but repeatable) price path
+
+# Made-up tickers for the simulator. Any names work here.
+symbols: [DEMO1, DEMO2]
+
+# One bar ("candle") per minute so you see signals quickly. 1분봉.
+timeframe: 1m
+bars_lookback: 300          # how many past bars the strategy looks at (must cover its warm-up)
+timezone: UTC               # decides when a new trading "day" starts for daily limits
+poll_interval_seconds: 30   # how often the bot wakes up to check (초 단위)
+
+# Strategy: buy when the 10-bar average rises above the 30-bar average,
+# sell when it falls back below. 단기 이동평균이 장기 이동평균을 넘으면 매수.
+strategy:
+  name: sma_crossover
+  params:
+    fast: 10
+    slow: 30
+
+# Risk limits (리스크 관리). All % values are percent of your account equity.
+risk:
+  risk_per_trade_pct: 1         # lose about 1% of equity if a trade hits its stop-loss
+  stop_loss_pct: 5              # sell if price falls 5% below the entry price (손절)
+                                # -> position size = 1% / 5% = 20% of equity
+  take_profit_pct: null         # null = no fixed profit target; the strategy decides when to sell
+  max_position_pct: 25          # never put more than 25% of equity in one symbol
+  max_total_exposure_pct: 60    # keep at least 40% of equity in cash
+  max_open_positions: 2
+  max_daily_loss_pct: 3         # stop opening new trades today after a 3% daily loss (일일 손실 한도)
+  flatten_on_daily_loss: false  # true = also sell everything when that limit is hit
+  max_trades_per_day: 20        # new entries per day (1-minute bars trade often); exits are always allowed
+  min_order_notional: 1         # skip orders smaller than $1
+  cash_buffer_pct: 1            # leave 1% of cash unused for fees/slippage
+
+# Notifications. Webhook URLs / Telegram tokens go in .env, NEVER in this file.
+notify:
+  on_trade: true
+  on_error: true
+
+# Where the bot keeps its memory and logs (relative to THIS file's folder).
+state_dir: ../state/demo
+log_dir: ../logs/demo

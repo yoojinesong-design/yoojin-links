@@ -1,0 +1,76 @@
+# =============================================================================
+# US STOCKS / ETFs via Alpaca (https://alpaca.markets). 미국 주식/ETF (알파카).
+#
+# mode: paper uses Alpaca's free PAPER account: fake money, real market prices.
+# 모의 투자 계좌라서 실제 돈은 사용되지 않아요.
+#
+# Setup:
+#   1. Sign up at alpaca.markets, switch to the "Paper" account, generate API keys.
+#   2. Copy .env.example to .env and fill in ALPACA_API_KEY / ALPACA_SECRET_KEY.
+#      (Keys go in .env, NEVER in this file. 키는 .env 파일에만 넣으세요.)
+#   3. python -m bot backtest -c configs/stocks.yaml   # test the idea on history first
+#      python -m bot run      -c configs/stocks.yaml   # then paper-trade
+#
+# The bot only acts on CLOSED daily bars and only while the market is open, so
+# with 1d bars it trades at most around once a day per symbol.
+# =============================================================================
+
+# paper = Alpaca paper account (모의 투자). Live trading needs BOTH mode: live here
+# AND LIVE_TRADING_CONFIRM=I_ACCEPT_THE_RISK in .env. Don't, until you've paper-traded for weeks.
+mode: paper
+
+broker:
+  type: alpaca
+  data_feed: iex          # iex = free market data; sip = paid (all US exchanges)
+  # The settings below are only used by backtests. Your Alpaca paper account
+  # has its own balance, and Alpaca charges no commission on US stocks.
+  starting_cash: 10000
+  fee_pct: 0              # commission-free (수수료 없음)
+  slippage_pct: 0.05      # assume we pay 0.05% worse than the quoted price
+
+symbols: [SPY, QQQ]         # S&P 500 ETF and Nasdaq-100 ETF
+
+timeframe: 1d               # daily bars (일봉)
+bars_lookback: 300          # needs >= 202 for the 200-day trend filter below
+timezone: America/New_York  # the trading "day" follows the US market clock (뉴욕 시간)
+poll_interval_seconds: 300  # check every 5 minutes
+
+# Connors-style RSI(2) mean reversion: buy a short, sharp dip while the long-term
+# trend is up; sell on the bounce. 상승 추세에서 단기 급락 시 매수, 반등 시 매도.
+# These are the default values, written out so you can tweak them.
+strategy:
+  name: rsi_reversion
+  params:
+    rsi_period: 2       # very short RSI = reacts to 1-3 day dips
+    entry_rsi: 10       # buy when RSI(2) drops below 10 (deeply oversold / 과매도)
+    exit_rsi: 70        # sell when RSI(2) rises above 70
+    trend_sma: 200      # only buy when price is above its 200-day average (0 = off)
+    exit_sma: 5         # also sell when price closes above its 5-day average (0 = off)
+
+# Risk limits (리스크 관리). All % values are percent of account equity.
+#
+# Position size = risk_per_trade_pct / stop_loss_pct of equity:
+#   2% / 8% = 25% of equity per position. If the 8% stop is hit you lose ~2%.
+#   Two positions max -> at most ~50% invested; the rest stays in cash.
+# max_position_pct (45%) is the hard ceiling that applies if you raise
+# risk_per_trade_pct or turn the stop-loss off (null), so a single ETF can
+# never exceed 45% of the account. 한 종목 최대 45%.
+risk:
+  risk_per_trade_pct: 2
+  stop_loss_pct: 8              # sell if price falls 8% below the entry (손절)
+  take_profit_pct: null         # no fixed target: the strategy's exit rules decide
+  max_position_pct: 45
+  max_total_exposure_pct: 90    # never more than 90% of equity in stocks (no margin, ever)
+  max_open_positions: 2
+  max_daily_loss_pct: 3         # no new buys for the rest of the day after a 3% drop (일일 손실 한도)
+  flatten_on_daily_loss: false
+  max_trades_per_day: 2         # at most 2 new entries a day; selling is always allowed
+  min_order_notional: 1         # Alpaca's minimum for fractional orders is $1
+  cash_buffer_pct: 1
+
+notify:
+  on_trade: true
+  on_error: true
+
+state_dir: ../state/stocks
+log_dir: ../logs/stocks

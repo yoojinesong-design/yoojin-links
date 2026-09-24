@@ -1,0 +1,66 @@
+# =============================================================================
+# CRYPTO on Upbit via ccxt, priced in Korean won (KRW). 업비트 원화 마켓.
+#
+# mode: paper = the bot reads REAL public Upbit prices but trades a LOCAL
+# simulated account (starting_cash below). No API keys needed, no real orders.
+# 모의 투자: 실제 업비트 시세를 쓰지만 주문은 가상 계좌에서만 체결돼요.
+#
+#   python -m bot backtest -c configs/crypto.yaml   # test on history first
+#   python -m bot run      -c configs/crypto.yaml   # then paper-trade 24/7
+#
+# Crypto trades 24/7 and is far more volatile than stocks: expect big swings.
+# =============================================================================
+
+# Live trading needs BOTH mode: live AND LIVE_TRADING_CONFIRM=I_ACCEPT_THE_RISK in .env,
+# plus CCXT_API_KEY / CCXT_SECRET. Keys go in .env, NEVER in this file.
+mode: paper
+
+broker:
+  type: ccxt
+  exchange: upbit         # any ccxt exchange id works (binance, kraken, ...) with matching symbols
+  use_sandbox: false      # Upbit has no testnet
+  starting_cash: 1000000  # local paper account: 1,000,000 KRW (100만 원)
+  fee_pct: 0.05           # Upbit KRW-market fee is 0.05% per trade (수수료)
+  slippage_pct: 0.1       # assume we pay 0.1% worse than the last price
+
+# All symbols must share one quote currency (here KRW). Spot markets only.
+symbols: [BTC/KRW, ETH/KRW]
+
+timeframe: 4h               # 4-hour bars (4시간봉)
+bars_lookback: 150          # Upbit returns at most 200 candles per request; the strategy needs >= 53
+timezone: Asia/Seoul        # the trading "day" for daily limits starts at midnight KST (한국 시간)
+poll_interval_seconds: 60   # check every minute (stop-losses are checked on every check)
+
+# Turtle-style breakout: buy when price closes above the highest high of the
+# last 20 bars, sell when it closes below the lowest low of the last 10 bars.
+# Only buy while price is above its 50-bar average (uptrend filter).
+# 20봉 최고가 돌파 시 매수, 10봉 최저가 이탈 시 매도.
+strategy:
+  name: donchian_breakout
+  params:
+    entry_period: 20
+    exit_period: 10
+    trend_sma: 50
+
+# Risk limits (리스크 관리). All % values are percent of account equity.
+# Position size = 2% / 10% stop = 20% of equity (about 200,000 KRW at the start).
+# If the stop is hit you lose ~2% of the account.
+risk:
+  risk_per_trade_pct: 2
+  stop_loss_pct: 10             # sell if price falls 10% below the entry (손절)
+  take_profit_pct: null         # let winners run; the strategy's exit decides
+  max_position_pct: 30          # hard ceiling per coin
+  max_total_exposure_pct: 60    # at least 40% stays in KRW
+  max_open_positions: 2
+  max_daily_loss_pct: 5         # crypto is volatile: pause new buys after a 5% daily loss
+  flatten_on_daily_loss: false
+  max_trades_per_day: 4         # new entries per day; exits are always allowed
+  min_order_notional: 5000      # Upbit's minimum order is 5,000 KRW (최소 주문 금액)
+  cash_buffer_pct: 1
+
+notify:
+  on_trade: true
+  on_error: true
+
+state_dir: ../state/crypto
+log_dir: ../logs/crypto

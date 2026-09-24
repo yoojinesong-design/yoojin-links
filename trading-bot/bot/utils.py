@@ -1,9 +1,12 @@
 """Small helpers: timeframes, closed-bar filtering, bar validation."""
 from __future__ import annotations
 
+import functools
 import math
 import re
+import sys
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import pandas as pd
 
@@ -78,7 +81,26 @@ def validate_bars(bars: pd.DataFrame) -> pd.DataFrame:
 
 
 def floor_to_step(value: float, step: float) -> float:
-    """Round ``value`` DOWN to a multiple of ``step`` (never order more than intended)."""
-    if step <= 0:
+    """Round ``value`` DOWN to a multiple of ``step`` (never order more than intended).
+
+    A value already on the grid up to float noise stays where it is: plain
+    ``value / step`` can land a hair below a grid point (1234.567891 / 1e-6 ->
+    1234567890.9999998) and would otherwise drop a whole step, leaving e.g. an
+    unsellable 0.000001-share remainder after a "sell everything". The result
+    is rounded to the step's decimals, so it carries no float noise either.
+    """
+    if step <= 0 or not math.isfinite(value):
         return value
-    return math.floor(value / step + 1e-9) * step
+    units = value / step
+    nearest = round(units)
+    # Division error is a few ulps of `units`; 1e-9 absolute matches the old slack.
+    tolerance = max(1e-9, abs(units) * 4 * sys.float_info.epsilon)
+    whole = nearest if abs(units - nearest) <= tolerance else math.floor(units)
+    return float(round(whole * step, _step_decimals(step)))
+
+
+@functools.lru_cache(maxsize=64)
+def _step_decimals(step: float) -> int:
+    """Decimal places of ``step`` as written: 1e-06 -> 6, 0.25 -> 2, 1.0 -> 1."""
+    exponent = Decimal(repr(float(step))).as_tuple().exponent
+    return max(0, -exponent) if isinstance(exponent, int) else 0

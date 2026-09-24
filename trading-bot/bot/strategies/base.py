@@ -24,6 +24,8 @@ from ..models import Position, Signal
 
 class Strategy(ABC):
     name: str = "strategy"
+    # One line for `python -m bot strategies`.
+    description: str = ""
     # Default parameter values; subclasses override. Unknown keys passed to
     # __init__ raise ValueError so config typos fail loudly.
     defaults: dict[str, Any] = {}
