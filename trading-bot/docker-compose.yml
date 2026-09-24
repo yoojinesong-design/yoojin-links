@@ -1,0 +1,13 @@
+# docker compose up -d        start in the background (restarts after reboots)
+# docker compose logs -f      watch what it is doing
+# docker compose down         stop
+services:
+  trading-bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    # Change the config here: configs/stocks.yaml, configs/crypto.yaml or your own.
+    command: ["-c", "configs/stocks.yaml", "run"]
+    volumes:
+      - ./state:/app/state
+      - ./logs:/app/logs

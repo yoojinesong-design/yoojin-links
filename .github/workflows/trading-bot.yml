@@ -1,0 +1,84 @@
+# Runs one trading check ("tick") on a schedule, so the bot trades on its own
+# without a server. It does NOTHING until you set the repository variable
+# TRADING_BOT_ENABLED=true (Settings > Secrets and variables > Actions > Variables).
+# Setup: trading-bot/README.md, section "GitHub Actions".
+name: trading-bot
+
+on:
+  schedule:
+    # Every 15 minutes, Mon-Fri, 13:00-20:59 UTC. That covers the US stock
+    # market (9:30-16:00 New York) in both summer and winter time; the bot
+    # itself skips ticks while the market is closed. GitHub may start
+    # scheduled runs a few minutes late.
+    - cron: "*/15 13-20 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never let two ticks overlap.
+concurrency:
+  group: trading-bot
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    if: vars.TRADING_BOT_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: trading-bot
+    env:
+      CONFIG: ${{ vars.TRADING_BOT_CONFIG || 'configs/stocks.yaml' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: trading-bot/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      # The bot keeps a little state between ticks (today's trade count, the
+      # last bar it acted on, the daily-loss baseline). Each run is a fresh
+      # machine, so carry it over in the Actions cache.
+      - name: Restore bot state
+        uses: actions/cache/restore@v4
+        with:
+          path: trading-bot/state
+          key: trading-bot-state-${{ github.run_id }}
+          restore-keys: trading-bot-state-
+
+      - name: Run one trading tick
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          CCXT_API_KEY: ${{ secrets.CCXT_API_KEY }}
+          CCXT_SECRET: ${{ secrets.CCXT_SECRET }}
+          CCXT_PASSWORD: ${{ secrets.CCXT_PASSWORD }}
+          NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Only matters if your config says `mode: live`. Leave this secret
+          # unset to make real-money trading impossible.
+          LIVE_TRADING_CONFIRM: ${{ secrets.LIVE_TRADING_CONFIRM }}
+        run: python -m bot -c "$CONFIG" once
+
+      - name: Save bot state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: trading-bot/state
+          key: trading-bot-state-${{ github.run_id }}
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trading-bot-logs-${{ github.run_id }}
+          path: trading-bot/logs
+          retention-days: 14
+          if-no-files-found: ignore

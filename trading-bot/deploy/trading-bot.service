@@ -1,0 +1,24 @@
+# systemd unit for a Linux server / VPS.
+#   sudo cp deploy/trading-bot.service /etc/systemd/system/
+#   (edit User, WorkingDirectory and the config path below)
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now trading-bot
+#   journalctl -u trading-bot -f        # live logs
+[Unit]
+Description=Automated trading bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bot
+WorkingDirectory=/opt/trading-bot
+EnvironmentFile=/opt/trading-bot/.env
+ExecStart=/opt/trading-bot/.venv/bin/python -m bot -c configs/stocks.yaml run
+Restart=on-failure
+RestartSec=30
+# Give the bot time to finish the current check on stop.
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target
