@@ -1,0 +1,7 @@
+pandas>=2.1
+numpy>=1.26
+PyYAML>=6.0
+python-dotenv>=1.0
+requests>=2.31
+alpaca-py>=0.30
+ccxt>=4.3
