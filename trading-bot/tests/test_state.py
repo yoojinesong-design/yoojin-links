@@ -29,6 +29,17 @@ def full_state() -> BotState:
         last_signal_bar={"AAPL": "2026-09-23T00:00:00+00:00", "BTC/USDT": "2026-09-24T13:00:00+00:00"},
         consecutive_errors=2,
         last_tick_at="2026-09-24T14:05:00+00:00",
+        account_key="live:alpaca::USD",
+        owned={"AAPL": {"qty": 10.0, "avg_entry_price": 180.5}},
+        unsettled=["AAPL"],
+        notified_unmanaged=["SPY"],
+        external_flow=-250.0,
+        flow_cash=4_000.0,
+        flow_holdings={"AAPL": [10.0, 182.0], "SPY": [100.0, 560.0]},
+        pending_orders={"bot-AAPL-sell-202609241400-ab12cd34": {
+            "symbol": "AAPL", "side": "sell", "qty": 10.0, "booked": 0.0, "held": 10.0, "order_id": "o-1"}},
+        seen_holdings={"AAPL": [10.0, 180.5]},
+        warned_short_history=["NEWIPO"],
     )
 
 
@@ -196,6 +207,19 @@ def test_missing_keys_take_defaults(tmp_path):
         '{"last_signal_bar": {"AAPL": 123}}',
         '{"day": 20260924}',
         '{"consecutive_errors": true}',
+        '{"owned": {"AAPL": 10}}',
+        '{"owned": {"AAPL": {"qty": -1, "avg_entry_price": 100}}}',
+        '{"owned": {"AAPL": {"qty": 1}}}',
+        '{"unsettled": "AAPL"}',
+        '{"notified_unmanaged": [1]}',
+        '{"external_flow": null}',
+        '{"flow_cash": "4000"}',
+        '{"flow_holdings": {"AAPL": [10]}}',
+        '{"pending_orders": {"bot-1": {"symbol": "AAPL", "side": "short", "qty": 1, "booked": 0, "held": 0, '
+        '"order_id": ""}}}',
+        '{"pending_orders": {"bot-1": {"symbol": "AAPL", "side": "buy", "qty": 1}}}',
+        '{"seen_holdings": {"AAPL": [10, 0]}}',
+        '{"warned_short_history": "AAPL"}',
     ],
 )
 def test_corrupt_file_is_moved_aside_and_fresh_state_returned(tmp_path, caplog, content):
@@ -307,3 +331,15 @@ def test_kill_switch_is_independent_of_state_file(tmp_path):
     assert store.load() == full_state()
     set_kill_switch(tmp_path, False)
     assert (tmp_path / "state.json").exists()
+
+
+def test_saved_state_file_gets_normal_permissions_not_mkstemps_0600(tmp_path):
+    # mkstemp creates 0600 files: one run as another user (e.g. `sudo ... once`)
+    # would leave a state file the bot's own service user cannot read.
+    path = tmp_path / "state.json"
+    old = os.umask(0o022)
+    try:
+        StateStore(path).save(full_state())
+    finally:
+        os.umask(old)
+    assert path.stat().st_mode & 0o777 == 0o644

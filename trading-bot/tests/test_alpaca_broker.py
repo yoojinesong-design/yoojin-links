@@ -170,12 +170,14 @@ def test_lookback_caps_absurd_limits_without_overflow():
 # ---- get_bars ----------------------------------------------------------------
 @pytest.mark.parametrize("tf, amount, unit", [
     ("1m", 1, TimeFrameUnit.Minute), ("5m", 5, TimeFrameUnit.Minute), ("15m", 15, TimeFrameUnit.Minute),
-    ("30m", 30, TimeFrameUnit.Minute), ("1h", 1, TimeFrameUnit.Hour), ("4h", 4, TimeFrameUnit.Hour),
-    ("1d", 1, TimeFrameUnit.Day),
+    ("30m", 30, TimeFrameUnit.Minute), ("1d", 1, TimeFrameUnit.Day),
+    # Built from 30-minute bars, so that the first bar of a session holds no pre-market trades.
+    ("1h", 30, TimeFrameUnit.Minute), ("4h", 30, TimeFrameUnit.Minute),
 ])
 def test_get_bars_builds_exact_request(fixed_now, tf, amount, unit):
     broker, _, data = make_broker(data_feed="sip")
-    data.get_stock_bars.return_value = BarSet({"SPY": raw_bars(5)})
+    # Weekdays at 10:00 New York time: inside the regular session for every timeframe.
+    data.get_stock_bars.return_value = BarSet({"SPY": raw_bars(5, start="2026-01-05T15:00:00Z")})
     broker.get_bars("SPY", tf, 3)
 
     (request,), _ = data.get_stock_bars.call_args
@@ -236,7 +238,7 @@ def test_get_bars_df_without_symbol_raises(fixed_now):
 
 def test_get_bars_accepts_raw_dict_response_and_missing_volume(fixed_now):
     broker, _, data = make_broker()
-    rows = [{k: v for k, v in r.items() if k != "v"} for r in raw_bars(3)]
+    rows = [{k: v for k, v in r.items() if k != "v"} for r in raw_bars(3, start="2026-01-05T15:00:00Z")]
     data.get_stock_bars.return_value = {"AAPL": rows}
     bars = broker.get_bars("AAPL", "1h", 3)
     assert (bars["volume"] == 0.0).all() and len(bars) == 3
@@ -623,7 +625,7 @@ def test_has_open_orders(orders, expected):
 def test_has_open_orders_wraps_errors():
     broker, trading, _ = make_broker()
     trading.get_orders.side_effect = requests.ConnectionError("x")
-    with pytest.raises(BrokerError, match="has_open_orders"):
+    with pytest.raises(BrokerError, match="get_orders"):
         broker.has_open_orders("AAPL")
 
 
@@ -825,3 +827,657 @@ def test_wire_latest_trade(fixed_now):
     http.request.return_value = http_response(200, {"trades": {"AAPL": {"t": TS, "p": 99.5, "s": 3}}})
     assert broker.get_latest_price("AAPL") == 99.5
     assert http.request.call_args.kwargs["params"]["feed"] == "iex"
+
+
+# ---- regression: HTTP timeouts -------------------------------------------------------
+import socket  # noqa: E402
+import threading  # noqa: E402
+import time  # noqa: E402
+
+
+@pytest.fixture
+def silent_server():
+    """A local TCP server that accepts connections and never answers."""
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(("127.0.0.1", 0))
+    server.listen(16)
+    held: list[socket.socket] = []
+    stop = threading.Event()
+
+    def accept() -> None:
+        server.settimeout(0.1)
+        while not stop.is_set():
+            try:
+                conn, _ = server.accept()
+            except OSError:
+                continue
+            held.append(conn)
+
+    thread = threading.Thread(target=accept, daemon=True)
+    thread.start()
+    yield f"http://127.0.0.1:{server.getsockname()[1]}"
+    stop.set()
+    thread.join(timeout=2)
+    for conn in held:
+        conn.close()
+    server.close()
+
+
+def _call_with_deadline(fn, deadline: float) -> tuple[bool, BaseException | None, float]:
+    """Run ``fn`` in a daemon thread: (finished in time, exception raised, seconds taken)."""
+    outcome: dict[str, BaseException] = {}
+
+    def target() -> None:
+        try:
+            fn()
+        except BaseException as exc:  # noqa: BLE001 - reported to the test
+            outcome["error"] = exc
+
+    started = time.monotonic()
+    thread = threading.Thread(target=target, daemon=True)
+    thread.start()
+    thread.join(deadline)
+    return not thread.is_alive(), outcome.get("error"), time.monotonic() - started
+
+
+def test_stalled_http_connection_times_out_as_broker_error(monkeypatch, silent_server):
+    monkeypatch.setattr(mod, "HTTP_TIMEOUT", (1.0, 1.0))
+    broker = AlpacaBroker("k", "s", paper=True)  # the real vendor clients, as make_broker builds them
+    broker._trading._base_url = silent_server
+    broker._data._base_url = silent_server
+
+    for call in (broker.get_account, lambda: broker.get_bars("SPY", "1d", 5)):
+        finished, error, took = _call_with_deadline(call, deadline=8.0)
+        assert finished, "the call hung on a connection that never answers"
+        assert isinstance(error, BrokerError) and "Timeout" in str(error)
+        assert took < 5.0
+
+
+def test_timeout_is_installed_on_both_vendor_sessions():
+    broker = AlpacaBroker("k", "s", paper=True)
+    for client in (broker._trading, broker._data):
+        adapter = client._session.get_adapter("https://paper-api.alpaca.markets")
+        assert getattr(adapter, "timeout", None) == mod.HTTP_TIMEOUT
+
+
+# ---- regression: open orders / per-symbol cancel ----------------------------------------
+def _order_with_client_id(client_order_id: str, side: str = "buy") -> Order:
+    placed = order("new", side=side)
+    return placed.model_copy(update={"client_order_id": client_order_id})
+
+
+def test_open_orders_tell_the_bots_own_orders_from_manual_ones():
+    broker, trading, _ = make_broker()
+    trading.get_orders.return_value = [_order_with_client_id("bot-AAPL-buy-202603101300-ab12cd34"),
+                                       _order_with_client_id("web-123", side="sell")]
+    orders = broker.open_orders("AAPL")
+    assert [(o.side, o.placed_by_bot) for o in orders] == [(Side.BUY, True), (Side.SELL, False)]
+    (request,), _ = trading.get_orders.call_args
+    assert request.status is QueryOrderStatus.OPEN and request.symbols == ["AAPL"]
+
+
+def test_cancel_orders_cancels_only_the_given_symbols_orders():
+    broker, trading, _ = make_broker()
+    first, second = order("new", symbol="SPY"), order("new", symbol="QQQ")
+    trading.get_orders.return_value = [first, second]
+    broker.cancel_orders(["SPY", "QQQ"])
+    (request,), _ = trading.get_orders.call_args
+    assert request.status is QueryOrderStatus.OPEN and request.symbols == ["SPY", "QQQ"]
+    assert [c.args[0] for c in trading.cancel_order_by_id.call_args_list] == [first.id, second.id]
+    trading.cancel_orders.assert_not_called()  # never the account-wide cancel
+
+
+def test_cancel_orders_with_no_symbols_does_nothing():
+    broker, trading, _ = make_broker()
+    broker.cancel_orders([])
+    assert not trading.method_calls
+
+
+# ---- regression: regular-session intraday bars ------------------------------------------
+def test_intraday_bars_keep_only_the_regular_session(fixed_now):
+    # 30m IEX/SIP-like bars from 04:00 to 19:30 New York time on two days (EDT, UTC-4).
+    rows = raw_bars(32, start="2026-03-09T08:00:00Z", step=timedelta(minutes=30)) + \
+        raw_bars(32, start="2026-03-10T08:00:00Z", step=timedelta(minutes=30))
+    broker, _, data = make_broker()
+    data.get_stock_bars.return_value = {"AAPL": rows}
+
+    bars = broker.get_bars("AAPL", "1h", 100)
+
+    new_york = bars.index.tz_convert("America/New_York")
+    assert len(bars) == 14  # 09:00 (only its 09:30-10:00 half) .. 15:00, twice
+    assert all(9 <= t.hour <= 15 for t in new_york)
+    assert all(t.minute == 0 for t in new_york)
+
+
+def session_rows(day: str, bars_30m: list[tuple[str, float, float, float, float, float]]) -> list[dict]:
+    """Raw 30m bars on ``day``: (New York start time, o, h, l, c, v)."""
+    rows = []
+    for start, o, h, low, c, v in bars_30m:
+        t = pd.Timestamp(f"{day} {start}", tz="America/New_York").tz_convert("UTC")
+        rows.append({"t": t.isoformat(), "o": o, "h": h, "l": low, "c": c, "v": v})
+    return rows
+
+
+def test_the_first_hourly_bar_of_a_session_holds_no_pre_market_trades(fixed_now):
+    # Pre-market trades at 500 with a dip to 494; the session opens at 503.
+    rows = session_rows("2026-03-09", [
+        ("09:00", 500, 501, 494, 502, 100),        # pre-market
+        ("09:30", 503, 504, 502.5, 503.5, 1000),
+        ("10:00", 503.5, 506, 503, 505, 900),
+        ("10:30", 505, 505.5, 501, 502, 800),
+    ])
+    broker, _, data = make_broker()
+    data.get_stock_bars.return_value = {"AAPL": rows}
+
+    bars = broker.get_bars("AAPL", "1h", 10)
+
+    assert list(bars.index.tz_convert("America/New_York").strftime("%H:%M")) == ["09:00", "10:00"]
+    assert tuple(bars.iloc[0]) == (503, 504, 502.5, 503.5, 1000)  # the 09:30-10:00 half only
+    assert tuple(bars.iloc[1]) == (503.5, 506, 501, 502, 1700)
+
+
+def test_four_hour_bars_are_built_from_the_regular_session_in_new_york_time(fixed_now):
+    # Across the DST change (March 8, 2026) the bars still start at 08:00 and
+    # 12:00 New York time (09:30-12:00 and 12:00-16:00).
+    rows = []
+    for day in ("2026-03-06", "2026-03-09"):
+        rows += session_rows(day, [(f"{h:02d}:{m:02d}", 100 + h, 101 + h, 99 + h, 100.5 + h, 10)
+                                   for h in range(7, 18) for m in (0, 30)])
+    broker, _, data = make_broker()
+    data.get_stock_bars.return_value = {"AAPL": rows}
+
+    bars = broker.get_bars("AAPL", "4h", 10)
+
+    local = bars.index.tz_convert("America/New_York")
+    assert list(local.strftime("%m-%d %H:%M")) == ["03-06 08:00", "03-06 12:00", "03-09 08:00", "03-09 12:00"]
+    first = bars.iloc[0]
+    assert (first.open, first.high, first.low, first.volume) == (109, 112, 108, 50)  # 09:30 .. 11:30
+
+
+def test_a_backtest_on_hourly_bars_fills_an_overnight_order_at_the_regular_open(fixed_now):
+    from bot.backtest import BacktestConfig, run_backtest
+    from bot.models import Action, Signal
+    from bot.risk import RiskConfig
+
+    rows = session_rows("2026-03-05", [(f"{h:02d}:{m:02d}", 490, 491, 489, 490, 10)
+                                       for h in range(9, 16) for m in (0, 30)])
+    rows += session_rows("2026-03-06", [("09:00", 500, 501, 494, 502, 100), ("09:30", 503, 504, 502.5, 503.5, 10),
+                                        ("10:00", 503.5, 504, 503, 503.5, 10)])
+    broker, _, data = make_broker()
+    data.get_stock_bars.return_value = {"AAPL": rows}
+    bars = broker.get_bars("AAPL", "1h", 100)
+
+    class BuyAtTheLastBarOfTheDay:
+        name, min_bars = "buy_late", 1
+
+        def generate_signal(self, window, position):
+            late = window.index[-1].tz_convert("America/New_York").hour == 15
+            return Signal(Action.BUY if late and position is None else Action.HOLD, "late")
+
+    cfg = BacktestConfig(fee_pct=0.0, slippage_pct=0.0, timeframe="1h", lookback=50,
+                         risk=RiskConfig(stop_loss_pct=1.0, max_daily_loss_pct=None))
+    trades = run_backtest(BuyAtTheLastBarOfTheDay(), {"AAPL": bars}, cfg).trades
+    (trade,) = trades
+    assert trade.entry_price == 503  # the 09:30 open, not the 09:00 pre-market price
+    assert trade.exit_reason == "end_of_backtest"  # the pre-market dip to 494 is not a stop-out
+
+
+def test_daily_bars_are_not_session_filtered(fixed_now):
+    broker, _, data = make_broker()
+    data.get_stock_bars.return_value = {"AAPL": raw_bars(8)}
+    assert len(broker.get_bars("AAPL", "1d", 8)) == 8
+
+
+# ---- regression: a retried order whose first attempt went through ----------------------
+def test_duplicate_client_order_id_after_a_retried_504_returns_the_placed_order(monkeypatch):
+    import alpaca.common.rest as rest
+
+    monkeypatch.setattr(rest.time, "sleep", lambda seconds: None)
+    broker, http, _ = real_broker()
+    placed = order_json("filled")
+    http.request.side_effect = [
+        http_response(504, {"message": "gateway timeout"}),
+        http_response(422, {"code": 40010001, "message": "client_order_id must be unique"}),
+        http_response(200, placed),
+    ]
+
+    result = broker.submit_order(OrderRequest("AAPL", Side.BUY, 2.5, client_order_id="bot-1"))
+
+    assert (result.status, result.id, result.filled_qty) == ("filled", placed["id"], 2.5)
+    method, url = http.request.call_args.args
+    assert method == "GET" and url.endswith("/v2/orders:by_client_order_id")
+    assert http.request.call_args.kwargs["params"] == {"client_order_id": "bot-1"}
+
+
+def test_duplicate_client_order_id_that_cannot_be_looked_up_is_a_broker_error(monkeypatch):
+    import alpaca.common.rest as rest
+
+    monkeypatch.setattr(rest.time, "sleep", lambda seconds: None)
+    broker, http, _ = real_broker()
+    http.request.side_effect = [
+        http_response(422, {"code": 40010001, "message": "client_order_id must be unique"}),
+        http_response(500, {"message": "internal error"}),
+    ]
+    with pytest.raises(BrokerError, match="may have been placed"):
+        broker.submit_order(OrderRequest("AAPL", Side.BUY, 2.5, client_order_id="bot-1"))
+
+
+# ---- regression: the real adapter under the trading engine --------------------------------
+class _Strategy:
+    """Minimal strategy: the same scripted action on every bar."""
+
+    name = "scripted"
+    min_bars = 2
+
+    def __init__(self, action: str = "hold") -> None:
+        from bot.models import Action
+        self.action = Action(action)
+
+    def generate_signal(self, bars, position):
+        from bot.models import Signal
+        return Signal(self.action, f"scripted {self.action.value}")
+
+
+def alpaca_engine(tmp_path, broker, strategy=None, clock_now: datetime = NOW, symbols=("SPY", "QQQ"), **risk):
+    from bot.config import BotConfig, BrokerConfig, NotifyConfig
+    from bot.engine import TradingEngine
+    from bot.notify import Notifier
+    from bot.risk import RiskConfig, RiskManager
+    from bot.state import STATE_FILE, StateStore
+
+    class Recorder(Notifier):
+        def __init__(self) -> None:
+            super().__init__(NotifyConfig(), mode="live")
+            self.errors: list[str] = []
+
+        def error(self, text: str) -> None:
+            self.errors.append(text)
+            super().error(text)
+
+    cfg = BotConfig(mode="live", broker=BrokerConfig(type="alpaca"), symbols=list(symbols), timeframe="1d",
+                    bars_lookback=10, timezone="America/New_York", risk=RiskConfig(**risk),
+                    state_dir=tmp_path / "state", log_dir=tmp_path / "logs")
+    notifier = Recorder()
+    engine = TradingEngine(cfg, broker, strategy or _Strategy(), RiskManager(cfg.risk),
+                           StateStore(cfg.state_dir / STATE_FILE), notifier, clock=lambda: clock_now)
+    return engine, notifier
+
+
+def open_market(trading, data, positions, spy_price: float = 560.0, **acct):
+    trading.get_clock.return_value = SimpleNamespace(is_open=True)
+    trading.get_account.return_value = account(**acct)
+    trading.get_all_positions.return_value = positions
+    trading.get_orders.return_value = []
+    trading.get_asset.return_value = asset("SPY")
+    data.get_stock_latest_trade.return_value = {"SPY": {"p": spy_price}, "QQQ": {"p": 480.0}}
+    data.get_stock_bars.return_value = {"SPY": raw_bars(30, start="2026-02-01T05:00:00Z"),
+                                        "QQQ": raw_bars(30, start="2026-02-01T05:00:00Z")}
+
+
+def test_engine_never_sells_spy_the_account_held_before_the_bot_started(tmp_path):
+    # configs/stocks.yaml switched to live on an account that has held 100 SPY
+    # (average $250) for years. Strategy SELL: the bot must not sell them.
+    broker, trading, data = make_broker(paper=False)
+    open_market(trading, data, [position("SPY", qty="100", avg="250", current="560")],
+                equity="66000", cash="10000", last_equity="66000")
+    engine, notifier = alpaca_engine(tmp_path, broker, _Strategy("sell"), stop_loss_pct=8.0, take_profit_pct=20.0)
+
+    report = engine.run_once()
+
+    trading.submit_order.assert_not_called()
+    assert report.orders == [] and report.errors == []
+    assert any("SPY" in m and "did not buy" in m for m in notifier.errors)
+
+
+def test_stop_loss_uses_the_positions_price_when_the_market_data_api_is_down(tmp_path):
+    # The trading API still reports SPY at 80 (bought at 100, 8% stop), but
+    # Alpaca's market-data service answers 503.
+    from bot.state import STATE_FILE, BotState, StateStore
+    broker, trading, data = make_broker(paper=False)
+    open_market(trading, data, [position("SPY", qty="10", avg="100", current="80")],
+                equity="10000", cash="9200", last_equity="10000")
+    data.get_stock_latest_trade.side_effect = api_error(503, "service unavailable", code=50300000)
+    trading.get_open_position.return_value = position("SPY", qty="10", avg="100", current="80")
+    trading.submit_order.return_value = order("accepted", symbol="SPY", side="sell", qty="10", filled_qty="0",
+                                              filled_avg_price=None)
+    StateStore(tmp_path / "state" / STATE_FILE).save(
+        BotState(owned={"SPY": {"qty": 10.0, "avg_entry_price": 100.0}}))
+    engine, _ = alpaca_engine(tmp_path, broker, stop_loss_pct=8.0)
+
+    report = engine.run_once()
+
+    (request,), _ = trading.submit_order.call_args
+    assert request.symbol == "SPY" and request.side is OrderSide.SELL and request.qty == 10.0
+    assert any(e.startswith("SPY:") and "503" in e for e in report.errors)
+
+
+def test_a_withdrawal_is_not_counted_as_a_daily_loss(tmp_path):
+    # $1,000 withdrawn in the middle of the day; the positions are unchanged.
+    broker, trading, data = make_broker(paper=False)
+    positions = [position("SPY", qty="10", avg="560", current="560")]
+    open_market(trading, data, positions, equity="10000", cash="4400", last_equity="10000")
+    engine, notifier = alpaca_engine(tmp_path, broker, max_daily_loss_pct=3.0, stop_loss_pct=None)
+    assert engine.run_once().halted is False
+
+    trading.get_account.return_value = account(equity="9000", cash="3400", last_equity="10000")
+    report = engine.run_once()
+
+    assert report.halted is False
+    assert not any("Daily loss limit" in m for m in notifier.errors)
+
+    # A real loss on top of it still counts: SPY -10% is -$560 = -6.2% of the $9,000 left.
+    trading.get_account.return_value = account(equity="8440", cash="3400", last_equity="10000")
+    trading.get_all_positions.return_value = [position("SPY", qty="10", avg="560", current="504")]
+    assert engine.run_once().halted is True
+
+
+# ---- regression: a stateful Alpaca account behind the real adapter and the engine ---------
+class FakeAlpaca:
+    """A stateful Alpaca account (trading and market-data client in one)
+    behind the REAL adapter. Market orders are acknowledged "accepted" and
+    fill only when ``fill()`` runs. Responses are real alpaca-py models."""
+
+    def __init__(self, prices: dict[str, float], cash: float, positions: dict[str, float] | None = None,
+                 last_equity: float | None = None) -> None:
+        self.prices = dict(prices)
+        self.cash = cash
+        self.qty = dict(positions or {})  # symbol -> signed quantity (< 0: short)
+        self.entry = {symbol: self.prices[symbol] for symbol in self.qty}
+        self.orders: list[dict] = []
+        self.last_equity = last_equity
+        self.cancelled: list[str] = []
+        self.after_next_account_read = None  # runs once, right after the next get_account
+        self.on_next_order = None            # runs once, right after the next submit_order
+
+    # -- trading API
+    def get_account(self) -> TradeAccount:
+        held = sum(q * self.prices[s] for s, q in self.qty.items())
+        acct = account(equity=str(self.cash + held), cash=str(self.cash), buying_power=str(self.cash),
+                       non_marginable_buying_power=str(max(0.0, self.cash)),
+                       last_equity=str(self.last_equity if self.last_equity is not None else self.cash + held))
+        hook, self.after_next_account_read = self.after_next_account_read, None
+        if hook:
+            hook()
+        return acct
+
+    def get_all_positions(self) -> list[AlpacaPosition]:
+        return [self._position(s) for s, q in self.qty.items() if q]
+
+    def get_open_position(self, symbol: str) -> AlpacaPosition:
+        if not self.qty.get(symbol):
+            raise api_error(404, "position does not exist", code=40410000)
+        return self._position(symbol)
+
+    def submit_order(self, request: MarketOrderRequest) -> Order:
+        placed = dict(id=str(uuid.uuid4()), symbol=request.symbol, side=request.side.value, qty=float(request.qty),
+                      client_order_id=request.client_order_id, status="accepted")
+        self.orders.append(placed)
+        hook, self.on_next_order = self.on_next_order, None
+        if hook:
+            hook()
+        return self._order({**placed, "status": "accepted"})
+
+    def get_orders(self, request: GetOrdersRequest) -> list[Order]:
+        return [self._order(o) for o in self.working() if not request.symbols or o["symbol"] in request.symbols]
+
+    def get_order_by_id(self, order_id: str) -> Order:
+        return self._order(self._find("id", str(order_id)))
+
+    def get_order_by_client_id(self, client_order_id: str) -> Order:
+        return self._order(self._find("client_order_id", client_order_id))
+
+    def cancel_order_by_id(self, order_id: str) -> None:
+        placed = next(o for o in self.orders if o["id"] == str(order_id))
+        if placed["status"] not in ("accepted", "new"):
+            raise api_error(422, "order is not cancelable", code=42210000)
+        placed["status"] = "canceled"
+        self.cancelled.append(str(order_id))
+
+    def get_clock(self) -> SimpleNamespace:
+        return SimpleNamespace(is_open=True)
+
+    def get_asset(self, symbol: str) -> Asset:
+        return asset(symbol, fractionable=False)
+
+    # -- market-data API
+    def get_stock_bars(self, request: StockBarsRequest) -> dict:
+        return {request.symbol_or_symbols: raw_bars(30, start="2026-02-01T05:00:00Z")}
+
+    def get_stock_latest_trade(self, request: StockLatestTradeRequest) -> dict:
+        return {request.symbol_or_symbols: {"p": self.prices[request.symbol_or_symbols]}}
+
+    # -- test controls
+    def place_user_order(self, symbol: str, side: str, qty: float, client_order_id: str) -> str:
+        placed = dict(id=str(uuid.uuid4()), symbol=symbol, side=side, qty=qty, client_order_id=client_order_id,
+                      status="new")
+        self.orders.append(placed)
+        return placed["id"]
+
+    def working(self, symbol: str | None = None) -> list[dict]:
+        return [o for o in self.orders if o["status"] in ("accepted", "new") and symbol in (None, o["symbol"])]
+
+    def fill(self) -> None:
+        """The bot's working orders fill at the current price."""
+        for o in self.working():
+            if not o["client_order_id"].startswith("bot-"):
+                continue
+            symbol, qty, price = o["symbol"], o["qty"], self.prices[o["symbol"]]
+            held = self.qty.get(symbol, 0.0)
+            if o["side"] == "buy":
+                self.entry[symbol] = (max(held, 0.0) * self.entry.get(symbol, price) + qty * price) / (
+                    max(held, 0.0) + qty)
+                self.qty[symbol], self.cash = held + qty, self.cash - qty * price
+            else:
+                self.qty[symbol], self.cash = held - qty, self.cash + qty * price
+            o["status"], o["filled"] = "filled", qty
+
+    def _position(self, symbol: str) -> AlpacaPosition:
+        q = self.qty[symbol]
+        locked = sum(o["qty"] for o in self.working(symbol) if o["side"] == "sell")
+        return position(symbol, qty=str(q), side="long" if q > 0 else "short", avg=str(self.entry[symbol]),
+                        current=str(self.prices[symbol]), qty_available=str(q - locked if q > 0 else q))
+
+    def _find(self, key: str, value: str) -> dict:
+        placed = next((o for o in self.orders if o[key] == value), None)
+        if placed is None:
+            raise api_error(404, "order not found", code=40410000)
+        return placed
+
+    def _order(self, o: dict) -> Order:
+        placed = order(o["status"], symbol=o["symbol"], side=o["side"], qty=str(o["qty"]),
+                       filled_qty=str(o.get("filled", 0.0)), filled_avg_price=None)
+        return placed.model_copy(update={"id": uuid.UUID(o["id"]), "client_order_id": o["client_order_id"]})
+
+
+def fake_alpaca_engine(tmp_path, fake: FakeAlpaca, action: str = "hold", symbols=("SPY",),
+                       owned: dict[str, float] | None = None, **risk):
+    from bot.state import STATE_FILE, BotState, StateStore
+
+    store = StateStore(tmp_path / "state" / STATE_FILE)
+    if owned:
+        store.save(BotState(owned={s: {"qty": q, "avg_entry_price": 100.0} for s, q in owned.items()}))
+    broker = AlpacaBroker("k", "s", trading_client=fake, data_client=fake)
+    engine, notifier = alpaca_engine(tmp_path, broker, _Strategy(action), symbols=symbols, **risk)
+    return engine, notifier, store
+
+
+_LOSS_LIMIT = dict(stop_loss_pct=None, max_position_pct=30.0, max_daily_loss_pct=3.0, flatten_on_daily_loss=True)
+
+
+def test_a_buy_filling_between_the_account_and_positions_reads_is_not_money_moved_in_or_out(tmp_path):
+    fake = FakeAlpaca({"SPY": 100.0}, cash=10_000.0, last_equity=10_000.0)
+    engine, notifier, store = fake_alpaca_engine(tmp_path, fake, "buy", **_LOSS_LIMIT)
+    fake.on_next_order = lambda: setattr(fake, "after_next_account_read", fake.fill)
+
+    first = engine.run_once()  # buys 30 SPY; it fills between the re-read of the account and of the positions
+    assert [(o.symbol, o.qty, o.status) for o in first.orders] == [("SPY", 30.0, "accepted")]
+    assert fake.qty["SPY"] == 30.0
+    for _ in range(2):
+        assert engine.run_once().halted is False
+    assert store.load().external_flow == 0.0
+
+    fake.prices["SPY"] = 80.0  # -600 = -6% of the account, twice the 3% limit
+    assert engine.run_once().halted is True
+    assert any("Daily loss limit hit" in m for m in notifier.errors)
+
+
+def test_a_sell_filling_between_the_account_and_positions_reads_is_not_a_false_daily_loss(tmp_path):
+    fake = FakeAlpaca({"SPY": 100.0}, cash=7_000.0, positions={"SPY": 30.0}, last_equity=10_000.0)
+    engine, notifier, store = fake_alpaca_engine(tmp_path, fake, "sell", owned={"SPY": 30.0}, **_LOSS_LIMIT)
+    fake.on_next_order = lambda: setattr(fake, "after_next_account_read", fake.fill)
+
+    first = engine.run_once()
+    assert [(o.symbol, o.side, o.qty) for o in first.orders] == [("SPY", Side.SELL, 30.0)]
+    for _ in range(2):
+        report = engine.run_once()
+        assert report.halted is False and report.orders == []
+    assert store.load().external_flow == 0.0
+    assert not any("Daily loss limit" in m for m in notifier.errors)
+
+
+def test_a_failed_positions_read_after_a_buy_is_not_money_moved_in_or_out(tmp_path):
+    fake = FakeAlpaca({"SPY": 100.0}, cash=10_000.0, last_equity=10_000.0)
+    engine, notifier, store = fake_alpaca_engine(tmp_path, fake, "buy", **_LOSS_LIMIT)
+    real_positions = fake.get_all_positions
+
+    def fill_then_fail_positions_read() -> None:
+        fake.fill()
+
+        def unavailable():
+            fake.get_all_positions = real_positions
+            raise api_error(503, "service unavailable", code=50300000)
+        fake.get_all_positions = unavailable
+
+    fake.on_next_order = fill_then_fail_positions_read
+    first = engine.run_once()
+    assert any("could not refresh" in e for e in first.errors)
+
+    for _ in range(2):
+        report = engine.run_once()
+        assert report.halted is False and report.orders == []  # no false halt, no flatten of the new position
+    assert store.load().external_flow == 0.0
+    assert fake.qty["SPY"] == 30.0
+    assert not any("Daily loss limit" in m for m in notifier.errors)
+
+
+def test_daily_loss_flatten_cancels_only_the_bots_own_orders(tmp_path):
+    # 130 SPY: 30 the bot bought, 100 the user's with their own working stop
+    # order. The user also has an order working on QQQ, where the bot has a
+    # working BUY of its own.
+    fake = FakeAlpaca({"SPY": 100.0, "QQQ": 400.0}, cash=10_000.0, positions={"SPY": 130.0},
+                      last_equity=23_000.0)
+    user_stop = fake.place_user_order("SPY", "sell", 100.0, "my-own-stop")
+    user_qqq = fake.place_user_order("QQQ", "buy", 5.0, "web-qqq-limit")
+    bot_qqq = fake.place_user_order("QQQ", "buy", 2.0, "bot-QQQ-buy-202603090500-ab12cd34")
+    engine, notifier, _ = fake_alpaca_engine(tmp_path, fake, symbols=("SPY", "QQQ"), owned={"SPY": 30.0},
+                                             **_LOSS_LIMIT)
+    fake.prices["SPY"] = 90.0  # equity 21,700: -5.7% vs 23,000
+
+    report = engine.run_once()
+
+    assert report.halted is True
+    assert fake.cancelled == [bot_qqq]
+    assert [o["id"] for o in fake.working() if not o["client_order_id"].startswith("bot-")] == [user_stop, user_qqq]
+    assert [(o.symbol, o.side, o.qty) for o in report.orders] == [("SPY", Side.SELL, 30.0)]
+
+
+def test_the_bot_never_buys_into_a_short_position_it_would_cover(tmp_path):
+    # The user is short 60 SPY by hand on a margin account.
+    fake = FakeAlpaca({"SPY": 100.0}, cash=20_000.0, positions={"SPY": -60.0}, last_equity=14_000.0)
+    engine, notifier, store = fake_alpaca_engine(tmp_path, fake, "buy", stop_loss_pct=None, max_position_pct=20.0,
+                                                 max_daily_loss_pct=3.0)
+    for _ in range(2):
+        report = engine.run_once()
+        assert report.orders == [] and fake.orders == []
+        assert "short" in report.signals["SPY"]
+    assert len([m for m in notifier.errors if "SPY" in m and "short" in m]) == 1
+
+    fake.qty["SPY"], fake.cash = 0.0, fake.cash - 6_000.0  # the user covers the short by hand
+    report = engine.run_once()
+    assert report.halted is False
+    assert store.load().external_flow == 0.0  # a cover is not money taken out of the account
+
+
+# ---- regression: how much of one of the bot's orders filled -------------------------------
+@pytest.mark.parametrize("status, filled, expected", [
+    ("filled", "20", 20.0), ("canceled", "5", 5.0), ("expired", "0", 0.0), ("rejected", "0", 0.0)])
+def test_order_filled_qty_reads_a_finished_order(status, filled, expected):
+    broker, trading, _ = make_broker()
+    trading.get_order_by_client_id.return_value = order(status, qty="20", filled_qty=filled)
+    assert broker.order_filled_qty("AAPL", "bot-AAPL-buy-1-ab") == expected
+    trading.get_order_by_client_id.assert_called_once_with("bot-AAPL-buy-1-ab")
+
+
+def test_an_order_reported_filled_without_a_fill_quantity_filled_in_full():
+    broker, trading, _ = make_broker()
+    trading.get_order_by_client_id.return_value = order("filled", qty="20", filled_qty="0")
+    assert broker.order_filled_qty("AAPL", "bot-AAPL-buy-1-ab") == 20.0
+
+
+def test_order_filled_qty_prefers_the_brokers_order_id():
+    broker, trading, _ = make_broker()
+    trading.get_order_by_id.return_value = order("filled", qty="3", filled_qty="3")
+    assert broker.order_filled_qty("AAPL", "bot-AAPL-buy-1-ab", "order-9") == 3.0
+    trading.get_order_by_id.assert_called_once_with("order-9")
+    trading.get_order_by_client_id.assert_not_called()
+
+
+def test_an_order_alpaca_never_received_filled_nothing():
+    broker, trading, _ = make_broker()
+    trading.get_order_by_client_id.side_effect = api_error(404, "order not found", code=40410000)
+    assert broker.order_filled_qty("AAPL", "bot-AAPL-buy-1-ab") == 0.0
+
+
+def test_an_order_still_working_is_not_settled_yet():
+    broker, trading, _ = make_broker()
+    trading.get_order_by_client_id.return_value = order("accepted", qty="3", filled_qty="0")
+    with pytest.raises(BrokerError, match="still"):
+        broker.order_filled_qty("AAPL", "bot-AAPL-buy-1-ab")
+
+
+@pytest.mark.parametrize("exc", [api_error(500, "internal"), requests.ConnectionError("reset")])
+def test_an_order_lookup_that_fails_is_unknown(exc):
+    broker, trading, _ = make_broker()
+    trading.get_order_by_client_id.side_effect = exc
+    assert broker.order_filled_qty("AAPL", "bot-AAPL-buy-1-ab") is None
+
+
+def test_a_buy_whose_reply_was_lost_is_looked_up_and_keeps_its_stop_loss(tmp_path):
+    fake = FakeAlpaca({"SPY": 100.0}, cash=10_000.0, last_equity=10_000.0)
+    engine, notifier, store = fake_alpaca_engine(tmp_path, fake, "buy", stop_loss_pct=5.0, max_position_pct=30.0,
+                                                 max_daily_loss_pct=None)
+    real_submit = fake.submit_order
+
+    def placed_then_timed_out(request):
+        real_submit(request)
+        fake.fill()
+        raise requests.ReadTimeout("read timed out")
+
+    fake.submit_order = placed_then_timed_out
+    assert any("may or may not" in e for e in engine.run_once().errors)
+    fake.submit_order = real_submit
+    fake.prices["SPY"] = 90.0
+
+    report = engine.run_once()
+
+    assert [(o.symbol, o.side, o.qty) for o in report.orders] == [("SPY", Side.SELL, 20.0)]  # 1% risk / 5% stop
+    assert not any("did not buy" in m for m in notifier.errors)
+
+
+def test_a_buy_alpaca_never_received_is_not_booked_even_when_the_user_buys_the_symbol(tmp_path):
+    fake = FakeAlpaca({"SPY": 100.0}, cash=10_000.0, last_equity=10_000.0)
+    engine, notifier, store = fake_alpaca_engine(tmp_path, fake, "buy", stop_loss_pct=5.0, max_position_pct=30.0,
+                                                 max_daily_loss_pct=None)
+    real_submit = fake.submit_order
+    fake.submit_order = lambda request: (_ for _ in ()).throw(requests.ConnectionError("connection reset"))
+    assert any("may or may not" in e for e in engine.run_once().errors)
+    assert store.load().owned["SPY"]["qty"] == 20.0  # booked as sent: its outcome is unknown
+    fake.submit_order = real_submit
+    fake.qty["SPY"], fake.entry["SPY"], fake.cash = 20.0, 100.0, 8_000.0  # meanwhile the user buys 20 by hand
+    fake.prices["SPY"] = 90.0
+
+    for _ in range(2):
+        assert engine.run_once().orders == []  # the user's shares are never sold
+
+    assert store.load().owned == {} and store.load().pending_orders == {}
+    assert any("SPY" in m and "did not buy" in m for m in notifier.errors)

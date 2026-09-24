@@ -11,6 +11,7 @@ import logging
 import math
 import numbers
 import re
+import warnings
 import zlib
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
@@ -196,13 +197,48 @@ def _parse_times(column: pd.Series, where: str) -> pd.DatetimeIndex:
                 unit = "s" if magnitude < 1e11 else "ms" if magnitude < 1e14 else "us" if magnitude < 1e17 else "ns"
                 times = pd.to_datetime(numeric.astype("int64") if integral else numeric, unit=unit, utc=True)
         else:
-            try:
-                times = pd.to_datetime(text, utc=True)
-            except (ValueError, TypeError):
-                times = pd.to_datetime(text, utc=True, format="mixed")
+            times = _parse_date_strings(text, where)
     except (ValueError, TypeError, OverflowError) as exc:
+        if str(exc).startswith(where):
+            raise
         raise ValueError(f"{where}: cannot parse dates ({exc})") from exc
     return pd.DatetimeIndex(times).as_unit(_TIME_UNIT).rename(None)
+
+
+_ISO_HINT = "write the dates as YYYY-MM-DD (ISO), e.g. 2024-01-31"
+_YEAR_FIRST = re.compile(r"\s*\d{4}\D")
+
+
+def _parse_date_strings(text: pd.Series, where: str) -> pd.Series:
+    """Date strings in ONE consistent format: month-first or day-first (e.g.
+    31/01/2024), never a per-row mix of both. pandas infers the format from
+    the first row and guesses month-first when that row is ambiguous (02/01),
+    so the day-first reading is tried too and a file that reads both ways
+    differently is refused rather than guessed."""
+    def strict(dayfirst: bool) -> pd.Series | None:
+        try:
+            with warnings.catch_warnings():  # "Parsing dates in %d/%m/%Y format when dayfirst=False"
+                warnings.simplefilter("ignore", UserWarning)
+                return pd.to_datetime(text, utc=True, dayfirst=dayfirst)
+        except (ValueError, TypeError, OverflowError):
+            return None
+
+    month_first = strict(dayfirst=False)
+    # Year-first dates (2024-01-02) are never day-first; pandas would read them as YYYY-DD-MM.
+    day_first = None if _YEAR_FIRST.match(str(text.iloc[0])) else strict(dayfirst=True)
+    if month_first is not None and day_first is not None and not month_first.equals(day_first):
+        raise ValueError(f"{where}: the dates can be read day-first or month-first (e.g. "
+                         f"{text.iloc[0]!r}), so which one is meant is unclear; {_ISO_HINT}")
+    if month_first is not None or day_first is not None:
+        return month_first if month_first is not None else day_first
+    # Mixed formats: each row parsed on its own. Only trusted when that keeps
+    # the file's order (a day-first/month-first mix scrambles the rows).
+    times = pd.to_datetime(text, utc=True, format="mixed")
+    index = pd.DatetimeIndex(times)
+    if not (index.is_monotonic_increasing or index.is_monotonic_decreasing):
+        raise ValueError(f"{where}: the dates are in mixed formats and do not come out in file order, "
+                         f"so some were probably misread; {_ISO_HINT}")
+    return times
 
 
 def load_csv_bars(path: str | Path) -> pd.DataFrame:

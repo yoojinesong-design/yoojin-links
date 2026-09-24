@@ -1,8 +1,10 @@
 # Run the bot 24/7 in a container:
 #   docker build -t trading-bot .
 #   docker run -d --restart unless-stopped --env-file .env \
-#     -v "$PWD/state:/app/state" -v "$PWD/logs:/app/logs" trading-bot
+#     -v "$PWD/configs:/app/configs:ro" -v "$PWD/state:/app/state" -v "$PWD/logs:/app/logs" trading-bot
 # or simply: docker compose up -d
+# configs/ is copied in as a default, but mount it (as above) so config edits
+# apply after a restart; without the mount they need a rebuild.
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \

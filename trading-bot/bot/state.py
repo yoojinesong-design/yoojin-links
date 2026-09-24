@@ -33,6 +33,46 @@ class BotState:
     last_signal_bar: dict[str, str] = field(default_factory=dict)  # symbol -> ISO ts of last bar evaluated
     consecutive_errors: int = 0
     last_tick_at: str | None = None
+    # Which account the daily fields belong to (mode, broker, currency). When it
+    # changes (e.g. a paper -> live switch on the same state_dir) the daily
+    # counters, loss baseline and the fields below start over instead of
+    # mixing two accounts.
+    account_key: str | None = None
+    # What the bot itself bought in this account, from its own orders:
+    # symbol -> {"qty", "avg_entry_price"}. Only this much of a holding is
+    # managed (stop-loss, exits, flatten) and ever sold by the bot.
+    owned: dict[str, dict[str, float]] = field(default_factory=dict)
+    # Symbols with an order from the bot the broker had not reported filled
+    # yet (or whose reply was lost): ``owned`` is not trimmed to the broker's
+    # holding until no order of the bot's is working on them.
+    unsettled: list[str] = field(default_factory=list)
+    # Orders of the bot's not reported filled yet (accepted, or sent and the
+    # reply lost), by client order id: {"symbol", "side" ("buy"/"sell"),
+    # "qty", "booked": how much of it ``owned`` already counts (a BUY in full,
+    # as if it fills; a SELL only as far as it filled), "held": the account's
+    # holding when it was sent, "order_id": the broker's id, if known}. When
+    # the symbol settles, ``owned`` is corrected to what the broker says
+    # filled (else to how the holding changed): a sell that expired, was
+    # cancelled or filled in part leaves the rest the bot's, and shares the
+    # user holds alongside are never counted as the bot's.
+    pending_orders: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # The broker's own [qty, avg_entry_price] of each holding the bot owns (a
+    # part of), as last seen. A later change of quantity at an unchanged cost
+    # (qty x average price) is a stock split: ``owned`` is rescaled with it.
+    seen_holdings: dict[str, list[float]] = field(default_factory=dict)
+    # Holdings the bot does not manage that it already sent a notice about.
+    notified_unmanaged: list[str] = field(default_factory=list)
+    # Symbols it already warned have too little history to ever trade (kept
+    # here so that separate `once` runs do not repeat the notice).
+    warned_short_history: list[str] = field(default_factory=list)
+    # Money that moved in or out of the account today without the bot trading
+    # (a deposit, a withdrawal, a trade in an asset the bot does not value),
+    # added to day_start_equity so the daily loss limit only sees trading.
+    external_flow: float = 0.0
+    # Cash and holdings ({symbol: [qty, price]}) at the end of the last tick
+    # today: the reference those flows are measured against (None: none yet).
+    flow_cash: float | None = None
+    flow_holdings: dict[str, list[float]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -49,7 +89,21 @@ class BotState:
         _check_types(state)
         if state.day_start_equity is not None:
             state.day_start_equity = float(state.day_start_equity)
+        if state.flow_cash is not None:
+            state.flow_cash = float(state.flow_cash)
+        state.external_flow = float(state.external_flow)
         state.last_signal_bar = dict(state.last_signal_bar)
+        state.owned = {s: {"qty": float(e["qty"]), "avg_entry_price": float(e["avg_entry_price"])}
+                       for s, e in state.owned.items()}
+        state.unsettled = list(state.unsettled)
+        state.pending_orders = {cid: {"symbol": e["symbol"], "side": e["side"], "qty": float(e["qty"]),
+                                      "booked": float(e["booked"]), "held": float(e["held"]),
+                                      "order_id": e["order_id"]}
+                                for cid, e in state.pending_orders.items()}
+        state.seen_holdings = {s: [float(v) for v in pair] for s, pair in state.seen_holdings.items()}
+        state.notified_unmanaged = list(state.notified_unmanaged)
+        state.warned_short_history = list(state.warned_short_history)
+        state.flow_holdings = {s: [float(v) for v in pair] for s, pair in state.flow_holdings.items()}
         return state
 
 
@@ -57,15 +111,14 @@ def _check_types(state: BotState) -> None:
     def fail(name: str, value: Any) -> None:
         raise ValueError(f"state field {name!r} has invalid value {value!r}")
 
-    for name in ("day", "last_tick_at"):
+    for name in ("day", "last_tick_at", "account_key"):
         value = getattr(state, name)
         if value is not None and not isinstance(value, str):
             fail(name, value)
-    equity = state.day_start_equity
-    if equity is not None and (
-        not isinstance(equity, numbers.Real) or isinstance(equity, bool) or not math.isfinite(equity)
-    ):
-        fail("day_start_equity", equity)
+    for name in ("day_start_equity", "flow_cash", "external_flow"):
+        value = getattr(state, name)
+        if value is not None and not _finite(value):
+            fail(name, value)
     for name in ("trades_today", "consecutive_errors"):
         value = getattr(state, name)
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
@@ -75,6 +128,38 @@ def _check_types(state: BotState) -> None:
     bars = state.last_signal_bar
     if not isinstance(bars, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in bars.items()):
         fail("last_signal_bar", bars)
+    owned = state.owned
+    if not isinstance(owned, dict) or not all(
+            isinstance(k, str) and isinstance(v, dict) and set(v) == {"qty", "avg_entry_price"}
+            and all(_finite(x) and x > 0 for x in v.values()) for k, v in owned.items()):
+        fail("owned", owned)
+    for name in ("unsettled", "notified_unmanaged", "warned_short_history"):
+        value = getattr(state, name)
+        if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+            fail(name, value)
+    orders = state.pending_orders
+    if not isinstance(orders, dict) or not all(
+            isinstance(k, str) and isinstance(v, dict) and set(v) == _PENDING_KEYS
+            and isinstance(v["symbol"], str) and v["side"] in ("buy", "sell") and isinstance(v["order_id"], str)
+            and all(_finite(v[x]) and v[x] >= 0 for x in ("qty", "booked", "held")) for k, v in orders.items()):
+        fail("pending_orders", orders)
+    seen = state.seen_holdings
+    if not isinstance(seen, dict) or not all(
+            isinstance(k, str) and isinstance(v, list) and len(v) == 2 and all(_finite(x) and x > 0 for x in v)
+            for k, v in seen.items()):
+        fail("seen_holdings", seen)
+    held = state.flow_holdings
+    if not isinstance(held, dict) or not all(
+            isinstance(k, str) and isinstance(v, list) and len(v) == 2 and all(_finite(x) for x in v)
+            for k, v in held.items()):
+        fail("flow_holdings", held)
+
+
+_PENDING_KEYS = {"symbol", "side", "qty", "booked", "held", "order_id"}
+
+
+def _finite(value: Any) -> bool:
+    return isinstance(value, numbers.Real) and not isinstance(value, bool) and math.isfinite(value)
 
 
 class StateStore:
@@ -122,6 +207,7 @@ def _atomic_write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     try:
+        give_default_permissions(fd)
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(text)
             fh.flush()
@@ -136,6 +222,22 @@ def _atomic_write_text(path: Path, text: str) -> None:
     _fsync_dir(path.parent)
 
 
+def give_default_permissions(fd: int) -> None:
+    """Give a ``mkstemp`` file (always 0600) the mode a normally created file
+    gets (0666 minus the umask, e.g. 0644), so a file rewritten by another
+    user (say, one ``sudo`` run) stays readable by the bot's own user. Best
+    effort: a no-op where ``os.fchmod`` does not exist (Windows)."""
+    fchmod = getattr(os, "fchmod", None)
+    if fchmod is None:
+        return
+    umask = os.umask(0)
+    os.umask(umask)
+    try:
+        fchmod(fd, 0o666 & ~umask)
+    except OSError:
+        pass
+
+
 def _fsync_dir(directory: Path) -> None:
     """Persist the rename itself across power loss (best effort; POSIX only)."""
     try:
@@ -148,6 +250,17 @@ def _fsync_dir(directory: Path) -> None:
         pass
     finally:
         os.close(fd)
+
+
+def loss_baseline(state: BotState) -> float | None:
+    """The daily loss limit's reference: the day's starting equity plus money
+    moved in (or minus money moved out) today without the bot trading. None
+    when there is no usable baseline."""
+    start = state.day_start_equity
+    if start is None or not _finite(start) or start <= 0:
+        return None
+    baseline = start + state.external_flow
+    return baseline if _finite(baseline) and baseline > 0 else None
 
 
 def kill_switch_active(state_dir: Path) -> bool:
@@ -182,7 +295,9 @@ __all__ = [
     "STATE_FILE",
     "BotState",
     "StateStore",
+    "give_default_permissions",
     "kill_switch_active",
     "kill_switch_reason",
+    "loss_baseline",
     "set_kill_switch",
 ]

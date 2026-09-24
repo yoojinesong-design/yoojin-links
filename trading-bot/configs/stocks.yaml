@@ -72,5 +72,11 @@ notify:
   on_trade: true
   on_error: true
 
+# The bot only ever manages (and sells) what it bought itself. Holdings already in
+# the account, even in the symbols above (e.g. SPY you bought yourself), are left alone and
+# the bot does not buy more of them. true = let the bot manage them too, which
+# means its stop-loss and strategy may SELL them. 봇은 자기가 산 것만 팔아요.
+# adopt_existing_positions: false
+
 state_dir: ../state/stocks
 log_dir: ../logs/stocks

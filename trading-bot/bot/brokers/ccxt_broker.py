@@ -19,9 +19,11 @@ Safety rules enforced here, on top of the engine's own checks:
   price feed of a local ``PaperBroker``); every account/order method raises.
 
 Exchanges do not report entry prices for spot holdings, so the average entry
-price of each position is kept in a small JSON file (``entries_path``) updated
-on our own fills. Holdings the bot did not buy itself are anchored at the price
-first seen, so stop-losses still have a fixed reference.
+price of each position is kept in a small JSON file (``entries_path``, one per
+account: testnet and live never share it) updated on our own fills. Holdings
+the bot did not buy itself are anchored at the price first seen, so that they
+have a fixed reference should the engine be told to adopt them (by default it
+leaves them alone; see ``BotState.owned``).
 """
 from __future__ import annotations
 
@@ -34,7 +36,7 @@ import numbers
 import os
 import tempfile
 import time
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
@@ -43,8 +45,9 @@ import ccxt
 import pandas as pd
 
 from ..models import BAR_COLUMNS, Account, OrderRequest, OrderResult, Position, Side
+from ..state import give_default_permissions
 from ..utils import timeframe_to_timedelta, validate_bars
-from .base import Broker, BrokerError
+from .base import BOT_ORDER_PREFIX, Broker, BrokerError, OpenOrder
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +55,16 @@ DEFAULT_MIN_ORDER_COST = 1.0
 # Minimum order value for venues whose ccxt markets do not report
 # ``limits.cost.min`` (exchange id -> quote currency -> minimum).
 KNOWN_MIN_ORDER_COST: dict[str, dict[str, float]] = {"upbit": {"KRW": 5000.0}}
+# Quote currencies worth about a US dollar or less per unit, where
+# DEFAULT_MIN_ORDER_COST is a sensible floor when the venue reports no minimum.
+# For any other quote (BTC, ETH, BNB ...) one unit is a large sum, so no floor
+# is assumed: risk.min_order_notional applies and the exchange rejects anything
+# still too small.
+UNIT_PRICED_QUOTES = frozenset({
+    "USD", "USDT", "USDC", "BUSD", "FDUSD", "TUSD", "DAI", "USDP", "PYUSD", "EUR", "GBP", "CHF", "AUD",
+    "CAD", "NZD", "SGD", "HKD", "JPY", "KRW", "CNY", "TWD", "THB", "IDR", "INR", "PHP", "VND", "TRY",
+    "BRL", "MXN", "ARS", "ZAR", "NGN", "UAH", "RUB", "PLN", "CZK", "HUF", "SEK", "NOK", "DKK", "ILS", "AED",
+})
 
 # Exchange verdicts on an order: report "rejected", do not retry.
 ORDER_REJECTIONS: tuple[type[Exception], ...] = (
@@ -131,6 +144,9 @@ class CCXTBroker(Broker):
         self._entries: dict[str, dict[str, float]] = self._load_entries()
         self._markets: Mapping[str, Any] | None = None
         self._warned_unknown_entry: set[str] = set()
+        self._last_price: dict[str, float] = {}          # last good price per symbol
+        self._min_cost: dict[str, float] = {}            # resolved minimum order value per symbol
+        self._placed_ids: set[str] = set()              # ids of orders this broker sent
 
     @property
     def currency(self) -> str:
@@ -163,15 +179,12 @@ class CCXTBroker(Broker):
         self._market(symbol)
         with self._api(f"fetch_ticker({symbol})"):
             ticker = self.exchange.fetch_ticker(symbol) or {}
-        last = _positive(ticker.get("last"))
-        if last is not None:
-            return last
         bid, ask = _positive(ticker.get("bid")), _positive(ticker.get("ask"))
-        if bid is not None and ask is not None:
-            return (bid + ask) / 2.0
-        close = _positive(ticker.get("close"))
-        if close is not None:
-            return close
+        mid = (bid + ask) / 2.0 if bid is not None and ask is not None else None
+        price = _positive(ticker.get("last")) or mid or _positive(ticker.get("close"))
+        if price is not None:
+            self._last_price[symbol] = price
+            return price
         raise BrokerError(f"{self.exchange_id} ticker for {symbol} has no usable price: "
                           f"last={ticker.get('last')!r} bid={ticker.get('bid')!r} ask={ticker.get('ask')!r}")
 
@@ -182,12 +195,16 @@ class CCXTBroker(Broker):
         quote = self.quote_currency
         cash = _balance(balance, quote, "total")
         equity = cash
+        unpriced: list[str] = []
         for symbol in self.symbols:
             qty = _balance(balance, self._base[symbol], "total")
             if qty > 0:
-                equity += qty * self.get_latest_price(symbol)
+                price, priced = self._holding_price(symbol)
+                equity += qty * (price or 0.0)
+                if not priced:
+                    unpriced.append(symbol)
         return Account(equity=equity, cash=cash, buying_power=_balance(balance, quote, "free"),
-                       currency=quote, day_start_equity=None)
+                       currency=quote, day_start_equity=None, unpriced=tuple(unpriced))
 
     def get_positions(self) -> dict[str, Position]:
         """Configured symbols whose base-currency balance is worth at least the
@@ -200,17 +217,21 @@ class CCXTBroker(Broker):
             qty = _balance(balance, self._base[symbol], "total")
             if qty <= 0:
                 continue
-            price = self.get_latest_price(symbol)
-            if qty * price < self.min_order_notional(symbol):
+            price, priced = self._holding_price(symbol)
+            if price is None:
+                continue  # cannot value it at all; that symbol's own check reports the error
+            if priced and qty * price < self.min_order_notional(symbol):
                 logger.debug("%s: ignoring dust %g %s", self.name, qty, self._base[symbol])
                 continue
             entry = self._entries.get(symbol)
-            if entry is None:
+            if entry is None and not priced:
+                entry = {"qty": qty, "avg_entry_price": price}  # not anchored on a stale price
+            elif entry is None:
                 if symbol not in self._warned_unknown_entry:
                     self._warned_unknown_entry.add(symbol)
-                    logger.warning("%s: entry price of %g %s is unknown (not bought by this bot); "
-                                   "using the current price %g as the entry for stop-loss/take-profit",
-                                   self.name, qty, symbol, price)
+                    logger.warning("%s: entry price of %g %s is unknown (not bought by this bot); recording "
+                                   "the current price %g as its entry (the bot leaves such holdings alone "
+                                   "unless adopt_existing_positions is set)", self.name, qty, symbol, price)
                 entry = {"qty": qty, "avg_entry_price": price}
                 self._entries[symbol] = entry
                 anchored = True
@@ -278,6 +299,8 @@ class CCXTBroker(Broker):
 
         # The order is live from here on: never raise, or the engine could retry it.
         try:
+            if isinstance(response, dict) and response.get("id"):
+                self._placed_ids.add(str(response["id"]))
             response = self._refresh_order(response, symbol)
             result = _order_result(response, order, side, amount, note)
             self._record_fill(result, price)
@@ -291,9 +314,42 @@ class CCXTBroker(Broker):
         return result
 
     def cancel_all_orders(self) -> None:
+        self.cancel_orders(self.symbols)
+
+    def order_filled_qty(self, symbol: str, client_order_id: str, order_id: str = "") -> float | None:
+        """By the exchange's order id only: no client order id is sent to
+        exchanges, so an order whose reply was lost cannot be looked up."""
+        if not order_id or not self.has_credentials or not self.exchange.has.get("fetchOrder"):
+            return None
+        try:
+            with self._api(f"fetch_order({order_id}, {symbol})"):
+                placed = self.exchange.fetch_order(order_id, symbol) or {}
+        except BrokerError as exc:
+            logger.warning("%s: could not look up order %s: %s", self.name, order_id, exc)
+            return None
+        status = str(placed.get("status") or "").lower()
+        if status not in ("closed", *_DEAD_STATUSES):
+            raise BrokerError(f"{self.exchange_id} order {order_id} ({symbol}) is still {status or 'working'}")
+        filled = _number(placed.get("filled"))
+        if status == "closed" and not filled:  # "closed" without a fill quantity: all of it
+            return _number(placed.get("amount"))
+        return None if filled is None else max(filled, 0.0)
+
+    def cancel_order(self, symbol: str, order_id: str) -> None:
+        self._require_keys("cancelling orders")
+        with self._api(f"cancel_order({order_id}, {symbol})"):
+            try:
+                self.exchange.cancel_order(order_id, symbol)
+            except ccxt.OrderNotFound:
+                logger.info("%s: order %s (%s) already gone", self.name, order_id, symbol)
+                return
+        logger.info("%s: cancelled order %s (%s)", self.name, order_id, symbol)
+
+    def cancel_orders(self, symbols: Sequence[str]) -> None:
+        """Cancel every working order of ``symbols`` (tries all, then reports failures)."""
         self._require_keys("cancelling orders")
         errors: list[str] = []
-        for symbol in self.symbols:
+        for symbol in symbols:
             try:
                 with self._api(f"fetch_open_orders({symbol})"):
                     orders = self.exchange.fetch_open_orders(symbol) or []
@@ -312,18 +368,57 @@ class CCXTBroker(Broker):
         if errors:
             raise BrokerError(f"{self.exchange_id} cancel_all_orders incomplete: " + "; ".join(errors))
 
-    def has_open_orders(self, symbol: str) -> bool:
+    def open_orders(self, symbol: str) -> list[OpenOrder]:
+        """Working orders on ``symbol``; the bot's own are the ones this broker
+        sent (or whose client order id starts with ``bot-``)."""
         self._require_keys("checking open orders")
         self._market(symbol)
         with self._api(f"fetch_open_orders({symbol})"):
-            return bool(self.exchange.fetch_open_orders(symbol))
+            orders = self.exchange.fetch_open_orders(symbol) or []
+        result = []
+        for raw in orders:
+            order_id = str(raw.get("id") or "")
+            client_id = str(raw.get("clientOrderId") or "")
+            side = str(raw.get("side") or "").lower()
+            result.append(OpenOrder(
+                id=order_id, symbol=symbol, side=Side(side) if side in ("buy", "sell") else None,
+                placed_by_bot=order_id in self._placed_ids or client_id.startswith(BOT_ORDER_PREFIX)))
+        return result
 
     # ---- market rules ----------------------------------------------------------
     def min_order_notional(self, symbol: str) -> float:
+        """Smallest order value in the QUOTE currency: the market's
+        ``limits.cost.min``, else a known venue minimum, else (with API keys)
+        the venue's private per-market limits, else 1.0 for dollar-like quotes
+        and 0 for crypto quotes such as BTC (never "one whole BTC")."""
         cost_min = _positive(_limit(self._market(symbol), "cost", "min"))
         if cost_min is not None:
             return cost_min
-        return KNOWN_MIN_ORDER_COST.get(self.exchange_id, {}).get(self.quote_currency, DEFAULT_MIN_ORDER_COST)
+        known = KNOWN_MIN_ORDER_COST.get(self.exchange_id, {}).get(self.quote_currency)
+        if known is not None:
+            return known
+        if symbol not in self._min_cost:
+            self._min_cost[symbol] = self._private_min_cost(symbol) or self._fallback_min_cost(symbol)
+        return self._min_cost[symbol]
+
+    def _private_min_cost(self, symbol: str) -> float | None:
+        """``fetch_market`` (e.g. Upbit's orders/chance ``min_total``): needs keys; looked up once."""
+        fetch = getattr(self.exchange, "fetch_market", None)
+        if not self.has_credentials or not callable(fetch):
+            return None
+        try:
+            return _positive(_limit(fetch(symbol) or {}, "cost", "min"))
+        except Exception as exc:
+            logger.warning("%s: could not read the minimum order value for %s: %s", self.name, symbol, exc)
+            return None
+
+    def _fallback_min_cost(self, symbol: str) -> float:
+        if self.quote_currency in UNIT_PRICED_QUOTES:
+            return DEFAULT_MIN_ORDER_COST
+        logger.warning("%s reports no minimum order value for %s; the bot assumes none (risk.min_order_notional, "
+                       "in %s, still applies and the exchange rejects anything smaller than its own minimum)",
+                       self.exchange_id, symbol, self.quote_currency)
+        return 0.0
 
     def normalize_qty(self, symbol: str, qty: float) -> float:
         """Truncate to the market's amount precision; 0.0 when that leaves
@@ -339,6 +434,18 @@ class CCXTBroker(Broker):
         return amount
 
     # ---- internals -------------------------------------------------------------
+    def _holding_price(self, symbol: str) -> tuple[float | None, bool]:
+        """(price, True) from the ticker; when that fails (outage, delisted
+        market) one symbol must not break the whole account read, so it is
+        (last known price, else the stored entry price, else None; False)."""
+        try:
+            return self.get_latest_price(symbol), True
+        except BrokerError as exc:
+            entry = self._entries.get(symbol) or {}
+            price = self._last_price.get(symbol) or _positive(entry.get("avg_entry_price"))
+            logger.warning("%s: cannot price %s (%s); valuing it at %s for now", self.name, symbol, exc, price)
+            return price, False
+
     @contextlib.contextmanager
     def _api(self, what: str) -> Iterator[None]:
         """Translate every vendor exception from a read into ``BrokerError``."""
@@ -530,6 +637,7 @@ class CCXTBroker(Broker):
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+            give_default_permissions(fd)
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 json.dump(self._entries, fh, indent=2, sort_keys=True)
             os.replace(tmp, path)

@@ -1050,3 +1050,291 @@ def test_can_serve_as_price_feed_for_paper_broker():
     assert broker.is_market_open() is True
     assert math.isclose(broker.get_latest_price("ETH/USDT"), 1_500.0)
     assert isinstance(Path(__file__), Path)
+
+
+# ---- regression: one unpriceable holding / minimum order value units -----------
+
+
+def test_one_holding_that_cannot_be_priced_does_not_fail_the_account_read():
+    ex = FakeExchange()
+    broker = make_broker(ex)
+    ex.set_balance("BTC", 0.1)
+    ex.set_balance("ETH", 2.0)
+    broker.get_account()  # both priced: remembers their last prices
+    ex.tickers["ETH/USDT"] = ccxt.ExchangeNotAvailable("ETH ticker down")
+
+    account = broker.get_account()
+    positions = broker.get_positions()
+
+    assert account.unpriced == ("ETH/USDT",)
+    assert account.equity == pytest.approx(10_000.0 + 0.1 * 20_000.0 + 2.0 * 1_500.0)
+    assert set(positions) == {"BTC/USDT", "ETH/USDT"}
+    assert positions["ETH/USDT"].market_price == 1_500.0
+
+
+def test_delisted_holding_does_not_fail_the_account_read():
+    ex = FakeExchange()
+    broker = make_broker(ex)
+    ex.set_balance("BTC", 0.1)
+    ex.set_balance("ETH", 2.0)
+    ex.market_list = [m for m in ex.market_list if m["symbol"] != "ETH/USDT"]  # gone after a restart
+
+    account = broker.get_account()
+
+    assert account.unpriced == ("ETH/USDT",)
+    assert account.equity == pytest.approx(10_000.0 + 0.1 * 20_000.0)
+    assert set(broker.get_positions()) == {"BTC/USDT"}
+
+
+def test_engine_still_stops_out_one_coin_when_another_cannot_be_priced(tmp_path):
+    from datetime import datetime, timezone
+
+    from bot.config import BotConfig, BrokerConfig, NotifyConfig
+    from bot.engine import TradingEngine
+    from bot.notify import Notifier
+    from bot.risk import RiskConfig, RiskManager
+    from bot.state import STATE_FILE, BotState, StateStore
+    from bot.strategies import create_strategy
+
+    entries = tmp_path / "entries.json"
+    entries.write_text(json.dumps({"BTC/USDT": {"qty": 0.1, "avg_entry_price": 40_000.0}}))
+    # The bot bought that BTC itself (its own record), so it manages it.
+    StateStore(tmp_path / "state" / STATE_FILE).save(
+        BotState(owned={"BTC/USDT": {"qty": 0.1, "avg_entry_price": 40_000.0}}))
+    ex = FakeExchange()
+    broker = make_broker(ex, entries_path=entries)
+    ex.set_balance("BTC", 0.1)  # bought at 40k, now 20k: -50% with a 5% stop
+    ex.set_balance("ETH", 2.0)
+    ex.tickers["ETH/USDT"] = ccxt.ExchangeNotAvailable("ETH ticker down")
+    risk = RiskConfig(stop_loss_pct=5.0)
+    cfg = BotConfig(symbols=["BTC/USDT", "ETH/USDT"], timeframe="1h", bars_lookback=5, timezone="UTC",
+                    broker=BrokerConfig(type="ccxt", exchange="fakex"), risk=risk,
+                    state_dir=tmp_path / "state", log_dir=tmp_path / "logs")
+    clock = lambda: datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)  # noqa: E731
+    engine = TradingEngine(cfg, broker, create_strategy("sma_crossover", {"fast": 2, "slow": 3}),
+                           RiskManager(risk), StateStore(cfg.state_dir / STATE_FILE),
+                           Notifier(NotifyConfig()), clock=clock)
+
+    report = engine.run_once()
+
+    assert ("create_order", "BTC/USDT", "market", "sell", 0.1, None) in ex.calls
+    assert any("ETH" in error for error in report.errors)
+
+
+def upbit_exchange(*market_ids: str) -> FakeExchange:
+    """A FakeExchange carrying upbit's own parsed markets (cost.min is None)."""
+    parsed = [ccxt.upbit().parse_market({"market": market_id}) for market_id in market_ids]
+    return FakeExchange(parsed, exchange_id="upbit")
+
+
+def test_btc_quoted_market_without_a_reported_minimum_is_not_one_whole_btc():
+    from bot.models import Account, Action, Signal
+    from bot.risk import RiskConfig, RiskManager
+
+    broker = make_broker(upbit_exchange("BTC-ETH", "BTC-XRP"), symbols=("ETH/BTC", "XRP/BTC"), keys=False)
+    minimum = broker.min_order_notional("ETH/BTC")
+    assert minimum < 0.001
+
+    risk = RiskManager(RiskConfig(min_order_notional=0.00005, max_position_pct=20.0, stop_loss_pct=None))
+    qty, why = risk.entry_qty("ETH/BTC", 0.05, Signal(Action.BUY), Account(0.5, 0.5, 0.5), {}, minimum)
+    assert qty > 0, why  # a 0.1 BTC entry is not "below minimum"
+
+
+def test_upbit_krw_minimum_is_still_known_without_keys():
+    broker = make_broker(upbit_exchange("KRW-BTC"), symbols=("BTC/KRW",), keys=False)
+    assert broker.min_order_notional("BTC/KRW") == 5_000.0
+
+
+def test_minimum_order_value_comes_from_the_private_market_endpoint_when_keys_are_set():
+    class UpbitWithChance(FakeExchange):
+        def fetch_market(self, symbol, params=None):
+            self.calls.append(("fetch_market", symbol))
+            return {"limits": {"cost": {"min": 0.0005}}}
+
+    ex = UpbitWithChance([ccxt.upbit().parse_market({"market": "BTC-ETH"})], exchange_id="upbit")
+    broker = make_broker(ex, symbols=("ETH/BTC",))
+    assert broker.min_order_notional("ETH/BTC") == 0.0005
+    assert broker.min_order_notional("ETH/BTC") == 0.0005
+    assert ex.names().count("fetch_market") == 1  # looked up once, then cached
+
+
+def test_usd_quoted_market_without_a_reported_minimum_keeps_the_1_unit_floor():
+    ex = FakeExchange([spot_market("BTC/USDT")])
+    assert make_broker(ex, symbols=("BTC/USDT",)).min_order_notional("BTC/USDT") == 1.0
+
+
+# ---- regression: open orders tell the bot's own from others; per-symbol cancel -----
+
+
+def test_open_orders_tell_the_bots_own_orders_from_manual_ones():
+    ex = FakeExchange()
+    broker = make_broker(ex)
+    ex.order_response = {"id": "ord-bot", "symbol": "BTC/USDT", "side": "buy", "status": "open",
+                         "amount": 0.1, "filled": 0.0}
+    ex.fetched_order = dict(ex.order_response)
+    broker.submit_order(buy("BTC/USDT", 0.1))
+    ex.open_orders["BTC/USDT"] = [
+        {"id": "ord-bot", "side": "buy", "status": "open"},
+        {"id": "manual-1", "side": "sell", "status": "open"},
+        {"id": "x-2", "clientOrderId": "bot-BTCUSDT-buy-2024", "side": "buy", "status": "open"},
+    ]
+
+    orders = broker.open_orders("BTC/USDT")
+
+    assert [(o.id, o.side, o.placed_by_bot) for o in orders] == [
+        ("ord-bot", Side.BUY, True), ("manual-1", Side.SELL, False), ("x-2", Side.BUY, True)]
+    assert broker.has_open_orders("BTC/USDT") is True
+    assert broker.has_open_orders("ETH/USDT") is False
+
+
+def test_cancel_orders_only_touches_the_given_symbols():
+    ex = FakeExchange()
+    ex.open_orders = {"BTC/USDT": [{"id": "a"}], "ETH/USDT": [{"id": "c"}]}
+    make_broker(ex).cancel_orders(["BTC/USDT"])
+    assert [c for c in ex.calls if c[0] == "cancel_order"] == [("cancel_order", "a", "BTC/USDT")]
+
+
+# ---------------------------------------------------------------------------
+# regression: the engine on a real (shared) exchange account
+# ---------------------------------------------------------------------------
+class _PriceTagStrategy:
+    """BUY on bars whose price is above ``buy_above`` (tells symbols apart), else HOLD."""
+
+    name = "price_tag"
+    min_bars = 2
+
+    def __init__(self, buy_above: float | None = None, sell: bool = False) -> None:
+        self.buy_above = buy_above
+        self.sell = sell
+
+    def generate_signal(self, bars, position):
+        from bot.models import Action, Signal
+        if self.sell and position is not None:
+            return Signal(Action.SELL, "scripted sell")
+        if self.buy_above is not None and position is None and bars["close"].iloc[-1] > self.buy_above:
+            return Signal(Action.BUY, "scripted buy")
+        return Signal.hold("scripted hold")
+
+
+def ccxt_engine(tmp_path, broker, strategy=None, owned: dict | None = None, **risk):
+    from datetime import datetime, timezone
+
+    from bot.config import BotConfig, BrokerConfig, NotifyConfig
+    from bot.engine import TradingEngine
+    from bot.notify import Notifier
+    from bot.risk import RiskConfig, RiskManager
+    from bot.state import STATE_FILE, BotState, StateStore
+
+    class Recorder(Notifier):
+        def __init__(self) -> None:
+            super().__init__(NotifyConfig(), mode="live")
+            self.errors: list[str] = []
+
+        def error(self, text: str) -> None:
+            self.errors.append(text)
+            super().error(text)
+
+    store = StateStore(tmp_path / "state" / STATE_FILE)
+    if owned:
+        store.save(BotState(owned=owned))
+    cfg = BotConfig(mode="live", symbols=["BTC/USDT", "ETH/USDT"], timeframe="1h", bars_lookback=5,
+                    timezone="UTC", broker=BrokerConfig(type="ccxt", exchange="fakex"), risk=RiskConfig(**risk),
+                    state_dir=tmp_path / "state", log_dir=tmp_path / "logs")
+    notifier = Recorder()
+    clock = lambda: datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)  # noqa: E731
+    engine = TradingEngine(cfg, broker, strategy or _PriceTagStrategy(), RiskManager(cfg.risk), store,
+                           notifier, clock=clock)
+    return engine, notifier
+
+
+def test_engine_on_a_live_account_leaves_coins_the_user_already_held_alone(tmp_path):
+    # A leftover TESTNET entry (BTC at 30,000) sits in the same state folder,
+    # and the live account holds the user's own 0.5 BTC, now at 26,000.
+    from bot.brokers import ccxt_entries_file
+    state = tmp_path / "state"
+    state.mkdir()
+    (state / ccxt_entries_file("fakex", sandbox=True)).write_text(
+        json.dumps({"BTC/USDT": {"qty": 1.0, "avg_entry_price": 30_000.0}}))
+    ex = FakeExchange()
+    ex.tickers["BTC/USDT"] = {"last": 26_000.0}
+    ex.set_balance("BTC", 0.5)
+    ex.candles["ETH/USDT"] = hourly_rows(10)
+    broker = make_broker(ex, entries_path=state / ccxt_entries_file("fakex", sandbox=False))
+    engine, notifier = ccxt_engine(tmp_path, broker, _PriceTagStrategy(sell=True), stop_loss_pct=10.0)
+
+    report = engine.run_once()
+
+    assert order_calls(ex) == [] and report.orders == []
+    assert "BTC/USDT" not in broker.entries or broker.entries["BTC/USDT"]["avg_entry_price"] == 26_000.0
+    assert any("BTC/USDT" in m and "did not buy" in m for m in notifier.errors)
+
+
+def test_moving_cash_into_a_coin_outside_symbols_is_not_a_daily_loss(tmp_path):
+    ex = FakeExchange()
+    ex.set_balance("USDT", 8_000.0)
+    ex.set_balance("BTC", 0.1)  # the bot's, 2,000 USDT
+    ex.candles["ETH/USDT"] = hourly_rows(10)
+    broker = make_broker(ex)
+    engine, notifier = ccxt_engine(tmp_path, broker, owned={"BTC/USDT": {"qty": 0.1, "avg_entry_price": 20_000.0}},
+                                   max_daily_loss_pct=5.0, flatten_on_daily_loss=True, stop_loss_pct=None)
+    assert engine.run_once().halted is False  # day start: 10,000
+
+    ex.set_balance("USDT", 7_000.0)  # the user buys 1,000 USDT of XRP by hand
+    ex.set_balance("XRP", 2_000.0)
+    report = engine.run_once()
+
+    assert report.halted is False and report.orders == []
+    assert order_calls(ex) == []
+    assert not any("Daily loss limit" in m for m in notifier.errors)
+
+
+def test_cash_moved_in_from_another_coin_does_not_hide_a_real_daily_loss(tmp_path):
+    ex = FakeExchange()
+    ex.set_balance("USDT", 4_000.0)
+    ex.set_balance("BTC", 0.3)  # the bot's, 6,000 USDT
+    ex.candles["ETH/USDT"] = hourly_rows(10, price=1_000.0)
+    broker = make_broker(ex)
+    engine, notifier = ccxt_engine(tmp_path, broker, _PriceTagStrategy(buy_above=500.0),
+                                   owned={"BTC/USDT": {"qty": 0.3, "avg_entry_price": 20_000.0}},
+                                   max_daily_loss_pct=5.0, stop_loss_pct=None, max_open_positions=1)
+    assert engine.run_once().halted is False  # day start: 10,000 (ETH not bought: one position max)
+
+    engine.risk.config.max_open_positions = 5
+    ex.candles["ETH/USDT"] = hourly_rows(11, price=1_000.0)  # a new ETH bar with a BUY signal
+    ex.tickers["BTC/USDT"] = {"last": 18_000.0}  # the bot loses 600 (-6%) ...
+    ex.set_balance("USDT", 4_700.0)  # ... while the user sells 700 USDT of another coin
+    report = engine.run_once()
+
+    assert report.halted is True
+    assert "daily loss limit" in report.signals["ETH/USDT"]
+    assert order_calls(ex) == []
+
+
+# ---- regression: how much of one of the bot's orders filled -------------------------------
+def test_order_filled_qty_reads_a_finished_order():
+    ex = FakeExchange()
+    ex.fetched_order = {"id": "o-1", "status": "canceled", "amount": 0.5, "filled": 0.2}
+    broker = make_broker(ex)
+    assert broker.order_filled_qty("BTC/USDT", "bot-x", "o-1") == 0.2
+    assert ("fetch_order", "o-1", "BTC/USDT") in ex.calls
+
+
+def test_order_filled_qty_of_a_closed_order_without_fill_details_is_its_amount():
+    ex = FakeExchange()
+    ex.fetched_order = {"id": "o-1", "status": "closed", "amount": 0.5, "filled": None}
+    assert make_broker(ex).order_filled_qty("BTC/USDT", "bot-x", "o-1") == 0.5
+
+
+def test_order_filled_qty_of_an_order_still_open_is_not_settled_yet():
+    ex = FakeExchange()
+    ex.fetched_order = {"id": "o-1", "status": "open", "amount": 0.5, "filled": 0.1}
+    with pytest.raises(BrokerError, match="still"):
+        make_broker(ex).order_filled_qty("BTC/USDT", "bot-x", "o-1")
+
+
+def test_order_filled_qty_is_unknown_without_an_order_id_or_when_the_lookup_fails():
+    ex = FakeExchange()
+    broker = make_broker(ex)
+    assert broker.order_filled_qty("BTC/USDT", "bot-x", "") is None  # no clientOrderId is sent to exchanges
+    ex.fetch_order_error = ccxt.RequestTimeout("timeout")
+    assert broker.order_filled_qty("BTC/USDT", "bot-x", "o-1") is None

@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 import pandas as pd
 
 from ..models import Account, OrderRequest, OrderResult, Position, Side
+from ..state import give_default_permissions
 from ..utils import floor_to_step, utcnow
 from .base import Broker, BrokerError
 
@@ -62,6 +63,8 @@ class PaperBroker(Broker):
     """
 
     name = "paper"
+    # A local simulated account: only this bot ever buys in it.
+    bot_owned_account = True
 
     def __init__(self, feed: DataFeed, starting_cash: float = 10_000.0, fee_pct: float = 0.1,
                  slippage_pct: float = 0.05, state_path: Path | None = None,
@@ -86,6 +89,7 @@ class PaperBroker(Broker):
         self._holdings: dict[str, _Holding] = {}
         self._fills: list[dict[str, Any]] = []
         self._next_id = 1
+        self._last_price: dict[str, float] = {}   # last good price per symbol
         if self.state_path is not None and self.state_path.exists():
             self._load(self.state_path)
 
@@ -101,6 +105,7 @@ class PaperBroker(Broker):
             price = math.nan
         if not math.isfinite(price) or price <= 0:
             raise BrokerError(f"paper broker: feed returned an invalid price for {symbol}: {price!r}")
+        self._last_price[symbol] = price
         return price
 
     # ---- account --------------------------------------------------------------
@@ -114,16 +119,31 @@ class PaperBroker(Broker):
         return [dict(fill) for fill in self._fills]
 
     def get_account(self) -> Account:
-        positions_value = sum(p.market_value for p in self.get_positions().values())
+        positions, unpriced = self._marked_positions()
+        positions_value = sum(p.market_value for p in positions.values())
         return Account(equity=self._cash + positions_value, cash=self._cash, buying_power=self._cash,
-                       currency=self.currency, day_start_equity=None)
+                       currency=self.currency, day_start_equity=None, unpriced=unpriced)
 
     def get_positions(self) -> dict[str, Position]:
-        """Open positions marked to the feed's latest price."""
-        return {
-            symbol: Position(symbol, h.qty, h.avg_entry_price, self.get_latest_price(symbol))
-            for symbol, h in self._holdings.items()
-        }
+        """Open positions marked to the feed's latest price (see ``get_account``
+        for a holding whose price cannot be read)."""
+        return self._marked_positions()[0]
+
+    def _marked_positions(self) -> tuple[dict[str, Position], tuple[str, ...]]:
+        """Holdings marked to market. One symbol whose price cannot be read
+        must not break the whole account: it is valued at its last known price
+        (else its entry price) and listed as unpriced."""
+        positions: dict[str, Position] = {}
+        unpriced: list[str] = []
+        for symbol, h in self._holdings.items():
+            try:
+                price = self.get_latest_price(symbol)
+            except BrokerError as exc:
+                price = self._last_price.get(symbol, h.avg_entry_price)
+                unpriced.append(symbol)
+                logger.warning("paper broker: cannot price %s (%s); valuing it at %g for now", symbol, exc, price)
+            positions[symbol] = Position(symbol, h.qty, h.avg_entry_price, price)
+        return positions, tuple(unpriced)
 
     # ---- market rules (the feed's when it has them, e.g. a CCXTBroker) -------
     def is_market_open(self) -> bool:
@@ -326,6 +346,7 @@ def _atomic_write_json(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     try:
+        give_default_permissions(fd)
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(text)
             fh.flush()

@@ -13,18 +13,27 @@ own checks:
   insufficient buying power or 422 invalid order) and raises ``BrokerError``
   for transport/server failures (5xx, connection errors, timeouts) and for the
   transient 4xx codes 401/408/429, so the engine retries on the next tick.
+* Every HTTP request has a finite timeout (``HTTP_TIMEOUT``): alpaca-py sets
+  none, so one connection that is accepted but never answered would otherwise
+  block the trading loop, and every stop-loss check, forever.
+* Intraday bars are limited to the regular session (see
+  ``regular_session_bars``), the only hours the bot trades in; 1h and 4h bars
+  are built from 30-minute ones, so that no bar mixes in pre-market trades.
 """
 from __future__ import annotations
 
 import logging
 import math
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from decimal import ROUND_DOWN, Context, Decimal
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
+import requests
+from requests.adapters import HTTPAdapter
 from alpaca.common.exceptions import APIError
 from alpaca.data.enums import Adjustment, DataFeed
 from alpaca.data.historical.stock import StockHistoricalDataClient
@@ -36,7 +45,7 @@ from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
 
 from ..models import BAR_COLUMNS, Account, OrderRequest, OrderResult, Position, Side
 from ..utils import timeframe_to_timedelta, utcnow, validate_bars
-from .base import Broker, BrokerError
+from .base import BOT_ORDER_PREFIX, Broker, BrokerError, OpenOrder
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +62,15 @@ TIMEFRAMES: dict[str, TimeFrame] = {
 
 DATA_FEEDS: dict[str, DataFeed] = {"iex": DataFeed.IEX, "sip": DataFeed.SIP}
 
+# Timeframes built from finer bars: Alpaca's own are clock-aligned, so its
+# 09:00 hourly bar (and a 4h bar) would mix pre-market trades into the first
+# bar of the session, which the live bot, trading only from 09:30, never sees.
+_BUILT_FROM: dict[str, str] = {"1h": "30m", "4h": "30m"}
+
 # Alpaca order statuses that mean "this order will never fill".
 _DEAD_STATUSES = frozenset({"rejected", "canceled", "expired"})
+# Order statuses after which an order's filled quantity no longer changes.
+_FINISHED_STATUSES = _DEAD_STATUSES | {"filled", "replaced", "done_for_day", "calculated"}
 
 # 4xx codes that are transient/transport problems rather than a verdict on the
 # order itself: raise BrokerError so the engine retries next tick instead of
@@ -70,6 +86,14 @@ _WEEKEND_FACTOR = 7 / 5    # 5 trading days per 7 calendar days
 _HOLIDAY_FACTOR = 1.1      # ~9 NYSE holidays a year, plus slack
 _PAD_DAYS = 7
 _MAX_LOOKBACK_DAYS = 365 * 50
+
+# (connect, read) seconds for every Alpaca REST request.
+HTTP_TIMEOUT: tuple[float, float] = (5.0, 20.0)
+
+# The regular session in New York; intraday bars outside it are dropped.
+_NEW_YORK = ZoneInfo("America/New_York")
+_SESSION_OPEN_MINUTE = 9 * 60 + 30
+_SESSION_CLOSE_MINUTE = 16 * 60
 
 FRACTIONAL_DECIMALS = 6    # fractionable assets are traded in 1e-6 share steps
 _FRACTIONAL_STEP = 10.0 ** -FRACTIONAL_DECIMALS
@@ -93,6 +117,40 @@ def lookback_start(timeframe: str, limit: int, now: datetime) -> datetime:
         sessions = math.ceil(limit / per_session)
     days = math.ceil(sessions * _WEEKEND_FACTOR * _HOLIDAY_FACTOR) + _PAD_DAYS
     return now - timedelta(days=min(days, _MAX_LOOKBACK_DAYS))
+
+
+def regular_session_bars(bars: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+    """Keep only intraday bars that overlap the regular session (weekdays,
+    09:30-16:00 New York time). Alpaca also returns pre-market and after-hours
+    bars, which the live bot never acts on (it trades only while the market is
+    open), so live signals and backtests both use this series. Alpaca's bars
+    are clock-aligned: a 1h bar opening at 09:00 straddles the 09:30 open, so
+    1h and 4h bars are built from 30-minute ones instead (``resample_session_bars``).
+    Early-close days keep their after-hours bars up to 16:00."""
+    minutes_long = timeframe_to_timedelta(timeframe) / timedelta(minutes=1)
+    if bars.empty or minutes_long >= 24 * 60:
+        return bars
+    local = bars.index.tz_convert(_NEW_YORK)
+    start = local.hour.to_numpy() * 60 + local.minute.to_numpy()
+    keep = ((local.weekday.to_numpy() < 5) & (start < _SESSION_CLOSE_MINUTE)
+            & (start + minutes_long > _SESSION_OPEN_MINUTE))
+    return bars[keep]
+
+
+def resample_session_bars(bars: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+    """Combine regular-session bars into ``timeframe`` bars aligned to the
+    New York clock (1h: 09:00, 10:00, ...; 4h: 08:00 and 12:00), each labelled
+    by its start. The 09:00 hourly bar then holds only 09:30-10:00: its open
+    is the session's first trade, its low and high are regular-session ones."""
+    if bars.empty:
+        return bars
+    step = timeframe_to_timedelta(timeframe)
+    wall = bars.index.tz_convert(_NEW_YORK).tz_localize(None).floor(step)
+    grouped = bars.groupby(wall, sort=True).agg(
+        open=("open", "first"), high=("high", "max"), low=("low", "min"), close=("close", "last"),
+        volume=("volume", "sum"))
+    grouped.index = pd.DatetimeIndex(grouped.index).tz_localize(_NEW_YORK).tz_convert("UTC")
+    return validate_bars(grouped)
 
 
 def map_order_status(status: Any) -> str:
@@ -123,7 +181,10 @@ class AlpacaBroker(Broker):
             TradingClient(api_key, secret_key, paper=self.paper)
         self._data = data_client if data_client is not None else \
             StockHistoricalDataClient(api_key, secret_key)
+        for client in (self._trading, self._data):
+            _install_timeout(client)
         self._fractionable: dict[str, bool] = {}
+        self._shorts: dict[str, Position] = {}   # short positions seen by the last get_positions()
         logger.info("Alpaca broker ready: %s trading, %s data feed",
                     "PAPER" if self.paper else "LIVE", feed)
 
@@ -132,16 +193,19 @@ class AlpacaBroker(Broker):
         _require_stock_symbol(symbol)
         if timeframe not in TIMEFRAMES:
             raise ValueError(f"Unsupported timeframe {timeframe!r} for Alpaca; use one of {list(TIMEFRAMES)}")
+        source = _BUILT_FROM.get(timeframe, timeframe)
         request = StockBarsRequest(
             symbol_or_symbols=symbol,
-            timeframe=TIMEFRAMES[timeframe],
+            timeframe=TIMEFRAMES[source],
             start=lookback_start(timeframe, limit, utcnow()),
             feed=self.data_feed,
             adjustment=Adjustment.ALL,
         )
         with _vendor_errors(f"get_bars({symbol}, {timeframe})"):
             response = self._data.get_stock_bars(request)
-            bars = validate_bars(_bars_frame(response, symbol))
+            bars = regular_session_bars(validate_bars(_bars_frame(response, symbol)), source)
+            if source != timeframe:
+                bars = resample_session_bars(bars, timeframe)
         if bars.empty:
             raise BrokerError(f"Alpaca returned no {timeframe} bars for {symbol} "
                               f"(feed={self.data_feed.value}); check the symbol is a US stock/ETF")
@@ -183,23 +247,33 @@ class AlpacaBroker(Broker):
             )
 
     def get_positions(self) -> dict[str, Position]:
+        """Long positions. Short ones (a margin account where a person sold
+        short) are kept aside for :meth:`short_positions`."""
         with _vendor_errors("get_positions"):
             positions: dict[str, Position] = {}
+            shorts: dict[str, Position] = {}
             for p in self._trading.get_all_positions():
                 qty = float(p.qty)
-                if qty <= 0 or _enum_value(getattr(p, "side", "long")) == "short":
-                    if qty != 0:
-                        logger.warning("Ignoring short Alpaca position %s qty=%s (bot is long-only)",
-                                       p.symbol, qty)
+                if qty == 0:
                     continue
+                short = qty < 0 or _enum_value(getattr(p, "side", "long")) == "short"
                 entry = float(p.avg_entry_price)
                 price = _to_float(getattr(p, "current_price", None))
                 if price is None:
                     value = _to_float(getattr(p, "market_value", None))
                     price = value / qty if value is not None else entry
-                positions[str(p.symbol)] = Position(
-                    symbol=str(p.symbol), qty=qty, avg_entry_price=entry, market_price=price)
+                target = shorts if short else positions
+                target[str(p.symbol)] = Position(symbol=str(p.symbol), qty=-abs(qty) if short else qty,
+                                                 avg_entry_price=entry, market_price=abs(price))
+            for symbol, pos in shorts.items():
+                if symbol not in self._shorts:
+                    logger.warning("Alpaca account is short %g %s (not the bot's: it is long-only and never "
+                                   "covers it)", -pos.qty, symbol)
+            self._shorts = shorts
             return positions
+
+    def short_positions(self) -> dict[str, Position]:
+        return dict(self._shorts)
 
     # ---- orders ------------------------------------------------------------
     def submit_order(self, order: OrderRequest) -> OrderResult:
@@ -247,6 +321,8 @@ class AlpacaBroker(Broker):
             placed = self._trading.submit_order(request)
         except APIError as exc:
             status = _status_code(exc)
+            if _is_business_rejection(status) and order.client_order_id and _is_duplicate_client_id(exc):
+                return self._already_placed(order, side, qty, exc)
             if _is_business_rejection(status):
                 reason = f"rejected by Alpaca: {_api_error_text(exc)}"
                 logger.warning("%s %s %s %s", side.value.upper(), qty, order.symbol, reason)
@@ -262,11 +338,76 @@ class AlpacaBroker(Broker):
             responses = self._trading.cancel_orders()
         logger.info("Alpaca: requested cancel of %d open order(s)", len(responses or []))
 
-    def has_open_orders(self, symbol: str) -> bool:
+    def open_orders(self, symbol: str) -> list[OpenOrder]:
+        """Working orders on ``symbol``; the bot's own carry a ``bot-`` client order id."""
         _require_stock_symbol(symbol)
         request = GetOrdersRequest(status=QueryOrderStatus.OPEN, symbols=[symbol])
-        with _vendor_errors(f"has_open_orders({symbol})"):
-            return len(self._trading.get_orders(request) or []) > 0
+        with _vendor_errors(f"get_orders({symbol})"):
+            return [_open_order(o, symbol) for o in self._trading.get_orders(request) or []]
+
+    def order_filled_qty(self, symbol: str, client_order_id: str, order_id: str = "") -> float | None:
+        key = order_id or client_order_id
+        if not key:
+            return None
+        try:
+            if order_id:
+                placed = self._trading.get_order_by_id(order_id)
+            else:
+                placed = self._trading.get_order_by_client_id(client_order_id)
+        except APIError as exc:
+            if _status_code(exc) == 404:  # Alpaca never received it
+                return 0.0
+            logger.warning("Alpaca: could not look up order %s (%s): %s", key, symbol, _api_error_text(exc))
+            return None
+        except Exception as exc:
+            logger.warning("Alpaca: could not look up order %s (%s): %s: %s", key, symbol, type(exc).__name__, exc)
+            return None
+        status = _enum_value(_field(placed, "status"))
+        if status not in _FINISHED_STATUSES:
+            raise BrokerError(f"Alpaca order {key} ({symbol}) is still {status or 'working'}")
+        filled = max(_to_float(_field(placed, "filled_qty")) or 0.0, 0.0)
+        if status == "filled" and not filled:  # "filled" without a fill quantity: all of it
+            return max(_to_float(_field(placed, "qty")) or 0.0, 0.0)
+        return filled
+
+    def cancel_order(self, symbol: str, order_id: str) -> None:
+        _require_stock_symbol(symbol)
+        try:
+            self._trading.cancel_order_by_id(order_id)
+        except APIError as exc:
+            if _status_code(exc) in (404, 422):  # already filled / cancelled
+                logger.info("Alpaca: order %s (%s) is no longer working", order_id, symbol)
+                return
+            raise BrokerError(f"Alpaca cancel_order({order_id}, {symbol}) failed: {_api_error_text(exc)}") from exc
+        except Exception as exc:
+            raise BrokerError(f"Alpaca cancel_order({order_id}, {symbol}) failed: "
+                              f"{type(exc).__name__}: {exc}") from exc
+        logger.info("Alpaca: requested cancel of order %s (%s)", order_id, symbol)
+
+    def cancel_orders(self, symbols: Sequence[str]) -> None:
+        """Cancel the working orders of ``symbols`` only (``cancel_all_orders``
+        would also cancel orders on every other symbol in the account)."""
+        wanted = list(dict.fromkeys(symbols))
+        if not wanted:
+            return
+        for symbol in wanted:
+            _require_stock_symbol(symbol)
+        request = GetOrdersRequest(status=QueryOrderStatus.OPEN, symbols=wanted)
+        with _vendor_errors(f"get_orders({', '.join(wanted)})"):
+            orders = self._trading.get_orders(request) or []
+        errors = []
+        for working in orders:
+            order_id = _field(working, "id")
+            try:
+                self._trading.cancel_order_by_id(order_id)
+            except APIError as exc:
+                if _status_code(exc) not in (404, 422):  # already filled / cancelled
+                    errors.append(f"{order_id}: {_api_error_text(exc)}")
+            except Exception as exc:
+                errors.append(f"{order_id}: {type(exc).__name__}: {exc}")
+        if errors:
+            raise BrokerError("Alpaca could not cancel every order: " + "; ".join(errors))
+        logger.info("Alpaca: requested cancel of %d open order(s) for %s", len(orders), ", ".join(wanted))
 
     # ---- market rules ------------------------------------------------------
     def is_market_open(self) -> bool:
@@ -295,6 +436,21 @@ class AlpacaBroker(Broker):
         return results
 
     # ---- internals ---------------------------------------------------------
+    def _already_placed(self, order: OrderRequest, side: Side, qty: float, exc: APIError) -> OrderResult:
+        """Alpaca refused the client order id as a duplicate: an earlier attempt
+        of THIS order went through (alpaca-py re-sends a POST after a 504/429),
+        so report that order instead of a rejection."""
+        client_id = str(order.client_order_id)
+        logger.warning("Alpaca: %s (%s) is a duplicate client order id; looking up the order already placed",
+                       client_id, _api_error_text(exc))
+        try:
+            placed = self._trading.get_order_by_client_id(client_id)
+            return _order_result(placed, symbol=order.symbol, side=side, qty=qty, reason=order.reason)
+        except Exception as lookup_exc:
+            raise BrokerError(f"Alpaca refused client order id {client_id} as a duplicate, so the "
+                              f"order may have been placed, but looking it up failed ({type(lookup_exc).__name__}: "
+                              f"{lookup_exc}); check open orders") from lookup_exc
+
     def _is_fractionable(self, symbol: str) -> bool:
         if symbol not in self._fractionable:
             with _vendor_errors(f"get_asset({symbol})"):
@@ -321,6 +477,42 @@ class AlpacaBroker(Broker):
 
 
 # ---- helpers ----------------------------------------------------------------
+class _TimeoutAdapter(HTTPAdapter):
+    """Transport adapter that gives every request without a timeout ``timeout``."""
+
+    def __init__(self, timeout: tuple[float, float], **kwargs: Any) -> None:
+        self.timeout = timeout
+        super().__init__(**kwargs)
+
+    def send(self, request: requests.PreparedRequest, **kwargs: Any) -> requests.Response:  # type: ignore[override]
+        if kwargs.get("timeout") is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
+
+
+def _install_timeout(client: Any) -> None:
+    """Mount a default-timeout adapter on an alpaca-py client's requests session.
+    (A timed-out request raises ``requests.Timeout``, reported as BrokerError.)"""
+    session = getattr(client, "_session", None)
+    if isinstance(session, requests.Session):
+        adapter = _TimeoutAdapter(HTTP_TIMEOUT)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+
+
+def _is_duplicate_client_id(exc: APIError) -> bool:
+    text = _api_error_text(exc).lower()
+    return "client_order_id" in text and any(word in text for word in ("unique", "duplicate", "already"))
+
+
+def _open_order(order: Any, symbol: str) -> OpenOrder:
+    side = _enum_value(_field(order, "side"))
+    client_id = str(_field(order, "client_order_id") or "")
+    return OpenOrder(id=str(_field(order, "id") or ""), symbol=str(_field(order, "symbol") or symbol),
+                     side=Side(side) if side in ("buy", "sell") else None,
+                     placed_by_bot=client_id.startswith(BOT_ORDER_PREFIX))
+
+
 @contextmanager
 def _vendor_errors(what: str) -> Iterator[None]:
     """Re-raise any vendor/parsing exception as BrokerError with context."""

@@ -7,11 +7,29 @@ objects the live engine uses, so what you backtest is what trades:
   (its last ``lookback`` rows), exactly like the live engine's closed bars.
 * Orders decided at a bar's close fill at that symbol's NEXT bar open, with
   slippage against us and a fee on the notional.
-* Stop-loss / take-profit levels are checked against each bar's low / high,
-  including the bar a position was opened on; a gap through the level fills
-  at the (worse) open, and the stop wins when both levels were touched.
+* Stop-loss / take-profit levels are checked every bar, including the bar a
+  position was opened on. The open comes first: a bar that opens through
+  either level exits at the open, with that level's reason (as the live
+  engine's first tick after the open sees it). Otherwise the bar's low / high
+  are checked, and the stop wins when both levels were touched inside the bar
+  (the order of the high and the low is unknown).
 * Long-only, no leverage: a queued buy that is no longer affordable at the
   open is shrunk or dropped, so cash never goes negative.
+* The daily entry gates (loss-limit halt, max trades per day) apply on the day
+  a buy is SENT, i.e. its fill bar, like the live engine: a signal at a day's
+  last close is sent the next day, after the daily counters reset. The loss
+  limit is checked at each open too (holdings valued at the open), before
+  queued buys fill, as the live engine does on its first tick of a session.
+* An exit queued at a close frees its position slot and (estimated) cash for
+  the symbols after it in the same close, like the live engine, which sells
+  and re-reads the account before sizing the next symbol. Likewise at an open:
+  symbols are walked in order, and a holding whose open is through its stop
+  or target is sold before the later symbols' buys fill, so a buy that was
+  skipped at the close only for want of a slot or cash is sized again then.
+* CAGR, Sharpe, volatility and time in market cover the trading period: from
+  the first bar a fill can happen (the open after the strategy's first signal
+  bar), like buy & hold. The warm-up bars before it, when the strategy cannot
+  trade yet (the live bot fetches that history instead), are left out.
 
 Invariant: at every bar, equity == cash + sum(qty * latest close).
 """
@@ -143,6 +161,11 @@ class BacktestResult:
             lines.append(f"Strategy: {self.strategy}")
         lines.append(f"Period:   {_fmt_date(m.get('start'))} -> {_fmt_date(m.get('end'))} "
                      f"({len(self.equity_curve):,} bars)")
+        warmup, tradable_from = m.get("warmup_bars", math.nan), m.get("tradable_from", math.nan)
+        if math.isfinite(warmup) and warmup > 0 and math.isfinite(tradable_from):
+            lines.append(f"Trading:  {_fmt_date(tradable_from)} -> {_fmt_date(m.get('end'))} (after "
+                         f"{int(warmup):,} warm-up bar{'s' if warmup != 1 else ''}; CAGR, Sharpe, volatility and "
+                         "time in market cover this)")
         lines.append("-" * (width + 2 + value_width))
         lines += [f"{label:<{width}}  {value:>{value_width}}" for label, value in rows]
         if self.trades:
@@ -151,17 +174,22 @@ class BacktestResult:
                 counts[trade.exit_reason] = counts.get(trade.exit_reason, 0) + 1
             lines.append("Exits: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
         if too_short and span_days is not None:
-            lines.append(f"Note: the data covers only {_fmt_span(span_days)}, too short to annualise:")
+            lines.append(f"Note: the trading period covers only {_fmt_span(span_days)}, too short to annualise:")
             lines.append("      CAGR is not shown and the annualised Sharpe/volatility are rough. Use more bars.")
         return "\n".join(lines)
 
     def _span_days(self) -> float | None:
-        """Calendar time the data covers (first open to last close), in days."""
+        """Calendar time the trading period covers (its first open to the last
+        close; see ``tradable_from``), in days."""
         index = self.equity_curve.index
         if len(index) < 2 or not isinstance(index, pd.DatetimeIndex):
             return None
         bar = pd.Series(index).diff().median()
-        return float((index[-1] - index[0] + bar) / pd.Timedelta(days=1))
+        start = index[0]
+        tradable_from = self.metrics.get("tradable_from")
+        if tradable_from is not None and math.isfinite(tradable_from):
+            start = pd.Timestamp(tradable_from, unit="s", tz="UTC")
+        return float((index[-1] - start + bar) / pd.Timedelta(days=1))
 
     def save(self, out_dir: Path) -> None:
         """Write ``equity.csv``, ``trades.csv`` and ``metrics.json`` into ``out_dir``."""
@@ -186,6 +214,7 @@ class BacktestResult:
         metrics: dict[str, object] = {k: _json_number(v) for k, v in self.metrics.items()}
         metrics["start_time"] = _fmt_date(self.metrics.get("start"), iso=True)
         metrics["end_time"] = _fmt_date(self.metrics.get("end"), iso=True)
+        metrics["tradable_from_time"] = _fmt_date(self.metrics.get("tradable_from"), iso=True)
         if self.strategy:
             metrics["strategy"] = self.strategy
         (out / "metrics.json").write_text(json.dumps(metrics, indent=2, allow_nan=False) + "\n",
@@ -251,6 +280,9 @@ class _Simulation:
         self.fees_paid = 0.0
         self.holdings: dict[str, _Holding] = {}
         self.queued: dict[str, _Order] = {}
+        # BUY signals skipped at the last close for want of a slot or cash:
+        # sized again at the next open if an exit there made room (see run).
+        self.deferred: dict[str, tuple[Signal, float]] = {}
         self.last_close: dict[str, float] = {}
         self.trades: list[Trade] = []
 
@@ -285,9 +317,26 @@ class _Simulation:
             for symbol, row in bars:
                 if (order := self.queued.get(symbol)) is not None and order.side is Side.SELL:
                     self._fill_queued(symbol, row, t)
+            #    The live engine checks the daily loss limit on its first tick
+            #    after the open, before any entry: a gap down can halt the day.
+            self._check_daily_loss_at_open(bars, t)
+            #    Then symbol by symbol, in `symbols` order like that tick: a
+            #    holding whose open is through its stop or target is sold at the
+            #    open, freeing its slot and cash for the symbols after it; queued
+            #    buys fill; a buy skipped at the close for want of a slot or cash
+            #    is sized again once an exit at this open made room for it.
+            freed = False
             for symbol, row in bars:
-                if (order := self.queued.get(symbol)) is not None and order.side is Side.BUY:
+                deferred = self.deferred.pop(symbol, None)
+                if self._protective_exit(symbol, row, t, at_open=True):
+                    freed = True
+                elif (order := self.queued.get(symbol)) is not None and order.side is Side.BUY:
                     self._fill_queued(symbol, row, t)
+                elif deferred is not None and freed and not self.halted and symbol not in self.holdings:
+                    self._queue_buy(symbol, deferred[1], deferred[0], t)
+                    self.deferred.pop(symbol, None)
+                    if symbol in self.queued:
+                        self._fill_queued(symbol, row, t)
             # 2. Protective exits inside the bar (entry bar included).
             for symbol, row in bars:
                 self._protective_exit(symbol, row, t)
@@ -320,10 +369,11 @@ class _Simulation:
 
         index = pd.DatetimeIndex(timeline, name="time")
         equity_curve = pd.Series(equity_pts, index=index, name="equity")
+        first = self._first_tradable_bar(timeline)
         metrics = _metrics(
             equity_curve, self.trades, self.cfg, fees_paid=self.fees_paid,
-            exposure_pct=float(in_market.mean() * 100.0),
-            buy_and_hold_pct=self._buy_and_hold_pct(),
+            exposure_pct=float(in_market[first or 0:].mean() * 100.0),
+            buy_and_hold_pct=self._buy_and_hold_pct(), first_tradable=first,
         )
         return BacktestResult(
             equity_curve=equity_curve,
@@ -349,32 +399,76 @@ class _Simulation:
             if symbol in self.holdings:
                 self._sell(symbol, open_ * (1.0 - self.slip), t, order.reason)
         elif symbol not in self.holdings:
-            self._buy(symbol, open_ * (1.0 + self.slip), order.qty, t)
+            # Gated with the counters of the day the order is sent (this bar),
+            # as the live engine does after its day roll.
+            if self.halted:
+                logger.debug("%s %s: queued buy dropped, daily loss limit hit", t, symbol)
+            elif self.trades_today >= self.cfg.risk.max_trades_per_day:
+                logger.debug("%s %s: queued buy dropped, max trades per day reached", t, symbol)
+            elif self._buy(symbol, open_ * (1.0 + self.slip), order.qty, t):
+                self.trades_today += 1
 
-    def _protective_exit(self, symbol: str, row: int, t: pd.Timestamp) -> None:
+    def _protective_exit(self, symbol: str, row: int, t: pd.Timestamp, at_open: bool = False) -> bool:
+        """Stop-loss / take-profit. The open comes first: a bar that opens
+        through either level exits at the open with that level's reason (what
+        the live engine's first tick sees). Otherwise, inside the bar, the stop
+        wins when both levels were touched. ``at_open``: only the open. True
+        when it sold."""
         holding = self.holdings.get(symbol)
         if holding is None:
-            return
+            return False
         open_, high, low, _ = (float(x) for x in self.prices[symbol][row])
         pos = Position(symbol, holding.qty, holding.entry_price, market_price=open_)
+        # Same comparisons as the live engine, applied to the open, then the bar's extremes.
+        reason = self.risk.exit_reason(pos, open_)
+        if reason in (EXIT_STOP, EXIT_TAKE_PROFIT):
+            self._sell(symbol, open_ * (1.0 - self.slip), t, reason)
+            return True
+        if at_open:
+            return False
         stop, target = self.risk.stop_price(pos), self.risk.take_profit_price(pos)
-        # Same comparisons as the live engine, applied to the bar's extremes.
         if stop is not None and self.risk.exit_reason(pos, low) == EXIT_STOP:
-            self._sell(symbol, min(open_, stop) * (1.0 - self.slip), t, EXIT_STOP)
+            self._sell(symbol, stop * (1.0 - self.slip), t, EXIT_STOP)
         elif target is not None and self.risk.exit_reason(pos, high) == EXIT_TAKE_PROFIT:
-            self._sell(symbol, max(open_, target) * (1.0 - self.slip), t, EXIT_TAKE_PROFIT)
+            self._sell(symbol, target * (1.0 - self.slip), t, EXIT_TAKE_PROFIT)
+        else:
+            return False
+        return True
 
     def _check_daily_loss(self, t: pd.Timestamp) -> None:
         if self.halted or not self.risk.daily_loss_breached(self.equity, self.day_start_equity):
             return
-        self.halted = True
-        logger.info("%s: daily loss limit hit (equity %.2f vs day start %.2f); no new entries today",
-                    t, self.equity, self.day_start_equity)
-        for symbol in [s for s, o in self.queued.items() if o.side is Side.BUY]:
-            del self.queued[symbol]
+        self._halt(t, self.equity)
         if self.cfg.risk.flatten_on_daily_loss:
             for symbol, holding in self.holdings.items():
                 self.queued.setdefault(symbol, _Order(Side.SELL, holding.qty, EXIT_DAILY_LOSS))
+
+    def _check_daily_loss_at_open(self, bars: list[tuple[str, int]], t: pd.Timestamp) -> None:
+        """The loss limit against the holdings valued at this bar's opens (the
+        last close for symbols without a bar now), before queued buys fill. A
+        flatten sells at this open where the symbol trades, else at its next."""
+        if self.halted:
+            return
+        opens = {symbol: float(self.prices[symbol][row, 0]) for symbol, row in bars}
+        equity = self.cash + sum(h.qty * opens.get(s, self.last_close[s]) for s, h in self.holdings.items())
+        if not self.risk.daily_loss_breached(equity, self.day_start_equity):
+            return
+        self._halt(t, equity)
+        if self.cfg.risk.flatten_on_daily_loss:
+            for symbol, holding in list(self.holdings.items()):
+                if symbol in opens:
+                    self._sell(symbol, opens[symbol] * (1.0 - self.slip), t, EXIT_DAILY_LOSS)
+                else:
+                    self.queued.setdefault(symbol, _Order(Side.SELL, holding.qty, EXIT_DAILY_LOSS))
+
+    def _halt(self, t: pd.Timestamp, equity: float) -> None:
+        """Daily loss limit hit: no new entries today; buys still queued are dropped."""
+        self.halted = True
+        self.deferred.clear()
+        logger.info("%s: daily loss limit hit (equity %.2f vs day start %.2f); no new entries today",
+                    t, equity, self.day_start_equity)
+        for symbol in [s for s, o in self.queued.items() if o.side is Side.BUY]:
+            del self.queued[symbol]
 
     def _on_close(self, symbol: str, row: int, t: pd.Timestamp) -> None:
         if row + 1 < self.min_bars:
@@ -392,30 +486,39 @@ class _Simulation:
             self._queue_buy(symbol, close, signal, t)
 
     def _queue_buy(self, symbol: str, price: float, signal: Signal, t: pd.Timestamp) -> None:
-        if self.halted:
-            logger.debug("%s %s: buy skipped, daily loss limit hit", t, symbol)
-            return
-        if self.trades_today >= self.cfg.risk.max_trades_per_day:
-            logger.debug("%s %s: buy skipped, max trades per day reached", t, symbol)
-            return
+        # The halt and the day's trade count are checked when the order is sent
+        # (_fill_queued): this close may be the last of the day. Only a count that
+        # no day could accept is ruled out here.
         queued_buys = {s: o for s, o in self.queued.items() if o.side is Side.BUY}
+        if len(queued_buys) >= self.cfg.risk.max_trades_per_day:
+            logger.debug("%s %s: buy skipped, max trades per day already queued", t, symbol)
+            return
         reserved = sum(o.reserved for o in queued_buys.values())
-        account = Account(equity=self.equity, cash=self.cash, buying_power=max(0.0, self.cash - reserved))
-        positions = {s: Position(s, h.qty, h.entry_price, self.last_close[s]) for s, h in self.holdings.items()}
+        # Exits already queued at this close (by symbols earlier in the loop, or
+        # a flatten) free their slot and cash, as the live engine's SELL and
+        # account re-read do before it sizes the next symbol in `symbols` order.
+        exiting = {s for s, o in self.queued.items() if o.side is Side.SELL and s in self.holdings}
+        proceeds = sum(self.holdings[s].qty * self.last_close[s] * (1.0 - self.slip) * (1.0 - self.fee_rate)
+                       for s in exiting)
+        cash = self.cash + proceeds
+        account = Account(equity=self.equity, cash=cash, buying_power=max(0.0, cash - reserved))
+        positions = {s: Position(s, h.qty, h.entry_price, self.last_close[s])
+                     for s, h in self.holdings.items() if s not in exiting}
         positions.update({s: Position(s, o.qty, o.ref_price, o.ref_price) for s, o in queued_buys.items()})
 
         qty, why = self.risk.entry_qty(symbol, price, signal, account, positions)
         qty = floor_to_step(qty, self.cfg.qty_step)
         if qty <= 0 or qty * price < self.min_notional:
             logger.debug("%s %s: buy skipped (%s)", t, symbol, why)
+            self.deferred[symbol] = (signal, price)
             return
         reserved_cost = qty * price * (1.0 + self.slip) * (1.0 + self.fee_rate)
         self.queued[symbol] = _Order(Side.BUY, qty, signal.reason, ref_price=price, reserved=reserved_cost)
-        self.trades_today += 1  # counted when sent, like the live engine (even if later dropped)
         logger.debug("%s %s: queue buy %s (%s)", t, symbol, why, signal.reason)
 
     # ---- fills -------------------------------------------------------------
-    def _buy(self, symbol: str, price: float, qty: float, t: pd.Timestamp) -> None:
+    def _buy(self, symbol: str, price: float, qty: float, t: pd.Timestamp) -> bool:
+        """Fill a queued buy (shrunk to what cash affords). False when dropped."""
         affordable = self._affordable_qty(price)
         if qty > affordable:
             logger.debug("%s %s: queued buy of %g shrunk to affordable %g", t, symbol, qty, affordable)
@@ -423,12 +526,13 @@ class _Simulation:
         cost = qty * price
         if qty <= 0 or cost < self.min_notional:
             logger.debug("%s %s: queued buy dropped (not affordable at %.6g)", t, symbol, price)
-            return
+            return False
         fee = cost * self.fee_rate
         self.cash -= cost + fee
         self.fees_paid += fee
         self.holdings[symbol] = _Holding(qty=qty, entry_price=price, entry_time=t, entry_fee=fee)
         logger.debug("%s %s: bought %g @ %.6g (fee %.4f)", t, symbol, qty, price, fee)
+        return True
 
     def _affordable_qty(self, price: float) -> float:
         """Largest qty (on the step grid) whose cost + fee fits in cash."""
@@ -463,6 +567,16 @@ class _Simulation:
     # ---- helpers -----------------------------------------------------------
     def _mark_to_market(self) -> float:
         return self.cash + sum(h.qty * self.last_close[s] for s, h in self.holdings.items())
+
+    def _first_tradable_bar(self, timeline: pd.DatetimeIndex) -> int | None:
+        """Timeline position of the first bar a fill can happen at: the one
+        after the earliest first signal bar (row ``min_bars - 1``) of any
+        symbol. None when no symbol ever has enough bars to trade."""
+        signal_bars = [timeline.get_loc(frame.index[self.min_bars - 1])
+                       for frame in self.frames.values() if len(frame) >= self.min_bars]
+        if not signal_bars or min(signal_bars) + 1 >= len(timeline):
+            return None
+        return int(min(signal_bars)) + 1
 
     def _buy_and_hold_pct(self) -> float:
         """Equal-weight buy & hold from each symbol's first possible fill (the
@@ -500,12 +614,17 @@ def _prepare_data(data: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
 
 
 def _metrics(equity: pd.Series, trades: list[Trade], cfg: BacktestConfig, *, fees_paid: float,
-             exposure_pct: float, buy_and_hold_pct: float) -> dict[str, float]:
+             exposure_pct: float, buy_and_hold_pct: float, first_tradable: int | None = None) -> dict[str, float]:
+    """Headline metrics. CAGR, Sharpe and volatility cover the trading period,
+    from bar ``first_tradable`` (the first a fill can happen at) on; the bars
+    before it are the strategy's warm-up, flat by construction. Total return
+    and drawdown are the same over either span."""
     start_cash = float(cfg.starting_cash)
     final = float(equity.iloc[-1])
     total_return = (final / start_cash - 1.0) * 100.0
+    first = first_tradable or 0
 
-    span = equity.index[-1] - equity.index[0] + timeframe_to_timedelta(cfg.timeframe)
+    span = equity.index[-1] - equity.index[first] + timeframe_to_timedelta(cfg.timeframe)
     years = span / pd.Timedelta(days=365.25)
     if final <= 0:
         cagr = -100.0
@@ -514,7 +633,8 @@ def _metrics(equity: pd.Series, trades: list[Trade], cfg: BacktestConfig, *, fee
     else:
         cagr = math.nan
 
-    returns = equity.pct_change().dropna()
+    # From the close before the first tradable bar: the first return is that bar's.
+    returns = equity.iloc[max(first - 1, 0):].pct_change().dropna()
     per_year = bars_per_year(cfg.timeframe, cfg.trading_days_per_year)
     if len(returns) < 2:
         sharpe = volatility = math.nan
@@ -550,6 +670,9 @@ def _metrics(equity: pd.Series, trades: list[Trade], cfg: BacktestConfig, *, fee
         # Bar times as POSIX seconds (metrics are all floats); summary()/save() render dates.
         "start": equity.index[0].timestamp(),
         "end": equity.index[-1].timestamp(),
+        # The trading period: from this bar on, after `warmup_bars` warm-up bars.
+        "tradable_from": equity.index[first_tradable].timestamp() if first_tradable is not None else math.nan,
+        "warmup_bars": float(first_tradable if first_tradable is not None else len(equity)),
     }
 
 

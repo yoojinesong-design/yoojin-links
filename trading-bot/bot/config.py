@@ -104,6 +104,10 @@ class BotConfig:
     state_dir: Path = Path("state")       # relative paths resolved against the config file's directory
     log_dir: Path = Path("logs")
     config_path: Path | None = None
+    # By default the bot manages (and sells) only what it bought itself; a
+    # holding already in the account in one of `symbols` is left alone. True
+    # lets it take over such holdings: stop-loss, strategy exits, flatten.
+    adopt_existing_positions: bool = False
 
     @property
     def is_live(self) -> bool:
@@ -112,7 +116,8 @@ class BotConfig:
 
 
 _TOP_KEYS = ("mode", "broker", "symbols", "timeframe", "bars_lookback", "timezone",
-             "poll_interval_seconds", "strategy", "risk", "notify", "state_dir", "log_dir")
+             "poll_interval_seconds", "strategy", "risk", "notify", "state_dir", "log_dir",
+             "adopt_existing_positions")
 _BROKER_KEYS = tuple(f.name for f in fields(BrokerConfig))
 _STRATEGY_KEYS = ("name", "params")
 _RISK_KEYS = tuple(f.name for f in fields(RiskConfig))
@@ -150,6 +155,23 @@ def load_config(path: str | Path, env: Mapping[str, str] | None = None) -> BotCo
     if cfg.is_live:
         logger.warning("Config %s requests LIVE trading with real money", config_path)
     return cfg
+
+
+def state_dir_only(path: str | Path) -> Path:
+    """The state folder a config uses, WITHOUT validating anything else, so
+    the emergency commands (``kill``/``resume``) still reach a running bot
+    after its config was edited into an invalid state. Resolved exactly like
+    :func:`load_config` does. Raises ConfigError only when the file cannot be
+    read as YAML or ``state_dir`` itself is invalid."""
+    config_path = Path(path).expanduser().resolve()
+    try:
+        raw = yaml.load(config_path.read_text(encoding="utf-8"), Loader=_StrictLoader)  # noqa: S506
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ConfigError(f"Cannot read config file {config_path}: {exc}") from exc
+    except yaml.YAMLError as exc:
+        raise ConfigError(f"{config_path} is not valid YAML:\n{exc}") from exc
+    value = raw.get("state_dir", "state") if isinstance(raw, Mapping) else "state"
+    return _path(value, "state_dir", config_path.parent)
 
 
 def assert_live_allowed(cfg: BotConfig, env: Mapping[str, str] | None = None) -> None:
@@ -223,6 +245,8 @@ def _build(raw: Any, config_path: Path, env: Mapping[str, str]) -> BotConfig:
         state_dir=_path(top.get("state_dir", "state"), "state_dir", base_dir),
         log_dir=_path(top.get("log_dir", "logs"), "log_dir", base_dir),
         config_path=config_path,
+        adopt_existing_positions=_boolean(top.get("adopt_existing_positions", False),
+                                          "adopt_existing_positions"),
     )
 
 
@@ -335,10 +359,18 @@ def _notify(raw: Any, env: Mapping[str, str]) -> NotifyConfig:
                 raise ConfigError(f"notify.{key} must not be in the YAML file; set {_NOTIFY_ENV_KEYS[key]} "
                                   "in your .env file instead (see .env.example)")
     sec = _section(raw, "notify", _NOTIFY_KEYS)
+    token, chat_id = _env_value(env, ENV_TELEGRAM_BOT_TOKEN), _env_value(env, ENV_TELEGRAM_CHAT_ID)
+    if bool(token) != bool(chat_id):
+        # Telegram needs both: with only one, every alert would be dropped silently.
+        have, missing = ((ENV_TELEGRAM_BOT_TOKEN, ENV_TELEGRAM_CHAT_ID) if token
+                         else (ENV_TELEGRAM_CHAT_ID, ENV_TELEGRAM_BOT_TOKEN))
+        raise ConfigError(f"{have} is set but {missing} is not, so no Telegram alert could be sent. Set "
+                          f"{missing} in your .env file too (see .env.example: the chat id comes from "
+                          f"https://api.telegram.org/bot<token>/getUpdates), or remove {have}.")
     return NotifyConfig(
         webhook_url=_env_value(env, ENV_NOTIFY_WEBHOOK_URL),
-        telegram_bot_token=_env_value(env, ENV_TELEGRAM_BOT_TOKEN),
-        telegram_chat_id=_env_value(env, ENV_TELEGRAM_CHAT_ID),
+        telegram_bot_token=token,
+        telegram_chat_id=chat_id,
         on_trade=_boolean(sec.get("on_trade", True), "notify.on_trade"),
         on_error=_boolean(sec.get("on_error", True), "notify.on_error"),
     )
@@ -462,5 +494,5 @@ _StrictLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _c
 
 __all__ = [
     "ConfigError", "LIVE_CONFIRM_ENV", "LIVE_CONFIRM_VALUE", "BrokerConfig", "StrategyConfig",
-    "NotifyConfig", "BotConfig", "load_config", "assert_live_allowed",
+    "NotifyConfig", "BotConfig", "load_config", "assert_live_allowed", "state_dir_only",
 ]

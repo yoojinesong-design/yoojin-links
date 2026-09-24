@@ -444,6 +444,43 @@ def test_csv_bad_files_raise_clear_value_errors(text, message, load_text):
         load_text(text)
 
 
+def _daily_csv_text(date_format: str, periods: int = 60) -> str:
+    days = pd.bdate_range("2023-01-03", periods=periods)
+    rows = [f"{day.strftime(date_format)},{100 + i},{101 + i},{99 + i},{100.5 + i},1000"
+            for i, day in enumerate(days)]
+    return "Date,Open,High,Low,Close,Volume\n" + "\n".join(rows) + "\n"
+
+
+@pytest.mark.parametrize("date_format", ["%d/%m/%Y", "%d.%m.%Y", "%d-%m-%Y"])
+def test_csv_day_first_dates_are_read_day_first_not_scrambled(tmp_path, date_format):
+    # The first date (03/01/2023) is ambiguous; pandas guesses month-first from it,
+    # fails on the 13th and used to fall back to per-row parsing that put days
+    # 1-12 of every month into the wrong month.
+    iso = load_csv_bars(write_csv(tmp_path, _daily_csv_text("%Y-%m-%d"), "iso.csv"))
+    day_first = load_csv_bars(write_csv(tmp_path, _daily_csv_text(date_format), "eu.csv"))
+    pd.testing.assert_frame_equal(day_first, iso)
+
+
+def test_csv_us_month_first_dates_still_work(tmp_path):
+    iso = load_csv_bars(write_csv(tmp_path, _daily_csv_text("%Y-%m-%d"), "iso.csv"))
+    us = load_csv_bars(write_csv(tmp_path, _daily_csv_text("%m/%d/%Y"), "us.csv"))
+    pd.testing.assert_frame_equal(us, iso)
+
+
+def test_csv_dates_that_read_both_day_first_and_month_first_are_refused(load_text):
+    # Every day and month is <= 12: 02/01 could be 2 Jan or 1 Feb.
+    text = "date,open,high,low,close\n01/02/2024,1,2,0.5,1.5\n02/02/2024,1,2,0.5,1.5\n03/02/2024,1,2,0.5,1.5\n"
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        load_text(text)
+
+
+def test_csv_mixed_formats_that_parse_out_of_order_are_refused(load_text):
+    text = ("date,open,high,low,close\n2024-01-02,1,2,0.5,1.5\n03/01/2024 00:00,1,2,0.5,1.5\n"
+            "2024-01-04,1,2,0.5,1.5\n")
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        load_text(text)
+
+
 def test_csv_missing_file_raises_file_not_found(tmp_path):
     with pytest.raises(FileNotFoundError):
         load_csv_bars(tmp_path / "nope.csv")

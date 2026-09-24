@@ -454,8 +454,9 @@ def test_daily_loss_limit_blocks_new_entries_for_the_rest_of_the_day():
     cfg = config(risk={"max_daily_loss_pct": 3.0, "max_position_pct": 50.0})
     result = run_backtest(Scripted(script), loss_day_data(), cfg)
     entries = {t.symbol: t.entry_time for t in result.trades}
-    # B's BUY at day 1's close is refused (halted); day 2 is a new day, so it's allowed.
-    assert entries == {"A": day(1), "B": day(3)}
+    # Day 1 is halted. B's BUY at day 1's close is sent at day 2's open, a new
+    # day, so (as in live trading) the halt no longer applies to it.
+    assert entries == {"A": day(1), "B": day(2)}
     assert {t.symbol: t.exit_reason for t in result.trades} == {"A": "end_of_backtest", "B": "end_of_backtest"}
 
 
@@ -499,8 +500,9 @@ def test_daily_loss_day_boundary_follows_configured_timezone():
     ny = run_backtest(Scripted(script), {"A": a, "B": b},
                       config(risk=risk, timeframe="1h", timezone="America/New_York"))
     utc = run_backtest(Scripted(script), {"A": a, "B": b}, config(risk=risk, timeframe="1h"))
-    # New York's new day starts at 05:00 UTC: B's buy at that close fills at 06:00.
-    assert {t.symbol: t.entry_time for t in ny.trades} == {"A": hour(1), "B": hour(6)}
+    # New York's new day starts at 05:00 UTC: B's buy at the 04:00 bar's close is
+    # sent at 05:00, on the new day, so it fills then (as in live trading).
+    assert {t.symbol: t.entry_time for t in ny.trades} == {"A": hour(1), "B": hour(5)}
     # In UTC the whole run is one halted day: B never enters.
     assert [t.symbol for t in utc.trades] == ["A"]
 
@@ -597,7 +599,7 @@ def test_metrics_on_a_known_equity_curve():
     assert m["total_return_pct"] == pytest.approx(10.0)
     assert m["max_drawdown_pct"] == pytest.approx(-25.0)
     assert m["final_equity"] == pytest.approx(11_000)
-    assert m["exposure_pct"] == pytest.approx(80.0)          # holding at 4 of 5 closes
+    assert m["exposure_pct"] == pytest.approx(100.0)  # holding at all 4 closes after the 1-bar warm-up
     assert m["buy_and_hold_return_pct"] == pytest.approx(10.0)
     assert m["num_trades"] == 1 and m["win_rate_pct"] == 100.0
     assert m["profit_factor"] == math.inf
@@ -607,9 +609,10 @@ def test_metrics_on_a_known_equity_curve():
     per_year = bars_per_year("1d", 365)
     assert m["sharpe"] == pytest.approx(rets.mean() / rets.std() * math.sqrt(per_year))
     assert m["volatility_ann_pct"] == pytest.approx(rets.std() * math.sqrt(per_year) * 100)
-    years = 5 / 365.25
+    years = 4 / 365.25  # from the first open a fill can happen at (day 1) to the last close
     assert m["cagr_pct"] == pytest.approx((1.1 ** (1 / years) - 1) * 100)
     assert m["start"] == day(0).timestamp() and m["end"] == day(4).timestamp()
+    assert m["tradable_from"] == day(1).timestamp() and m["warmup_bars"] == 1
 
 
 def test_sharpe_annualisation_uses_trading_days_per_year():
@@ -683,13 +686,13 @@ def test_summary_is_an_aligned_table_of_key_metrics():
 
 
 def test_summary_hides_cagr_when_the_data_is_too_short_to_annualise():
-    data = {"A": bars([100, 100, 101, 99, 100], freq="1h")}  # 5 hours
+    data = {"A": bars([100, 100, 101, 99, 100], freq="1h")}  # 5 hours, 4 after the 1-bar warm-up
     result = run_backtest(Scripted({hour(0): BUY}), data, config(timeframe="1h"))
     assert math.isfinite(result.metrics["cagr_pct"])  # the metric itself is still computed
     text = result.summary()
     cagr_line = next(line for line in text.splitlines() if line.startswith("CAGR"))
     assert cagr_line.split()[-1] == "n/a"
-    assert "5.0 hours, too short to annualise" in text
+    assert "4.0 hours, too short to annualise" in text
 
 
 def test_summary_shows_cagr_for_a_long_enough_period():
@@ -779,3 +782,176 @@ def test_lookback_shorter_than_strategy_warmup_is_rejected():
 def test_bad_data_is_rejected(data, match):
     with pytest.raises(ValueError, match=match):
         run_backtest(Scripted(), data, config())
+
+
+# --------------------------------------------------------------------------- regression: gate day
+
+
+def test_daily_loss_halt_applies_on_the_day_the_buy_is_sent_like_live():
+    # Daily bars: A and B (30% each) fall 8% on day 1 -> equity -4.8%, limit 3%.
+    # C's BUY at day 1's close is sent at day 2's open: a new trading day, and
+    # the live engine (which sees day 1's bar only on day 2) takes it.
+    fall = [100, (100, 100, 92, 92), 92, 92]
+    data = {"A": bars(fall, tag=1), "B": bars(fall, tag=2), "C": bars([50] * 4, tag=3)}
+    script = {(1.0, day(0)): BUY, (2.0, day(0)): BUY, (3.0, day(1)): BUY}
+    cfg = config(risk={"max_daily_loss_pct": 3.0, "max_position_pct": 30.0})
+
+    result = run_backtest(Scripted(script), data, cfg)
+
+    assert {t.symbol: t.entry_time for t in result.trades} == {"A": day(1), "B": day(1), "C": day(2)}
+
+
+def test_daily_loss_halt_still_drops_a_buy_that_fills_later_the_same_day():
+    fall = [100, (100, 100, 92, 92), 92, 92, 92]
+    data = {"A": bars(fall, freq="1h", tag=1), "B": bars(fall, freq="1h", tag=2),
+            "C": bars([50] * 5, freq="1h", tag=3)}
+    script = {(1.0, hour(0)): BUY, (2.0, hour(0)): BUY, (3.0, hour(1)): BUY, (3.0, hour(2)): BUY}
+    cfg = config(risk={"max_daily_loss_pct": 3.0, "max_position_pct": 30.0}, timeframe="1h")
+
+    result = run_backtest(Scripted(script), data, cfg)
+
+    assert sorted(t.symbol for t in result.trades) == ["A", "B"]
+
+
+def test_max_trades_per_day_counts_on_the_day_the_buy_is_sent():
+    # One entry a day: BUYs at day 0's close for A and B. A is sent (and counted)
+    # on day 1; B, queued at day 1's close, is sent on day 2.
+    cfg = config(risk={"max_trades_per_day": 1, "max_position_pct": 30.0})
+    script = {(1.0, day(0)): BUY, (2.0, day(0)): BUY, (2.0, day(1)): BUY}
+    data = {s: bars([100] * 4, tag=i) for i, s in enumerate(["A", "B"], start=1)}
+    result = run_backtest(Scripted(script), data, cfg)
+    assert {t.symbol: t.entry_time for t in result.trades} == {"A": day(1), "B": day(2)}
+
+
+# --------------------------------------------------------------------------- regression: rotation, open gaps
+
+
+def rotation_data(order: tuple[str, ...] = ("A", "B", "C")) -> dict[str, pd.DataFrame]:
+    tags = {"A": 1, "B": 2, "C": 3}
+    return {s: bars([100] * 6, tag=tags[s]) for s in order}
+
+
+ROTATION = {(1.0, day(0)): BUY, (2.0, day(0)): BUY, (1.0, day(2)): SELL, (3.0, day(2)): BUY}
+
+
+def test_exit_queued_earlier_in_the_same_close_frees_its_slot_for_a_later_symbol():
+    # Like the live engine, which sells A (and re-reads the account) before it
+    # sizes C, the next symbol in `symbols` order.
+    cfg = config(risk={"max_open_positions": 2, "max_position_pct": 40.0})
+    result = run_backtest(Scripted(ROTATION), rotation_data(), cfg)
+    entries = sorted((t.symbol, t.entry_time) for t in result.trades)
+    assert entries == [("A", day(1)), ("B", day(1)), ("C", day(3))]
+
+
+def test_exit_of_a_later_symbol_does_not_free_a_slot_for_an_earlier_one():
+    # symbols [C, A, B]: live sizes C before it sells A, so the slots are still full.
+    cfg = config(risk={"max_open_positions": 2, "max_position_pct": 40.0})
+    result = run_backtest(Scripted(ROTATION), rotation_data(("C", "A", "B")), cfg)
+    assert sorted(t.symbol for t in result.trades) == ["A", "B"]
+
+
+def test_exit_queued_earlier_in_the_same_close_frees_its_cash_when_fully_invested():
+    cfg = config(risk={"max_open_positions": 5, "max_position_pct": 50.0})
+    result = run_backtest(Scripted(ROTATION), rotation_data(), cfg)
+    assert ("C", day(3)) in [(t.symbol, t.entry_time) for t in result.trades]
+    assert result.cash.min() >= 0
+
+
+def gap_open_data(gap_open: float) -> dict[str, pd.DataFrame]:
+    # A is bought at day 1's open (45% of equity) and gaps to ``gap_open`` at day 2's open.
+    a = bars([100, 100, (gap_open, gap_open, gap_open, gap_open), gap_open], tag=1)
+    return {"A": a, "B": bars([50] * 4, tag=2)}
+
+
+def test_daily_loss_limit_applies_to_an_entry_at_a_gap_down_open():
+    # Live on Alpaca compares the first tick after the open with the previous
+    # close: -8% on 45% of equity is -3.6%, past the 3% limit, so B is not bought.
+    script = {(1.0, day(0)): BUY, (2.0, day(1)): BUY}
+    cfg = config(risk={"max_daily_loss_pct": 3.0, "max_position_pct": 45.0})
+    result = run_backtest(Scripted(script), gap_open_data(92.0), cfg)
+    assert [t.symbol for t in result.trades] == ["A"]
+
+
+def test_gap_down_inside_the_daily_loss_limit_still_enters():
+    script = {(1.0, day(0)): BUY, (2.0, day(1)): BUY}
+    cfg = config(risk={"max_daily_loss_pct": 3.0, "max_position_pct": 45.0})
+    result = run_backtest(Scripted(script), gap_open_data(96.0), cfg)  # -1.8% of equity
+    assert {t.symbol: t.entry_time for t in result.trades} == {"A": day(1), "B": day(2)}
+
+
+def test_gap_down_through_the_daily_loss_limit_flattens_at_that_open_when_configured():
+    script = {(1.0, day(0)): BUY}
+    cfg = config(risk={"max_daily_loss_pct": 3.0, "max_position_pct": 45.0, "flatten_on_daily_loss": True})
+    result = run_backtest(Scripted(script), gap_open_data(92.0), cfg)
+    (trade,) = result.trades
+    assert (trade.exit_reason, trade.exit_time, trade.exit_price) == ("daily_loss_limit", day(2), 92.0)
+
+
+# --------------------------------------------------------------------------- regression: the open comes first
+
+
+def test_a_gap_up_through_the_take_profit_exits_there_even_if_the_bar_then_falls_through_the_stop():
+    # Earnings gap: opens at 112 (target 110), then reverses to a low of 94
+    # (stop 95). The open is known before the high and the low: live sells there.
+    data = {"A": bars([100, (100, 101, 99, 100), (112, 113, 94, 96), 96])}
+    cfg = config(risk={"stop_loss_pct": 5.0, "take_profit_pct": 10.0})
+    result = run_backtest(Scripted({day(0): BUY}), data, cfg)
+    (trade,) = result.trades
+    assert (trade.exit_reason, trade.exit_time, trade.exit_price) == ("take_profit", day(2), 112.0)
+    assert result.metrics["final_equity"] == pytest.approx(11_200.0)
+
+
+def gap_stop_data(order: tuple[str, ...] = ("A", "B")) -> dict[str, pd.DataFrame]:
+    # A (bought at day 1's open) opens day 4 at 90, through its 5% stop; B has
+    # a one-bar BUY signal at day 3's close, when the only slot is A's.
+    frames = {"A": bars([100, 100, 100, 100, (90, 91, 89, 90), 90], tag=1), "B": bars([50] * 6, tag=2)}
+    return {symbol: frames[symbol] for symbol in order}
+
+
+GAP_STOP = {(1.0, day(0)): BUY, (2.0, day(3)): BUY}
+
+
+def test_a_gap_stop_at_the_open_frees_its_slot_for_a_later_symbols_entry_at_that_open():
+    # Live, at day 4's first tick: A is stopped out, then B (next in `symbols`)
+    # is sized with the slot free and bought at the same open.
+    cfg = config(risk={"max_open_positions": 1, "max_position_pct": 50.0, "stop_loss_pct": 5.0})
+    result = run_backtest(Scripted(GAP_STOP), gap_stop_data(), cfg)
+    entries = {t.symbol: (t.entry_time, t.entry_price) for t in result.trades}
+    assert entries == {"A": (day(1), 100.0), "B": (day(4), 50.0)}
+    assert [(t.symbol, t.exit_reason, t.exit_time) for t in result.trades if t.symbol == "A"] == [
+        ("A", "stop_loss", day(4))]
+    assert result.cash.min() >= 0
+
+
+def test_a_gap_stop_of_a_later_symbol_does_not_free_a_slot_for_an_earlier_one():
+    # symbols [B, A]: live sizes B before it looks at A's stop, so the slot is still taken.
+    cfg = config(risk={"max_open_positions": 1, "max_position_pct": 50.0, "stop_loss_pct": 5.0})
+    result = run_backtest(Scripted(GAP_STOP), gap_stop_data(("B", "A")), cfg)
+    assert [t.symbol for t in result.trades] == ["A"]
+
+
+# --------------------------------------------------------------------------- regression: warm-up bars
+
+
+def test_warm_up_bars_do_not_dilute_the_annualised_metrics():
+    # The same trades on the same prices, once with a 1-bar warm-up and once
+    # after 40 extra flat bars the strategy needs as history first.
+    prices = [100, 100, 104, 101, 108, 103, 110, 107, 112, 109, 115, 111]
+    warmup = 40
+    plain = bars(prices, start=day(0))
+    padded = bars([100] * warmup + prices, start=day(-warmup))
+    script = {day(0): BUY, day(5): SELL, day(6): BUY}
+    a = run_backtest(Scripted(script, min_bars=1), {"A": plain}, config()).metrics
+    b = run_backtest(Scripted(script, min_bars=warmup + 1), {"A": padded}, config()).metrics
+    for key in ("total_return_pct", "cagr_pct", "sharpe", "volatility_ann_pct", "exposure_pct",
+                "max_drawdown_pct", "buy_and_hold_return_pct"):
+        assert b[key] == pytest.approx(a[key], rel=1e-9, abs=1e-12), key
+    assert a["tradable_from"] == b["tradable_from"] == day(1).timestamp()
+    assert (a["warmup_bars"], b["warmup_bars"]) == (1, warmup + 1)
+
+
+def test_summary_shows_the_warm_up_and_the_trading_period():
+    data = {"A": bars([100] * 10 + [100, 101, 102, 103, 104])}
+    text = run_backtest(Scripted({day(10): BUY}, min_bars=11), data, config()).summary()
+    assert "2024-01-01 -> 2024-01-15 (15 bars)" in text
+    assert "2024-01-12 -> 2024-01-15" in text and "11 warm-up bars" in text

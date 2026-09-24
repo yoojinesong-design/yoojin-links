@@ -19,7 +19,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 PAPER_ACCOUNT_FILE = "paper_account.json"
-CCXT_ENTRIES_FILE = "ccxt_entries.json"
+
+
+def ccxt_entries_file(exchange: str, sandbox: bool) -> str:
+    """File name of a ccxt account's stored entry prices, one per account: a
+    testnet's prices must never become the stop reference for live holdings
+    kept in the same state_dir."""
+    return f"ccxt_entries.{exchange}{'.sandbox' if sandbox else ''}.json"
 
 
 def make_broker(cfg: BotConfig, env: Mapping[str, str] | None = None) -> Broker:
@@ -88,9 +94,10 @@ def make_broker(cfg: BotConfig, env: Mapping[str, str] | None = None) -> Broker:
                 f"{b.exchange} {where} trading needs CCXT_API_KEY and CCXT_SECRET (and CCXT_PASSWORD if "
                 "the exchange uses an API passphrase) in your environment or .env file. See .env.example.")
         logger.info("Broker: %s %s account", b.exchange, "TESTNET" if b.use_sandbox else "LIVE")
+        entries = state_dir / ccxt_entries_file(b.exchange, b.use_sandbox)
         return _construct(CCXTBroker, f"ccxt:{b.exchange}", b.exchange, symbols,
                           api_key=key, secret=secret, password=_env(env, "CCXT_PASSWORD"),
-                          sandbox=b.use_sandbox, entries_path=state_dir / CCXT_ENTRIES_FILE)
+                          sandbox=b.use_sandbox, entries_path=entries)
 
     raise ConfigError(f"unknown broker type {b.type!r}; use sim, alpaca or ccxt")
 
@@ -124,4 +131,4 @@ def _quote_currency(symbols: list[str]) -> str:
     return symbols[0].partition("/")[2].split(":")[0] if symbols else "USD"
 
 
-__all__ = ["Broker", "BrokerError", "make_broker"]
+__all__ = ["Broker", "BrokerError", "ccxt_entries_file", "make_broker"]

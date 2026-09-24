@@ -444,12 +444,16 @@ def test_invalid_feed_price_raises_instead_of_filling(bad_price):
     assert broker.cash == 10_000 and broker.get_positions() == {}
 
 
-def test_positions_can_not_be_marked_without_a_price():
+def test_positions_are_never_marked_to_an_invalid_price():
     broker, feed = make_broker()
     broker.submit_order(buy("AAPL", 1))
     feed.prices["AAPL"] = float("nan")
+    account = broker.get_account()
+    assert account.unpriced == ("AAPL",)  # flagged, valued at the last good price instead
+    assert math.isfinite(account.equity)
+    assert broker.get_positions()["AAPL"].market_price == 100.0
     with pytest.raises(BrokerError):
-        broker.get_account()
+        broker.get_latest_price("AAPL")
 
 
 def test_invalid_venue_rules_from_the_feed_raise():
@@ -616,3 +620,42 @@ def test_minimal_state_file_loads_with_defaults(tmp_path):
     broker = PaperBroker(FakeFeed(), state_path=path)
     assert broker.cash == 1234.5 and broker.get_positions() == {}
     assert broker.submit_order(buy("AAPL", 1)).id == "paper-1"
+
+
+# ---- regression: one unpriceable holding ---------------------------------------
+
+
+def test_one_holding_that_cannot_be_priced_does_not_fail_the_account_read():
+    broker, feed = make_broker({"AAPL": 100.0, "MSFT": 50.0}, fee_pct=0.0, slippage_pct=0.0)
+    broker.submit_order(OrderRequest("AAPL", Side.BUY, 10))
+    broker.submit_order(OrderRequest("MSFT", Side.BUY, 10))
+    feed.prices["AAPL"] = 110.0
+    broker.get_account()  # a good read: 110 is the last known AAPL price
+
+    real = feed.get_latest_price
+
+    def price(symbol: str) -> float:
+        if symbol == "AAPL":
+            raise RuntimeError("AAPL feed down")
+        return real(symbol)
+
+    feed.get_latest_price = price
+    account = broker.get_account()
+    positions = broker.get_positions()
+
+    assert account.unpriced == ("AAPL",)
+    assert account.equity == pytest.approx(broker.cash + 10 * 110.0 + 10 * 50.0)
+    assert positions["AAPL"].market_price == 110.0 and positions["MSFT"].market_price == 50.0
+    with pytest.raises(BrokerError, match="AAPL feed down"):
+        broker.get_latest_price("AAPL")  # the symbol itself still reports its error
+
+
+def test_unpriceable_holding_never_priced_before_is_valued_at_its_entry_price():
+    broker, feed = make_broker({"AAPL": 100.0}, fee_pct=0.0, slippage_pct=0.0)
+    broker.submit_order(OrderRequest("AAPL", Side.BUY, 10))
+    fresh = PaperBroker(feed, state_path=None, clock=lambda: T0)
+    fresh._holdings = dict(broker._holdings)
+    feed.get_latest_price = lambda symbol: (_ for _ in ()).throw(RuntimeError("down"))
+    account = fresh.get_account()
+    assert account.unpriced == ("AAPL",)
+    assert fresh.get_positions()["AAPL"].market_price == pytest.approx(100.0)

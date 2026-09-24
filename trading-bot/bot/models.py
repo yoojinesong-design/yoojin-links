@@ -67,6 +67,10 @@ class Account:
     # (Alpaca ``last_equity``). Used as the daily-loss baseline.
     day_start_equity: float | None = None
     trading_blocked: bool = False
+    # Symbols whose holdings could not be priced this time (valued at their last
+    # known or entry price instead), so equity is uncertain: the engine makes no
+    # new entries on such a snapshot but still runs exits for the other symbols.
+    unpriced: tuple[str, ...] = ()
 
 
 @dataclass

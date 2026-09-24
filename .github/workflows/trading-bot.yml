@@ -49,7 +49,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: trading-bot/state
-          key: trading-bot-state-${{ github.run_id }}
+          key: trading-bot-state-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: trading-bot-state-
 
       - name: Run one trading tick
@@ -72,7 +72,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: trading-bot/state
-          key: trading-bot-state-${{ github.run_id }}
+          key: trading-bot-state-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload logs
         if: always()

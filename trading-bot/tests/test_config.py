@@ -184,9 +184,21 @@ def test_blank_notify_env_values_mean_disabled(tmp_path):
 
 def test_env_defaults_to_os_environ(tmp_path, monkeypatch):
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "777")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:abc")
     monkeypatch.delenv("NOTIFY_WEBHOOK_URL", raising=False)
     cfg = load_config(write(tmp_path, base_config()))
     assert cfg.notify.telegram_chat_id == "777" and cfg.notify.webhook_url is None
+
+
+@pytest.mark.parametrize("env, missing", [
+    ({"TELEGRAM_BOT_TOKEN": "123:abc"}, "TELEGRAM_CHAT_ID"),
+    ({"TELEGRAM_BOT_TOKEN": "123:abc", "TELEGRAM_CHAT_ID": "  "}, "TELEGRAM_CHAT_ID"),
+    ({"TELEGRAM_CHAT_ID": "42"}, "TELEGRAM_BOT_TOKEN"),
+])
+def test_telegram_with_only_one_of_token_and_chat_id_is_a_config_error(tmp_path, env, missing):
+    # Only one of the two would silently drop every alert.
+    with pytest.raises(ConfigError, match=f"{missing} is not"):
+        load(tmp_path, env=env)
 
 
 def test_notify_secrets_are_hidden_from_repr(tmp_path):
@@ -631,6 +643,26 @@ def test_shipped_configs_use_separate_state_dirs_inside_the_project(name):
     assert cfg.state_dir == ROOT / "state" / name and cfg.log_dir == ROOT / "logs" / name
 
 
+def test_existing_holdings_are_not_adopted_unless_opted_in(tmp_path):
+    assert load(tmp_path).adopt_existing_positions is False
+    assert load(tmp_path, adopt_existing_positions=True).adopt_existing_positions is True
+    with pytest.raises(ConfigError, match="adopt_existing_positions"):
+        load(tmp_path, adopt_existing_positions="yes")
+
+
+def test_state_dir_only_resolves_like_load_config_without_validating_the_rest(tmp_path):
+    from bot.config import state_dir_only
+    good = write(tmp_path / "configs", base_config(state_dir="../state/x"))
+    assert state_dir_only(good) == load_config(good, env={}).state_dir == (tmp_path / "state" / "x").resolve()
+    # An invalid edit elsewhere in the file does not hide where the state lives.
+    broken = write(tmp_path / "configs", base_config(state_dir="../state/x", bars_lookback=3, typo=1), "b.yaml")
+    with pytest.raises(ConfigError):
+        load_config(broken, env={})
+    assert state_dir_only(broken) == (tmp_path / "state" / "x").resolve()
+    default = write(tmp_path / "configs", base_config(), "d.yaml")
+    assert state_dir_only(default) == load_config(default, env={}).state_dir
+
+
 def test_env_example_lists_every_variable_and_keeps_live_switch_off():
     text = (ROOT / ".env.example").read_text(encoding="utf-8")
     active = {line.split("=", 1)[0]: line.split("=", 1)[1] for line in text.splitlines()
@@ -771,7 +803,18 @@ def test_ccxt_sandbox_uses_testnet_keys(tmp_path, fakes):
     assert isinstance(broker, fakes.CCXTBroker) and not fakes.PaperBroker.instances
     assert broker.args == ("binance", ["BTC/USDT"])
     assert broker.kwargs == {"api_key": "ck", "secret": "cs", "password": None, "sandbox": True,
-                             "entries_path": tmp_path / "state" / "ccxt_entries.json"}
+                             "entries_path": tmp_path / "state" / "ccxt_entries.binance.sandbox.json"}
+
+
+def test_ccxt_testnet_and_live_keep_entry_prices_in_separate_files(tmp_path, fakes):
+    # A testnet's average prices must never become the stop reference for live coins.
+    from bot.brokers import make_broker
+    sandbox = make_broker(make_cfg(tmp_path, type="ccxt", exchange="binance", use_sandbox=True,
+                                   symbols=["BTC/USDT"]), env=dict(CCXT_KEYS))
+    live = make_broker(make_cfg(tmp_path, mode="live", type="ccxt", exchange="binance", symbols=["BTC/USDT"]),
+                       env={**CCXT_KEYS, **LIVE_ENV})
+    assert live.kwargs["entries_path"] == tmp_path / "state" / "ccxt_entries.binance.json"
+    assert live.kwargs["entries_path"] != sandbox.kwargs["entries_path"]
 
 
 def test_ccxt_live_with_confirmation_passes_optional_password(tmp_path, fakes):
@@ -876,3 +919,14 @@ def test_sim_broker_end_to_end_with_real_adapters(tmp_path):
     account = broker.get_account()
     assert account.cash == pytest.approx(2500.0) and account.equity == pytest.approx(2500.0)
     assert broker.get_latest_price("DEMO1") > 0
+
+
+# --------------------------------------------------------------------------- deployment files
+
+
+def test_docker_compose_mounts_the_configs_so_edits_apply_without_a_rebuild():
+    root = Path(__file__).resolve().parents[1]
+    compose = yaml.safe_load((root / "docker-compose.yml").read_text(encoding="utf-8"))
+    volumes = compose["services"]["trading-bot"]["volumes"]
+    assert "./configs:/app/configs:ro" in volumes
+    assert "./state:/app/state" in volumes and "./logs:/app/logs" in volumes

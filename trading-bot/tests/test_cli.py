@@ -6,6 +6,7 @@ Everything runs offline: configs are temp copies of ``configs/demo.yaml``
 """
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import logging.handlers
@@ -22,9 +23,10 @@ import yaml
 from bot import cli
 from bot.brokers.base import Broker, BrokerError
 from bot.brokers.paper import PaperBroker
-from bot.config import LIVE_CONFIRM_ENV, LIVE_CONFIRM_VALUE
+from bot.config import LIVE_CONFIRM_ENV, LIVE_CONFIRM_VALUE, load_config
 from bot.data import SyntheticFeed, generate_synthetic_bars
 from bot.models import Account, OrderRequest, OrderResult, Position, Side
+from bot.risk import RiskConfig
 from bot.state import KILL_FILE, BotState, StateStore
 from bot.strategies import STRATEGIES
 
@@ -613,7 +615,7 @@ def test_backtest_default_output_folder_is_results_timestamp(capsys, tmp_path):
 
 
 def test_backtest_from_csv_files(capsys, tmp_path):
-    cfg = write_config(tmp_path)
+    cfg = write_config(tmp_path, timeframe="1d")
     path = tmp_path / "spy.csv"
     generate_synthetic_bars(300, "1d").to_csv(path)
     out_dir = tmp_path / "out"
@@ -661,7 +663,8 @@ def test_backtest_fetches_bars_from_the_broker_by_default(capsys, tmp_path, monk
     monkeypatch.setattr("bot.brokers.make_broker", lambda cfg, env=None: fake)
     code, out, _ = run(capsys, "-c", str(cfg), "backtest", "--out", str(tmp_path / "o"))
     assert code == 0, out
-    assert fake.bar_requests == [("DEMO1", "1m", 1000), ("DEMO2", "1m", 1000)]
+    # One extra bar each: the venue's still-forming bar is dropped.
+    assert fake.bar_requests == [("DEMO1", "1m", 1001), ("DEMO2", "1m", 1001)]
     assert "got 500 of the 1,000" in out  # the venue returned less history than asked
     assert fake.orders == []  # a backtest never trades
 
@@ -674,10 +677,8 @@ def test_backtest_broker_data_error_exits_1(capsys, tmp_path, monkeypatch):
     assert "Broker error: no data" in err
 
 
-def test_backtest_alpaca_config_annualises_with_252_days(capsys, tmp_path, monkeypatch):
-    cfg = write_config(tmp_path, symbols=["SPY"], broker={"type": "alpaca"}, timeframe="1d",
-                       strategy={"name": "sma_crossover", "params": {"fast": 5, "slow": 20}})
-    captured = {}
+def capture_backtest_config(monkeypatch) -> dict:
+    captured: dict = {}
     import bot.backtest as backtest_mod
 
     real = backtest_mod.run_backtest
@@ -687,12 +688,67 @@ def test_backtest_alpaca_config_annualises_with_252_days(capsys, tmp_path, monke
         return real(strategy, data, bt_cfg)
 
     monkeypatch.setattr(backtest_mod, "run_backtest", spy)
-    code, _, _ = run(capsys, "-c", str(cfg), "backtest", "--synthetic", "--bars", "200", "--out", str(tmp_path / "o"))
+    return captured
+
+
+def alpaca_daily_config(tmp_path: Path) -> Path:
+    return write_config(tmp_path, symbols=["SPY"], broker={"type": "alpaca"}, timeframe="1d",
+                        strategy={"name": "sma_crossover", "params": {"fast": 5, "slow": 20}})
+
+
+def weekday_bars(n: int):
+    frame = generate_synthetic_bars(n * 7 // 5 + 10, "1d")
+    return frame[frame.index.dayofweek < 5].tail(n)
+
+
+def test_backtest_alpaca_data_annualises_with_252_days(capsys, tmp_path, monkeypatch):
+    cfg = alpaca_daily_config(tmp_path)
+    captured = capture_backtest_config(monkeypatch)
+    monkeypatch.setattr("bot.brokers.make_broker", lambda cfg, env=None: FakeBroker(bars=weekday_bars(300)))
+    code, _, _ = run(capsys, "-c", str(cfg), "backtest", "--bars", "250", "--out", str(tmp_path / "o"))
     assert code == 0
     bt = captured["cfg"]
     assert bt.trading_days_per_year == 252
     assert (bt.timeframe, bt.lookback, bt.timezone) == ("1d", 300, "UTC")
     assert (bt.fee_pct, bt.slippage_pct, bt.starting_cash) == (0.1, 0.05, 10000.0)
+
+
+def test_backtest_synthetic_data_is_24_7_so_it_annualises_with_365_days_even_for_alpaca(
+        capsys, tmp_path, monkeypatch):
+    cfg = alpaca_daily_config(tmp_path)
+    captured = capture_backtest_config(monkeypatch)
+    code, _, _ = run(capsys, "-c", str(cfg), "backtest", "--synthetic", "--bars", "200", "--out", str(tmp_path / "o"))
+    assert code == 0
+    assert captured["cfg"].trading_days_per_year == 365
+
+
+def test_backtest_weekday_only_csv_annualises_with_252_days_under_a_crypto_config(capsys, tmp_path, monkeypatch):
+    cfg = write_config(tmp_path, timeframe="1d")  # the sim broker (365 by broker type)
+    path = tmp_path / "spy.csv"
+    weekday_bars(300).to_csv(path)
+    captured = capture_backtest_config(monkeypatch)
+    code, out, err = run(capsys, "-c", str(cfg), "backtest", "--csv", f"SPY={path}", "--out", str(tmp_path / "o"))
+    assert code == 0, err
+    assert captured["cfg"].trading_days_per_year == 252
+    assert "252" in out
+
+
+def test_backtest_refuses_csv_bars_that_do_not_match_the_config_timeframe(capsys, tmp_path):
+    cfg = write_config(tmp_path, timeframe="4h")
+    path = tmp_path / "btc_daily.csv"
+    generate_synthetic_bars(400, "1d").to_csv(path)
+    code, _, err = run(capsys, "-c", str(cfg), "backtest", "--csv", f"BTC={path}", "--out", str(tmp_path / "o"))
+    assert code == 2
+    assert "1d" in err and "4h" in err and "timeframe" in err
+    assert not (tmp_path / "o").exists()
+
+
+def test_backtest_from_the_broker_does_not_report_a_false_history_limit(capsys, tmp_path):
+    cfg = write_config(tmp_path)  # the sim broker: it has no history limit
+    code, out, _ = run(capsys, "-c", str(cfg), "backtest", "--bars", "1000", "--out", str(tmp_path / "o"))
+    assert code == 0, out
+    assert "Note: got" not in out
+    assert "DEMO1 1,000 bars" in out and "DEMO2 1,000 bars" in out
 
 
 # --------------------------------------------------------------------------- demo
@@ -812,3 +868,319 @@ def test_unwritable_log_dir_falls_back_to_console_logging(tmp_path):
         assert len(setup.handlers) == 1
     finally:
         setup.close()
+
+
+# --------------------------------------------------------------------------- regression: review findings
+
+
+def test_live_banner_emergency_commands_use_the_same_config(tmp_path):
+    cfg = load_config(live_alpaca_config(tmp_path), env={})
+    banner = cli._banner(cfg, argparse.Namespace(config="x/live.yaml"))
+    assert "python -m bot kill -c x/live.yaml" in banner
+    assert "python -m bot flatten --yes -c x/live.yaml" in banner
+    for line in banner.splitlines():
+        if "python -m bot" in line:
+            assert "-c x/live.yaml" in line, line
+
+
+def test_risk_line_without_a_stop_loss_does_not_claim_a_risk_per_trade():
+    lines = cli._risk_lines(RiskConfig(stop_loss_pct=None, risk_per_trade_pct=2.0, max_position_pct=45.0))
+    assert "at risk per trade" not in lines[0]
+    assert "no stop-loss" in lines[0] and "45%" in lines[0]
+    with_stop = cli._risk_lines(RiskConfig(stop_loss_pct=5.0, risk_per_trade_pct=2.0))
+    assert "2% of equity at risk per trade" in with_stop[0] and "stop-loss 5%" in with_stop[0]
+
+
+def test_missing_config_hint_keeps_state_inside_the_project(capsys):
+    code, _, err = run(capsys, "status")
+    assert code == 2
+    assert "to config.yaml" not in err  # the examples' ../state paths would escape the project
+    assert "configs/my.yaml" in err
+
+
+@pytest.mark.parametrize("name", ["demo.yaml", "stocks.yaml", "crypto.yaml"])
+def test_example_configs_keep_state_and_logs_inside_the_project(name):
+    cfg = load_config(ROOT / "configs" / name, env={})
+    assert Path(cfg.state_dir).resolve().is_relative_to(ROOT / "state")
+    assert Path(cfg.log_dir).resolve().is_relative_to(ROOT / "logs")
+
+
+def test_kill_resume_and_status_show_where_the_kill_file_is(capsys, tmp_path):
+    cfg = write_config(tmp_path)
+    kill_file = str((tmp_path / "state" / KILL_FILE).resolve())
+    _, out, _ = run(capsys, "-c", str(cfg), "kill")
+    assert kill_file in out
+    _, out, _ = run(capsys, "-c", str(cfg), "status")
+    assert kill_file in out
+    _, out, _ = run(capsys, "-c", str(cfg), "resume")
+    assert kill_file in out
+
+
+def test_status_flags_positions_the_bot_does_not_manage(capsys, tmp_path):
+    cfg = write_config(tmp_path)  # symbols: DEMO1, DEMO2
+    paper_broker(tmp_path).submit_order(OrderRequest("DEMO3", Side.BUY, 2.0))
+    code, out, _ = run(capsys, "-c", str(cfg), "status")
+    assert code == 0
+    assert "DEMO3" in out and "not managed" in out
+
+
+def test_flatten_help_says_it_is_account_wide_on_alpaca(capsys):
+    code, out, _ = run(capsys, "flatten", "-h")
+    assert code == 0
+    assert "Alpaca" in out and "account" in out
+
+
+class _FakeMsvcrt:
+    """msvcrt.locking emulated with flock, so the Windows branch runs on Linux."""
+
+    LK_UNLCK, LK_NBLCK = 0, 2
+
+    def __init__(self, real_fcntl) -> None:
+        self.fcntl = real_fcntl
+        self.calls: list[int] = []
+
+    def locking(self, fd: int, mode: int, nbytes: int) -> None:
+        self.calls.append(mode)
+        if mode == self.LK_NBLCK:
+            self.fcntl.flock(fd, self.fcntl.LOCK_EX | self.fcntl.LOCK_NB)
+        else:
+            self.fcntl.flock(fd, self.fcntl.LOCK_UN)
+
+
+def test_instance_lock_works_without_fcntl_through_msvcrt(tmp_path, monkeypatch):
+    real_fcntl = cli.fcntl
+    if real_fcntl is None:
+        pytest.skip("needs fcntl to emulate msvcrt")
+    fake = _FakeMsvcrt(real_fcntl)
+    monkeypatch.setattr(cli, "fcntl", None)  # as on Windows
+    monkeypatch.setattr(cli, "msvcrt", fake, raising=False)
+    first, second = cli._InstanceLock(tmp_path), cli._InstanceLock(tmp_path)
+
+    assert first.acquire() is True
+    assert second.acquire() is False  # a second bot on the same state folder is refused
+    first.release()
+    assert second.acquire() is True
+    second.release()
+    assert fake.LK_UNLCK in fake.calls
+
+
+def test_instance_lock_without_any_locking_warns_loudly(tmp_path, monkeypatch, caplog):
+    monkeypatch.setattr(cli, "fcntl", None)
+    monkeypatch.setattr(cli, "msvcrt", None, raising=False)
+    with caplog.at_level(logging.WARNING):
+        assert cli._InstanceLock(tmp_path).acquire() is True
+    assert any("lock" in r.getMessage().lower() for r in caplog.records)
+
+
+# --------------------------------------------------------------------------- regression: emergency commands
+
+
+def invalid_config(tmp_path: Path) -> Path:
+    """Edited while the bot runs: the strategy now needs 201 bars, lookback is only 100."""
+    return write_config(tmp_path, name="edited.yaml", bars_lookback=100, strategy={"params": {"slow": 200}})
+
+
+def test_kill_and_resume_still_work_when_the_config_no_longer_validates(capsys, tmp_path):
+    cfg = invalid_config(tmp_path)
+    kill_file = tmp_path / "state" / KILL_FILE
+
+    code, out, err = run(capsys, "-c", str(cfg), "kill", "--reason", "market crash")
+    assert code == 0
+    assert kill_file.read_text(encoding="utf-8") == "market crash"
+    assert "bars_lookback" in err  # the config problem is still shown
+    assert str(kill_file.resolve()) in out
+
+    code, out, _ = run(capsys, "-c", str(cfg), "resume")
+    assert code == 0 and not kill_file.exists()
+
+
+@pytest.mark.parametrize("command", [["flatten", "--yes"], ["status"]])
+def test_other_commands_with_an_invalid_config_say_where_the_kill_file_is(capsys, tmp_path, command):
+    cfg = invalid_config(tmp_path)
+    code, _, err = run(capsys, "-c", str(cfg), *command)
+    assert code == 2
+    assert "bars_lookback" in err
+    assert str((tmp_path / "state" / KILL_FILE).resolve()) in err and "kill" in err
+
+
+def test_kill_says_plainly_that_stop_losses_stop_too(capsys, tmp_path):
+    cfg = write_config(tmp_path)
+    _, out, _ = run(capsys, "-c", str(cfg), "kill", "--reason", "vacation")
+    assert "stop-loss" in out.lower() and "unprotected" in out
+    _, out, _ = run(capsys, "-c", str(cfg), "status")
+    assert "not even stop-loss" in out
+
+
+def test_readme_does_not_describe_the_kill_switch_as_stopping_only_new_orders():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    (line,) = [line for line in readme.splitlines() if " kill --reason" in line]
+    assert "손절" in line  # says that stop-loss sells stop as well
+
+
+def test_run_banner_says_where_alerts_go_or_that_none_will_be_sent(tmp_path):
+    args = cli.build_parser().parse_args(["run"])
+    cfg = load_config(write_config(tmp_path), env={})
+    assert "none" in cli._banner(cfg, args).split("Notify", 1)[1].splitlines()[0]
+    cfg = load_config(write_config(tmp_path), env={"TELEGRAM_BOT_TOKEN": "1:a", "TELEGRAM_CHAT_ID": "2"})
+    assert "Telegram" in cli._banner(cfg, args).split("Notify", 1)[1].splitlines()[0]
+
+
+# --------------------------------------------------------------------------- regression: status, flatten, CI
+
+
+def test_status_warns_about_holdings_it_could_not_price_and_exits_1(capsys, tmp_path, monkeypatch):
+    cfg = write_config(tmp_path)
+
+    class Unpriced(FakeBroker):
+        def get_account(self):
+            return Account(equity=1000.0, cash=800.0, buying_power=800.0, unpriced=("DEMO1", "DEMO2"))
+
+    fake = Unpriced(positions={"DEMO1": Position("DEMO1", 2.0, 100.0, 100.0)})
+    monkeypatch.setattr("bot.brokers.make_broker", lambda cfg, env=None: fake)
+    code, out, _ = run(capsys, "-c", str(cfg), "status")
+    assert code == 1
+    assert "WARNING" in out and "DEMO1" in out and "may be wrong" in out
+    demo1_row = next(line for line in out.splitlines() if line.strip().startswith("DEMO1"))
+    assert "+0.00%" not in demo1_row and "unknown" in demo1_row
+    assert "DEMO2" in out and "cannot be priced" in out  # held, but missing from the positions list
+
+
+def test_status_names_a_crypto_holding_whose_price_cannot_be_read(capsys, tmp_path, monkeypatch):
+    import ccxt
+
+    from bot.brokers.ccxt_broker import CCXTBroker
+    from tests.test_ccxt_broker import FakeExchange
+    cfg = write_config(tmp_path, symbols=["BTC/USDT", "ETH/USDT"], broker={"type": "ccxt", "exchange": "fakex"})
+    ex = FakeExchange()
+    ex.set_balance("BTC", 0.5)
+    ex.tickers["BTC/USDT"] = ccxt.NetworkError("ticker down")
+    broker = CCXTBroker("fakex", ["BTC/USDT", "ETH/USDT"], api_key="k", secret="s", exchange=ex)
+    monkeypatch.setattr("bot.brokers.make_broker", lambda cfg, env=None: broker)
+    code, out, _ = run(capsys, "-c", str(cfg), "status")
+    assert code == 1
+    assert "BTC/USDT" in out and "cannot be priced" in out
+
+
+def test_flatten_records_its_sells_in_trades_csv(capsys, tmp_path):
+    cfg = write_config(tmp_path)
+    paper_broker(tmp_path).submit_order(OrderRequest("DEMO1", Side.BUY, 4.0))
+    assert run(capsys, "-c", str(cfg), "flatten", "--yes")[0] == 0
+    import csv
+    with (tmp_path / "logs" / "trades.csv").open(newline="", encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    assert [(r["symbol"], r["side"], r["status"]) for r in rows] == [("DEMO1", "sell", "filled")]
+    assert "flatten" in rows[0]["reason"] and rows[0]["mode"] == "paper"
+
+
+def test_flatten_still_reports_the_sells_it_made_when_a_later_one_fails(capsys, tmp_path, monkeypatch):
+    cfg = write_config(tmp_path)
+
+    class Flaky(FakeBroker):
+        def submit_order(self, order):
+            if order.symbol == "DEMO2":
+                raise BrokerError("timeout while selling DEMO2")
+            return super().submit_order(order)
+
+    fake = Flaky(positions={"DEMO1": Position("DEMO1", 2.0, 90.0, 100.0),
+                            "DEMO2": Position("DEMO2", 3.0, 90.0, 100.0)})
+    monkeypatch.setattr("bot.brokers.make_broker", lambda cfg, env=None: fake)
+    code, out, err = run(capsys, "-c", str(cfg), "flatten", "--yes")
+    assert code == 1
+    assert "SELL 2 DEMO1: filled" in out
+    assert "timeout while selling DEMO2" in out + err
+    assert "DEMO1" in (tmp_path / "logs" / "trades.csv").read_text(encoding="utf-8")
+
+
+def test_once_on_github_actions_refuses_a_state_dir_the_workflow_does_not_keep(capsys, tmp_path, monkeypatch):
+    # A config in a configs/ folder without state_dir: its state would land in
+    # configs/state, which the workflow never caches, so every run forgets it.
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    configs = tmp_path / "configs"
+    configs.mkdir()
+    raw = yaml.safe_load((ROOT / "configs" / "demo.yaml").read_text(encoding="utf-8"))
+    del raw["state_dir"]
+    (configs / "x.yaml").write_text(yaml.safe_dump(raw), encoding="utf-8")
+    forbid_make_broker(monkeypatch)
+    code, _, err = run(capsys, "-c", str(configs / "x.yaml"), "once")
+    assert code == 2
+    assert "GitHub Actions" in err and "state_dir" in err
+
+
+@pytest.mark.parametrize("name", ["demo.yaml", "stocks.yaml", "crypto.yaml"])
+def test_shipped_configs_pass_the_github_actions_state_dir_check(name, monkeypatch):
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    cli._check_ci_state_dir(load_config(ROOT / "configs" / name, env={}))
+
+
+def test_status_lists_holdings_the_bot_did_not_buy(capsys, tmp_path, monkeypatch):
+    cfg = write_config(tmp_path)  # symbols DEMO1, DEMO2 on a (fake) real account
+    fake = FakeBroker(positions={"DEMO1": Position("DEMO1", 7.0, 90.0, 100.0),
+                                 "DEMO2": Position("DEMO2", 3.0, 90.0, 100.0)})
+    monkeypatch.setattr("bot.brokers.make_broker", lambda cfg, env=None: fake)
+    StateStore(tmp_path / "state" / cli.STATE_FILE).save(BotState(
+        account_key="paper:sim::USD", owned={"DEMO2": {"qty": 3.0, "avg_entry_price": 90.0}}))
+    code, out, _ = run(capsys, "-c", str(cfg), "status")
+    assert code == 0
+    line = next(line for line in out.splitlines() if "Not bought by this bot" in line)
+    assert "DEMO1 7" in line and "DEMO2" not in line
+
+
+# ---------------------------------------------------------------- regression: secrets in verbose logs, kill on Actions
+
+
+def test_verbose_logs_never_show_the_webhook_url_or_the_telegram_token(capsys, tmp_path, monkeypatch):
+    # With -v every library logs at DEBUG: urllib3 logs each request line, and
+    # a webhook's (or the Telegram API's) path IS the secret.
+    monkeypatch.setenv("NOTIFY_WEBHOOK_URL", "https://discord.com/api/webhooks/123/SUPERSECRETTOKEN")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123456:ABCSECRETTOKEN")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "42")
+    real = cli.set_kill_switch
+
+    def kill_while_libraries_log(*args, **kwargs):
+        wire = logging.getLogger("urllib3.connectionpool")
+        wire.debug('%s "POST %s HTTP/1.1" 204 0', "https://discord.com:443", "/api/webhooks/123/SUPERSECRETTOKEN")
+        wire.debug('%s "POST %s HTTP/1.1" 200 0', "https://api.telegram.org:443",
+                   "/bot123456:ABCSECRETTOKEN/sendMessage")
+        logging.getLogger("some.library").debug("posting to %s",
+                                                "https://discord.com/api/webhooks/123/SUPERSECRETTOKEN")
+        try:
+            raise ConnectionError("POST /bot123456:ABCSECRETTOKEN/sendMessage failed")
+        except ConnectionError:
+            logging.getLogger("some.library").exception("request failed")
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(cli, "set_kill_switch", kill_while_libraries_log)
+    cfg = write_config(tmp_path)
+    code, out, err = run(capsys, "-v", "-c", str(cfg), "kill")
+
+    log = (tmp_path / "logs" / "bot.log").read_text(encoding="utf-8")
+    assert code == 0
+    assert "some.library" in log and "request failed" in log  # debug logs are still written ...
+    for text in (out, err, log):
+        assert "SECRETTOKEN" not in text  # ... with the secrets masked
+
+
+def test_kill_and_flatten_say_a_github_actions_deployment_keeps_trading(capsys, tmp_path, monkeypatch):
+    # The KILL file is written on this machine; the Actions runner restores its
+    # state from the Actions cache and never sees it.
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    cfg = write_config(tmp_path)
+    _, out, _ = run(capsys, "-c", str(cfg), "kill", "--reason", "vacation")
+    assert "GitHub Actions" in out and "TRADING_BOT_ENABLED" in out
+    run(capsys, "-c", str(cfg), "resume")
+    _, out, _ = run(capsys, "-c", str(cfg), "flatten", "--yes")
+    assert "GitHub Actions" in out and "TRADING_BOT_ENABLED" in out
+
+
+def test_kill_on_the_actions_runner_itself_does_not_add_the_note(capsys, tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setattr(cli, "_check_ci_state_dir", lambda cfg: None)
+    cfg = write_config(tmp_path)
+    _, out, _ = run(capsys, "-c", str(cfg), "kill")
+    assert "TRADING_BOT_ENABLED" not in out
+
+
+def test_readme_says_kill_does_not_pause_a_github_actions_deployment():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    section = readme[readme.index("## 7."):readme.index("### Live")]
+    assert "TRADING_BOT_ENABLED" in section and "GitHub Actions" in section

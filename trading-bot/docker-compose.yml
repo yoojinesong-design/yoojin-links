@@ -1,13 +1,17 @@
 # docker compose up -d        start in the background (restarts after reboots)
 # docker compose logs -f      watch what it is doing
+# docker compose restart      apply config edits (configs/ is mounted, no rebuild needed)
 # docker compose down         stop
+# After changing code or requirements.txt: docker compose up -d --build
 services:
   trading-bot:
     build: .
     restart: unless-stopped
     env_file: .env
-    # Change the config here: configs/stocks.yaml, configs/crypto.yaml or your own.
+    # Change the config here: configs/stocks.yaml, configs/crypto.yaml or your own
+    # file inside configs/ (e.g. configs/my.yaml).
     command: ["-c", "configs/stocks.yaml", "run"]
     volumes:
+      - ./configs:/app/configs:ro
       - ./state:/app/state
       - ./logs:/app/logs
