@@ -47,6 +47,8 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     for name in SECRET_ENV:
         monkeypatch.delenv(name, raising=False)
+    # CI sets this; the CLI's Actions-only checks would reject tmp_path state dirs.
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     monkeypatch.setattr(cli, "LIVE_START_DELAY_SECONDS", 0)
 
 
