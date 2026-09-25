@@ -467,13 +467,37 @@ def test_daily_loss_limit_disabled_allows_entries():
     assert entries == {"A": day(1), "B": day(2)}
 
 
-def test_daily_loss_limit_flattens_at_next_open_when_configured():
+def test_daily_loss_limit_flattens_where_the_bar_crosses_it_when_configured():
+    # 50 A from 100 to a low of 90: the account crosses -3% (9,700) at 94, where
+    # the live engine, checking on every tick, sells.
     cfg = config(risk={"max_daily_loss_pct": 3.0, "max_position_pct": 50.0, "flatten_on_daily_loss": True})
     result = run_backtest(Scripted({(1.0, day(0)): BUY}), loss_day_data(), cfg)
     (trade,) = result.trades
     assert trade.exit_reason == "daily_loss_limit"
-    assert trade.exit_time == day(2)
-    assert trade.exit_price == 90.0
+    assert trade.exit_time == day(1)
+    assert trade.exit_price == pytest.approx(94.0)
+
+
+def test_a_dip_through_the_daily_loss_limit_that_recovers_by_the_close_still_flattens():
+    # 90 A bought at 100 (90% of 10,000); the next day dips to 95 (-4.5% of the
+    # account) and closes at 99.5 (-0.45%), then A rallies to 110. The live
+    # engine sells in the dip, where the account crosses -3%: at 96.67.
+    data = {"A": bars([100, 100, (100, 100.5, 95, 99.5), 110, 110])}
+    cfg = config(risk={"max_daily_loss_pct": 3.0, "max_position_pct": 90.0, "flatten_on_daily_loss": True})
+    result = run_backtest(Scripted({day(0): BUY}), data, cfg)
+    (trade,) = result.trades
+    assert (trade.exit_reason, trade.exit_time) == ("daily_loss_limit", day(2))
+    assert trade.exit_price == pytest.approx(96.0 + 2 / 3)
+    assert result.metrics["final_equity"] == pytest.approx(9_700.0)
+
+
+def test_a_dip_through_the_daily_loss_limit_inside_a_bar_halts_later_entries_that_day():
+    a = bars([100, 100, (100, 100, 92, 99.5)] + [99.5] * 3, freq="1h", tag=1)  # -4% of the account at the low
+    b = bars([50] * 6, freq="1h", tag=2)
+    script = {(1.0, hour(0)): BUY, (2.0, hour(2)): BUY}
+    cfg = config(risk={"max_daily_loss_pct": 3.0, "max_position_pct": 50.0}, timeframe="1h")
+    result = run_backtest(Scripted(script), {"A": a, "B": b}, cfg)
+    assert [t.symbol for t in result.trades] == ["A"]
 
 
 def test_daily_loss_limit_cancels_buys_still_waiting_for_their_open():
@@ -955,3 +979,17 @@ def test_summary_shows_the_warm_up_and_the_trading_period():
     text = run_backtest(Scripted({day(10): BUY}, min_bars=11), data, config()).summary()
     assert "2024-01-01 -> 2024-01-15 (15 bars)" in text
     assert "2024-01-12 -> 2024-01-15" in text and "11 warm-up bars" in text
+
+
+# --------------------------------------------------------------------------- regression: the floor before the target
+
+
+def test_a_bar_through_the_take_profit_and_the_daily_loss_floor_counts_the_floor_first():
+    # Bought at 100 with the whole account; the next bar spans 96..111: the
+    # order of its low and high is unknown, so the low (the floor) comes first.
+    data = {"A": bars([100, (100, 111, 96, 105), 105])}
+    cfg = config(risk={"max_daily_loss_pct": 3.0, "flatten_on_daily_loss": True, "take_profit_pct": 10.0})
+    result = run_backtest(Scripted({day(0): BUY}), data, cfg)
+    (trade,) = result.trades
+    assert (trade.exit_reason, trade.exit_time) == ("daily_loss_limit", day(1))
+    assert trade.exit_price == pytest.approx(97.0)  # where the account crossed -3%

@@ -34,6 +34,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
+from alpaca.common.enums import Sort
 from alpaca.common.exceptions import APIError
 from alpaca.data.enums import Adjustment, DataFeed
 from alpaca.data.historical.stock import StockHistoricalDataClient
@@ -45,7 +46,7 @@ from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
 
 from ..models import BAR_COLUMNS, Account, OrderRequest, OrderResult, Position, Side
 from ..utils import timeframe_to_timedelta, utcnow, validate_bars
-from .base import BOT_ORDER_PREFIX, Broker, BrokerError, OpenOrder
+from .base import ALPACA_TRADING_DAY_TIMEZONE, BOT_ORDER_PREFIX, Broker, BrokerError, OpenOrder
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,7 @@ _SESSION_CLOSE_MINUTE = 16 * 60
 FRACTIONAL_DECIMALS = 6    # fractionable assets are traded in 1e-6 share steps
 _FRACTIONAL_STEP = 10.0 ** -FRACTIONAL_DECIMALS
 _ORDER_DECIMALS = 9        # Alpaca accepts quantities with up to 9 decimals
+_RECENT_ORDERS = 100       # latest orders searched for the bot's newest (latest_bot_order_id)
 
 
 def lookback_start(timeframe: str, limit: int, now: datetime) -> datetime:
@@ -165,6 +167,7 @@ def map_order_status(status: Any) -> str:
 
 class AlpacaBroker(Broker):
     name = "alpaca"
+    trading_day_timezone = ALPACA_TRADING_DAY_TIMEZONE  # last_equity is the previous New York close
 
     def __init__(self, api_key: str, secret_key: str, paper: bool = True, data_feed: str = "iex",
                  trading_client=None, data_client=None) -> None:
@@ -262,6 +265,11 @@ class AlpacaBroker(Broker):
                 if price is None:
                     value = _to_float(getattr(p, "market_value", None))
                     price = value / qty if value is not None else entry
+                if _enum_value(getattr(p, "asset_class", "")) == "us_option":
+                    # Quoted per share; market_value and cost_basis carry the x100 contract multiplier.
+                    value = _to_float(getattr(p, "market_value", None))
+                    cost = _to_float(getattr(p, "cost_basis", None))
+                    price, entry = (value / qty if value else price), (cost / qty if cost else entry)
                 target = shorts if short else positions
                 target[str(p.symbol)] = Position(symbol=str(p.symbol), qty=-abs(qty) if short else qty,
                                                  avg_entry_price=entry, market_price=abs(price))
@@ -346,6 +354,11 @@ class AlpacaBroker(Broker):
             return [_open_order(o, symbol) for o in self._trading.get_orders(request) or []]
 
     def order_filled_qty(self, symbol: str, client_order_id: str, order_id: str = "") -> float | None:
+        """A lookup that fails (5xx, 429, a timeout, a dropped connection)
+        raises BrokerError like an order still working: the engine keeps it
+        pending and looks again next tick, rather than guessing from how the
+        holding changed (a trade by hand in the meantime would be counted as
+        the bot's). 404: Alpaca never received it, so nothing filled."""
         key = order_id or client_order_id
         if not key:
             return None
@@ -357,11 +370,10 @@ class AlpacaBroker(Broker):
         except APIError as exc:
             if _status_code(exc) == 404:  # Alpaca never received it
                 return 0.0
-            logger.warning("Alpaca: could not look up order %s (%s): %s", key, symbol, _api_error_text(exc))
-            return None
+            raise BrokerError(f"Alpaca could not look up order {key} ({symbol}): {_api_error_text(exc)}") from exc
         except Exception as exc:
-            logger.warning("Alpaca: could not look up order %s (%s): %s: %s", key, symbol, type(exc).__name__, exc)
-            return None
+            raise BrokerError(f"Alpaca could not look up order {key} ({symbol}): "
+                              f"{type(exc).__name__}: {exc}") from exc
         status = _enum_value(_field(placed, "status"))
         if status not in _FINISHED_STATUSES:
             raise BrokerError(f"Alpaca order {key} ({symbol}) is still {status or 'working'}")
@@ -369,6 +381,13 @@ class AlpacaBroker(Broker):
         if status == "filled" and not filled:  # "filled" without a fill quantity: all of it
             return max(_to_float(_field(placed, "qty")) or 0.0, 0.0)
         return filled
+
+    def latest_bot_order_id(self) -> str | None:
+        """From the account's latest orders (newest first, whoever placed them)."""
+        request = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=_RECENT_ORDERS, direction=Sort.DESC)
+        with _vendor_errors("get_orders(recent)"):
+            ids = [str(_field(o, "client_order_id") or "") for o in self._trading.get_orders(request) or []]
+        return next((cid for cid in ids if cid.startswith(BOT_ORDER_PREFIX)), None)
 
     def cancel_order(self, symbol: str, order_id: str) -> None:
         _require_stock_symbol(symbol)

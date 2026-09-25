@@ -22,6 +22,14 @@ logger = logging.getLogger(__name__)
 KILL_FILE = "KILL"
 # The bot's state file inside ``state_dir`` (shared by the CLI, deploy scripts and docs).
 STATE_FILE = "bot_state.json"
+# The fields that record what the bot bought in one account (see BotState.other_ledgers).
+ACCOUNT_LEDGER = ("owned", "unsettled", "pending_orders", "seen_holdings", "recent_order_ids")
+# How many of the bot's latest client order ids the state keeps (recent_order_ids).
+MAX_RECENT_ORDER_IDS = 100
+
+
+class CorruptStateError(ValueError):
+    """The state file exists but its content cannot be used. It is left in place."""
 
 
 @dataclass
@@ -35,8 +43,8 @@ class BotState:
     last_tick_at: str | None = None
     # Which account the daily fields belong to (mode, broker, currency). When it
     # changes (e.g. a paper -> live switch on the same state_dir) the daily
-    # counters, loss baseline and the fields below start over instead of
-    # mixing two accounts.
+    # counters and loss baseline start over, and the record of what the bot
+    # bought (ACCOUNT_LEDGER) is swapped for that account's (other_ledgers).
     account_key: str | None = None
     # What the bot itself bought in this account, from its own orders:
     # symbol -> {"qty", "avg_entry_price"}. Only this much of a holding is
@@ -60,11 +68,21 @@ class BotState:
     # part of), as last seen. A later change of quantity at an unchanged cost
     # (qty x average price) is a stock split: ``owned`` is rescaled with it.
     seen_holdings: dict[str, list[float]] = field(default_factory=dict)
+    # The client order ids of the bot's latest orders in this account (oldest
+    # first, at most MAX_RECENT_ORDER_IDS), booked before each order goes out.
+    # A newer order of the bot's at the broker means this state is older than
+    # the account (e.g. a GitHub Actions cache save that failed): not traded on.
+    recent_order_ids: list[str] = field(default_factory=list)
     # Holdings the bot does not manage that it already sent a notice about.
     notified_unmanaged: list[str] = field(default_factory=list)
     # Symbols it already warned have too little history to ever trade (kept
     # here so that separate `once` runs do not repeat the notice).
     warned_short_history: list[str] = field(default_factory=list)
+    # True once a tick with this state has looked at the account's holdings
+    # (not only at a closed market): until then a holding it has no record of
+    # is reported as "no record" (a first run, or a lost state), not as "not
+    # bought by the bot".
+    holdings_checked: bool = False
     # Money that moved in or out of the account today without the bot trading
     # (a deposit, a withdrawal, a trade in an asset the bot does not value),
     # added to day_start_equity so the daily loss limit only sees trading.
@@ -73,6 +91,11 @@ class BotState:
     # today: the reference those flows are measured against (None: none yet).
     flow_cash: float | None = None
     flow_holdings: dict[str, list[float]] = field(default_factory=dict)
+    # What the bot bought in the other accounts this state was used with, by
+    # account_key: {field: value} for the ACCOUNT_LEDGER fields. Switching
+    # back (e.g. live -> paper -> live) restores that account's record, so
+    # the positions the bot bought there keep their stop-loss.
+    other_ledgers: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -85,6 +108,8 @@ class BotState:
             raise ValueError(f"state must be a JSON object, got {type(data).__name__}")
         known = {f.name for f in fields(cls)}
         values = {k: v for k, v in data.items() if k in known}
+        if "holdings_checked" not in data:  # a state saved before this field existed
+            values["holdings_checked"] = data.get("last_tick_at") is not None
         state = cls(**values)
         _check_types(state)
         if state.day_start_equity is not None:
@@ -96,6 +121,7 @@ class BotState:
         state.owned = {s: {"qty": float(e["qty"]), "avg_entry_price": float(e["avg_entry_price"])}
                        for s, e in state.owned.items()}
         state.unsettled = list(state.unsettled)
+        state.recent_order_ids = list(state.recent_order_ids)
         state.pending_orders = {cid: {"symbol": e["symbol"], "side": e["side"], "qty": float(e["qty"]),
                                       "booked": float(e["booked"]), "held": float(e["held"]),
                                       "order_id": e["order_id"]}
@@ -104,7 +130,14 @@ class BotState:
         state.notified_unmanaged = list(state.notified_unmanaged)
         state.warned_short_history = list(state.warned_short_history)
         state.flow_holdings = {s: [float(v) for v in pair] for s, pair in state.flow_holdings.items()}
+        state.other_ledgers = {key: _ledger(value) for key, value in state.other_ledgers.items()}
         return state
+
+
+def _ledger(data: Mapping[str, Any]) -> dict[str, Any]:
+    """One account's record (the ACCOUNT_LEDGER fields), checked like the state's own."""
+    part = BotState.from_dict({name: data[name] for name in ACCOUNT_LEDGER if name in data})
+    return {name: getattr(part, name) for name in ACCOUNT_LEDGER}
 
 
 def _check_types(state: BotState) -> None:
@@ -123,8 +156,9 @@ def _check_types(state: BotState) -> None:
         value = getattr(state, name)
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             fail(name, value)
-    if not isinstance(state.halted_today, bool):
-        fail("halted_today", state.halted_today)
+    for name in ("halted_today", "holdings_checked"):
+        if not isinstance(getattr(state, name), bool):
+            fail(name, getattr(state, name))
     bars = state.last_signal_bar
     if not isinstance(bars, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in bars.items()):
         fail("last_signal_bar", bars)
@@ -133,7 +167,7 @@ def _check_types(state: BotState) -> None:
             isinstance(k, str) and isinstance(v, dict) and set(v) == {"qty", "avg_entry_price"}
             and all(_finite(x) and x > 0 for x in v.values()) for k, v in owned.items()):
         fail("owned", owned)
-    for name in ("unsettled", "notified_unmanaged", "warned_short_history"):
+    for name in ("unsettled", "recent_order_ids", "notified_unmanaged", "warned_short_history"):
         value = getattr(state, name)
         if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
             fail(name, value)
@@ -153,6 +187,10 @@ def _check_types(state: BotState) -> None:
             isinstance(k, str) and isinstance(v, list) and len(v) == 2 and all(_finite(x) for x in v)
             for k, v in held.items()):
         fail("flow_holdings", held)
+    ledgers = state.other_ledgers
+    if not isinstance(ledgers, dict) or not all(
+            isinstance(k, str) and isinstance(v, dict) and set(v) <= set(ACCOUNT_LEDGER) for k, v in ledgers.items()):
+        fail("other_ledgers", ledgers)
 
 
 _PENDING_KEYS = {"symbol", "side", "qty", "booked", "held", "order_id"}
@@ -169,9 +207,10 @@ class StateStore:
         self.path = Path(path)
 
     def load(self) -> BotState:
-        """Missing file -> fresh state. Unreadable/corrupt content -> the file
-        is moved aside to ``<name>.corrupt-<n>``, a warning is logged and a
-        fresh state is returned. Other I/O errors (e.g. permissions) raise."""
+        """Missing file -> fresh state. Content that cannot be used raises
+        :class:`CorruptStateError` and the file is left in place (a fresh state
+        would forget what the bot bought: its positions would lose their
+        stop-loss). Other I/O errors (e.g. permissions) raise as they are."""
         try:
             raw = self.path.read_bytes()
         except FileNotFoundError:
@@ -179,10 +218,9 @@ class StateStore:
         try:
             return BotState.from_dict(json.loads(raw.decode("utf-8")))
         except (ValueError, TypeError) as exc:  # incl. JSONDecodeError, UnicodeDecodeError
-            backup = self._quarantine()
-            logger.warning("State file %s is corrupt (%s); moved to %s and starting fresh",
-                           self.path, exc, backup or "<could not move>")
-            return BotState()
+            raise CorruptStateError(
+                f"state file {self.path} is corrupt ({exc}); fix it, or delete it to start over (the bot then "
+                "forgets what it bought, so those positions get no stop-loss)") from exc
 
     def save(self, state: BotState) -> None:
         """Write atomically: temp file in the same directory, fsync, os.replace.
@@ -190,17 +228,6 @@ class StateStore:
         than being persisted as invalid JSON."""
         payload = json.dumps(state.to_dict(), indent=2, sort_keys=True, allow_nan=False)
         _atomic_write_text(self.path, payload + "\n")
-
-    def _quarantine(self) -> Path | None:
-        n = 1
-        while (backup := self.path.with_name(f"{self.path.name}.corrupt-{n}")).exists():
-            n += 1
-        try:
-            os.replace(self.path, backup)
-        except OSError as exc:
-            logger.error("Could not move corrupt state file %s aside: %s", self.path, exc)
-            return None
-        return backup
 
 
 def _atomic_write_text(path: Path, text: str) -> None:
@@ -291,9 +318,12 @@ def kill_switch_reason(state_dir: Path) -> str | None:
 
 
 __all__ = [
+    "ACCOUNT_LEDGER",
     "KILL_FILE",
+    "MAX_RECENT_ORDER_IDS",
     "STATE_FILE",
     "BotState",
+    "CorruptStateError",
     "StateStore",
     "give_default_permissions",
     "kill_switch_active",

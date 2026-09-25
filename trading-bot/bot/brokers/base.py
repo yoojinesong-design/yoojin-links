@@ -14,6 +14,9 @@ from ..utils import floor_to_step
 # Every client order id the engine sends starts with this, so the bot can tell
 # its own working orders from ones a person placed on the same account.
 BOT_ORDER_PREFIX = "bot-"
+# The trading day of Alpaca's day start equity (last_equity: the previous
+# New York close), whatever `timezone` the config sets.
+ALPACA_TRADING_DAY_TIMEZONE = "America/New_York"
 
 
 class BrokerError(Exception):
@@ -48,6 +51,10 @@ class Broker(ABC):
     # real brokerage/exchange account (False) the engine manages and sells
     # only what it bought itself; see BotState.owned.
     bot_owned_account: bool = False
+    # The time zone of the trading day the broker's own day start equity
+    # (Account.day_start_equity) belongs to; None when it reports none. The
+    # engine's daily limits then follow this day, not the configured timezone.
+    trading_day_timezone: str | None = None
 
     # ---- market data -------------------------------------------------------
     @abstractmethod
@@ -107,6 +114,14 @@ class Broker(ABC):
         id the bot sent): 0.0 for an order the broker never received. None when
         the broker cannot tell (the engine then goes by how the holding
         changed). Raises BrokerError while the order is still working."""
+        return None
+
+    def latest_bot_order_id(self) -> str | None:
+        """The client order id of the newest order on the account that this
+        bot placed (it starts with BOT_ORDER_PREFIX), from the broker's own
+        order history; None when there is none or the broker cannot tell.
+        The engine checks it against the orders its state knows, so a state
+        file older than the account (a save that was lost) is not traded on."""
         return None
 
     def cancel_order(self, symbol: str, order_id: str) -> None:

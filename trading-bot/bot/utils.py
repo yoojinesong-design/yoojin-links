@@ -29,14 +29,16 @@ def timeframe_to_timedelta(timeframe: str) -> timedelta:
 def bars_per_year(timeframe: str, trading_days_per_year: int = 365) -> float:
     """Number of bars in a year, for annualising returns/Sharpe.
 
-    Stocks trade ~252 days a year with a ~6.5h session, crypto 365 x 24h.
-    For intraday stock bars this is an approximation.
+    Crypto trades 365 x 24h. Stocks trade ~252 days a year with a 6.5h
+    (390-minute) session, which holds a whole number of bars, the last one
+    short: 7 1h bars and 2 4h bars a day (as the Alpaca adapter builds them).
     """
     td = timeframe_to_timedelta(timeframe)
     if td >= timedelta(days=1):
         return trading_days_per_year / (td / timedelta(days=1))
-    hours_per_day = 24.0 if trading_days_per_year >= 365 else 6.5
-    return trading_days_per_year * hours_per_day * 3600.0 / td.total_seconds()
+    if trading_days_per_year >= 365:
+        return trading_days_per_year * 86_400.0 / td.total_seconds()
+    return trading_days_per_year * math.ceil(390 * 60 / td.total_seconds())
 
 
 def utcnow() -> datetime:

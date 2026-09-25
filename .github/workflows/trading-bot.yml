@@ -2,6 +2,21 @@
 # without a server. It does NOTHING until you set the repository variable
 # TRADING_BOT_ENABLED=true (Settings > Secrets and variables > Actions > Variables).
 # Setup: trading-bot/README.md, section "GitHub Actions".
+#
+# Before you trade real money from here, know that:
+# - in a PUBLIC repository anyone can read every run's log and download its
+#   logs artifact: your equity, positions and every order. Use a private repo.
+# - GitHub switches schedules off in a public repository after 60 days without
+#   a commit. The bot then stops checking stop-losses, and cannot tell you.
+# - the bot's memory (what it bought) lives in the Actions cache, which GitHub
+#   deletes after 7 days without a run. A run that finds no saved state fails
+#   (see "Restore bot state") instead of forgetting what the bot bought. A run
+#   whose state could not be saved fails too ("Check the bot state was saved"),
+#   and the next run then gets an older state back: the bot sees in the
+#   broker's order history that it is out of date and places no orders at all
+#   (Alpaca) until you start over with fresh_state (README section 4).
+# - it runs only on the default branch: a run on another branch would keep its
+#   state in a cache that the scheduled runs never see.
 name: trading-bot
 
 on:
@@ -12,6 +27,11 @@ on:
     # scheduled runs a few minutes late.
     - cron: "*/15 13-20 * * 1-5"
   workflow_dispatch:
+    inputs:
+      fresh_state:
+        description: "Start from a blank bot state, dropping any saved one (the first run, or after it was lost or out of date)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -23,7 +43,9 @@ concurrency:
 
 jobs:
   tick:
-    if: vars.TRADING_BOT_ENABLED == 'true'
+    if: >-
+      vars.TRADING_BOT_ENABLED == 'true' &&
+      (github.event_name == 'schedule' || github.ref_name == github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -42,15 +64,23 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      # The bot keeps a little state between ticks (today's trade count, the
-      # last bar it acted on, the daily-loss baseline). Each run is a fresh
-      # machine, so carry it over in the Actions cache.
+      # The bot keeps a little state between ticks (what it bought, today's
+      # trade count, the last bar it acted on, the daily-loss baseline). Each
+      # run is a fresh machine, so carry it over in the Actions cache. No saved
+      # state (never saved, or deleted by GitHub after 7 days unused) FAILS the
+      # run: a blank state would forget what the bot bought, and those
+      # positions would lose their stop-loss for good. Run it by hand with
+      # "fresh_state" ticked (which skips this step) only for the very first
+      # run, or to start over (README section 4).
       - name: Restore bot state
+        id: restore
+        if: ${{ !inputs.fresh_state }}
         uses: actions/cache/restore@v4
         with:
           path: trading-bot/state
           key: trading-bot-state-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: trading-bot-state-
+          fail-on-cache-miss: true
 
       - name: Run one trading tick
         env:
@@ -68,11 +98,23 @@ jobs:
         run: python -m bot -c "$CONFIG" once
 
       - name: Save bot state
-        if: always()
+        # Never after a failed restore: a blank state would become the newest cache.
+        if: always() && (steps.restore.outputs.cache-matched-key != '' || inputs.fresh_state)
         uses: actions/cache/save@v4
         with:
           path: trading-bot/state
           key: trading-bot-state-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # actions/cache/save only WARNS when the upload fails, and the next run
+      # would then restore an older state without a word. Fail loudly instead.
+      - name: Check the bot state was saved
+        if: always() && (steps.restore.outputs.cache-matched-key != '' || inputs.fresh_state)
+        uses: actions/cache/restore@v4
+        with:
+          path: trading-bot/state
+          key: trading-bot-state-${{ github.run_id }}-${{ github.run_attempt }}
+          lookup-only: true
+          fail-on-cache-miss: true
 
       - name: Upload logs
         if: always()

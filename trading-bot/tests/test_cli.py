@@ -148,6 +148,8 @@ def test_strategies_lists_every_strategy_with_defaults_and_warmup(capsys):
     assert "fast=20, slow=50" in out
     assert "needs 201 bars" in out  # rsi_reversion warm-up
     assert "Trend following" in out
+    hint = next(line for line in out.splitlines() if "test it before trading" in line)
+    assert "-c configs/" in hint  # without a config the command fails (no ./config.yaml)
 
 
 def test_no_command_prints_help_and_usage_exit_code(capsys):
@@ -250,9 +252,11 @@ def test_default_config_yaml_in_the_working_directory_is_used(capsys, tmp_path):
 def test_invalid_yaml_is_a_config_error(capsys, tmp_path):
     bad = tmp_path / "bad.yaml"
     bad.write_text("mode: [paper\n", encoding="utf-8")
-    code, _, err = run(capsys, "-c", str(bad), "kill")
+    code, _, err = run(capsys, "-c", str(bad), "once")
     assert code == 2
     assert "YAML" in err
+    code, _, err = run(capsys, "-c", str(bad), "kill")  # the emergency stop still works (default state_dir)
+    assert code == 0 and "YAML" in err and (tmp_path / "state" / KILL_FILE).exists()
 
 
 # --------------------------------------------------------------------------- kill / resume
@@ -326,7 +330,7 @@ def test_flatten_with_yes_sells_every_paper_position(capsys, tmp_path):
     code, out, _ = run(capsys, "-c", str(cfg), "flatten", "--yes")
     assert code == 0
     assert "SELL 5 DEMO1: filled" in out and "SELL 5 DEMO2: filled" in out
-    assert "2 of 2 sell order(s) sent" in out
+    assert "2 of 2 close order(s) sent" in out
     assert "kill" in out  # hint: the bot may buy again
     assert paper_broker(tmp_path).get_positions() == {}
 
@@ -709,7 +713,7 @@ def test_backtest_alpaca_data_annualises_with_252_days(capsys, tmp_path, monkeyp
     assert code == 0
     bt = captured["cfg"]
     assert bt.trading_days_per_year == 252
-    assert (bt.timeframe, bt.lookback, bt.timezone) == ("1d", 300, "UTC")
+    assert (bt.timeframe, bt.lookback, bt.timezone) == ("1d", 300, "America/New_York")  # Alpaca's trading day
     assert (bt.fee_pct, bt.slippage_pct, bt.starting_cash) == (0.1, 0.05, 10000.0)
 
 
@@ -928,6 +932,15 @@ def test_flatten_help_says_it_is_account_wide_on_alpaca(capsys):
     code, out, _ = run(capsys, "flatten", "-h")
     assert code == 0
     assert "Alpaca" in out and "account" in out
+    assert "short" in " ".join(out.split())  # Alpaca also buys back a short position
+
+
+def test_flatten_warns_that_it_also_sells_what_the_bot_did_not_buy_on_an_exchange(capsys, tmp_path):
+    code, _, err = run(capsys, "-c", str(write_config(tmp_path)), "flatten")
+    assert code == 2
+    assert "exchange" in err and "coins" in err and "did not buy" in err
+    _, out, _ = run(capsys, "flatten", "-h")
+    assert "exchange" in out
 
 
 class _FakeMsvcrt:
@@ -992,6 +1005,23 @@ def test_kill_and_resume_still_work_when_the_config_no_longer_validates(capsys, 
 
     code, out, _ = run(capsys, "-c", str(cfg), "resume")
     assert code == 0 and not kill_file.exists()
+
+
+def test_kill_still_works_after_a_yaml_indentation_mistake(capsys, tmp_path):
+    # The most common editing slip: one risk key indented by one space.
+    path = tmp_path / "configs" / "my.yaml"
+    path.parent.mkdir()
+    text = (ROOT / "configs" / "demo.yaml").read_text(encoding="utf-8")
+    assert "\n  max_open_positions:" in text
+    path.write_text(text.replace("\n  max_open_positions:", "\n max_open_positions:"), encoding="utf-8")
+    kill_file = tmp_path / "state" / "demo" / KILL_FILE  # demo.yaml: state_dir: ../state/demo
+
+    code, out, err = run(capsys, "-c", str(path), "kill")
+    assert code == 0 and kill_file.exists()
+    assert "not valid YAML" in err and str(kill_file.resolve()) in out
+    _, _, err = run(capsys, "-c", str(path), "status")
+    assert str(kill_file.resolve()) in err
+    assert run(capsys, "-c", str(path), "resume")[0] == 0 and not kill_file.exists()
 
 
 @pytest.mark.parametrize("command", [["flatten", "--yes"], ["status"]])
@@ -1106,6 +1136,34 @@ def test_once_on_github_actions_refuses_a_state_dir_the_workflow_does_not_keep(c
     assert "GitHub Actions" in err and "state_dir" in err
 
 
+def test_the_actions_workflow_never_trades_or_saves_from_a_lost_state():
+    # GitHub deletes a cache unused for 7 days: a blank state would forget what
+    # the bot bought (no stop-loss) and, once saved, shadow the good cache.
+    path = ROOT.parent / ".github" / "workflows" / "trading-bot.yml"
+    if not path.exists():
+        pytest.skip("the workflow lives outside this folder")
+    workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+    steps = {step.get("name"): step for step in workflow["jobs"]["tick"]["steps"]}
+    restore = steps["Restore bot state"]
+    assert restore["if"] == "${{ !inputs.fresh_state }}" and restore["with"]["fail-on-cache-miss"] is True
+    assert "steps.restore.outputs.cache-matched-key != ''" in steps["Save bot state"]["if"]
+
+
+def test_the_actions_workflow_fails_when_the_state_was_not_saved_and_runs_on_one_branch_only():
+    # A failed cache save only warns; the next run would restore an older state.
+    path = ROOT.parent / ".github" / "workflows" / "trading-bot.yml"
+    if not path.exists():
+        pytest.skip("the workflow lives outside this folder")
+    workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+    job = workflow["jobs"]["tick"]
+    names = [step.get("name") for step in job["steps"]]
+    check = job["steps"][names.index("Check the bot state was saved")]
+    assert names.index("Check the bot state was saved") > names.index("Save bot state")
+    assert check["with"]["key"] == job["steps"][names.index("Save bot state")]["with"]["key"]
+    assert check["with"]["lookup-only"] is True and check["with"]["fail-on-cache-miss"] is True
+    assert "github.event.repository.default_branch" in job["if"]
+
+
 @pytest.mark.parametrize("name", ["demo.yaml", "stocks.yaml", "crypto.yaml"])
 def test_shipped_configs_pass_the_github_actions_state_dir_check(name, monkeypatch):
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
@@ -1117,10 +1175,26 @@ def test_status_lists_holdings_the_bot_did_not_buy(capsys, tmp_path, monkeypatch
     fake = FakeBroker(positions={"DEMO1": Position("DEMO1", 7.0, 90.0, 100.0),
                                  "DEMO2": Position("DEMO2", 3.0, 90.0, 100.0)})
     monkeypatch.setattr("bot.brokers.make_broker", lambda cfg, env=None: fake)
-    StateStore(tmp_path / "state" / cli.STATE_FILE).save(BotState(
-        account_key="paper:sim::USD", owned={"DEMO2": {"qty": 3.0, "avg_entry_price": 90.0}}))
+    store = StateStore(tmp_path / "state" / cli.STATE_FILE)
+    store.save(BotState(account_key="paper:sim::USD", owned={"DEMO2": {"qty": 3.0, "avg_entry_price": 90.0}},
+                        holdings_checked=True))
     code, out, _ = run(capsys, "-c", str(cfg), "status")
     assert code == 0
+    line = next(line for line in out.splitlines() if "Not bought by this bot" in line)
+    assert "DEMO1 7" in line and "DEMO2" not in line
+    store.save(BotState(account_key="paper:sim::USD", last_tick_at="2026-09-24T14:00:00+00:00"))  # a lost state
+    _, out, _ = run(capsys, "-c", str(cfg), "status")  # that has only seen a closed market since
+    assert "No record of the bot buying these" in out and "Not bought by this bot" not in out
+
+
+def test_status_counts_what_the_bot_bought_in_this_account_after_it_ran_on_another(capsys, tmp_path, monkeypatch):
+    cfg = write_config(tmp_path)  # paper; the bot last ran with a live config on the same state folder
+    fake = FakeBroker(positions={"DEMO1": Position("DEMO1", 7.0, 90.0, 100.0),
+                                 "DEMO2": Position("DEMO2", 3.0, 90.0, 100.0)})
+    monkeypatch.setattr("bot.brokers.make_broker", lambda cfg, env=None: fake)
+    StateStore(tmp_path / "state" / cli.STATE_FILE).save(BotState(account_key="live:sim::USD", other_ledgers={
+        "paper:sim::USD": {"owned": {"DEMO2": {"qty": 3.0, "avg_entry_price": 90.0}}}}, holdings_checked=True))
+    _, out, _ = run(capsys, "-c", str(cfg), "status")
     line = next(line for line in out.splitlines() if "Not bought by this bot" in line)
     assert "DEMO1 7" in line and "DEMO2" not in line
 
@@ -1184,3 +1258,25 @@ def test_readme_says_kill_does_not_pause_a_github_actions_deployment():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     section = readme[readme.index("## 7."):readme.index("### Live")]
     assert "TRADING_BOT_ENABLED" in section and "GitHub Actions" in section
+
+
+# --------------------------------------------------------------------------- regression: review round 2
+
+
+def test_an_alpaca_backtest_counts_new_york_days_whatever_the_configured_timezone(capsys, tmp_path, monkeypatch):
+    # The live bot on Alpaca counts New York days: a Seoul midnight falls mid-session.
+    cfg = write_config(tmp_path, symbols=["SPY"], broker={"type": "alpaca"}, timeframe="1d", timezone="Asia/Seoul",
+                       strategy={"name": "sma_crossover", "params": {"fast": 5, "slow": 20}})
+    captured = capture_backtest_config(monkeypatch)
+    code, out, _ = run(capsys, "-c", str(cfg), "backtest", "--synthetic", "--bars", "200", "--out", str(tmp_path / "o"))
+    assert code == 0
+    assert captured["cfg"].timezone == "America/New_York" and "America/New_York days" in out
+
+
+def test_the_run_banner_shows_the_trading_day_the_daily_limits_really_use(tmp_path):
+    args = argparse.Namespace(config="x.yaml")
+    alpaca = write_config(tmp_path, name="a.yaml", symbols=["SPY"], broker={"type": "alpaca"}, timezone="Asia/Seoul")
+    (row,) = [line for line in cli._banner(load_config(alpaca, env={}), args).splitlines() if "Trading day" in line]
+    assert "America/New_York" in row and "Seoul" not in row
+    sim = write_config(tmp_path, name="s.yaml", timezone="Asia/Seoul")
+    assert "Asia/Seoul" in cli._banner(load_config(sim, env={}), args)

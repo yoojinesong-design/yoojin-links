@@ -66,6 +66,8 @@ notify:
 # the account, even in the symbols above (e.g. BTC you bought yourself), are left alone and
 # the bot does not buy more of them. true = let the bot manage them too, which
 # means its stop-loss and strategy may SELL them. 봇은 자기가 산 것만 팔아요.
+# Exception: the manual `flatten --yes` command sells the whole balance of each symbol,
+# yours too, and cancels the open orders on them.
 # adopt_existing_positions: false
 
 state_dir: ../state/crypto

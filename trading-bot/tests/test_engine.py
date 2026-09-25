@@ -1507,7 +1507,8 @@ def test_holding_the_bot_did_not_buy_is_never_sold(tmp_path):
                                      flatten_on_daily_loss=True))
     h.buy("AAA", 50)
     h.feed.prices["AAA"] = 50.0
-    h.save_state(day=TODAY, day_start_equity=100_000.0)  # the day's loss limit is hit: flatten
+    # A state the bot has run with before; the day's loss limit is hit: flatten.
+    h.save_state(day=TODAY, day_start_equity=100_000.0, last_tick_at=T0.isoformat(), holdings_checked=True)
 
     report = h.tick()
 
@@ -2076,3 +2077,346 @@ def test_a_sell_the_broker_reports_filled_is_booked_by_what_filled(tmp_path):
         h.clock.advance(minutes=5)
         assert h.tick().orders == []
     assert h.state().owned == {"AAA": {"qty": 15.0, "avg_entry_price": 100.0}}
+
+
+# --------------------------------------------------------------------------- regression: the bot's record survives
+
+
+def _stop_harness(tmp_path, **risk):
+    """A real account where the bot buys 10 AAA at 100 (10% of 10,000) with a 5% stop."""
+    return make_harness(tmp_path, prices={"AAA": 100.0}, actions={"AAA": Action.BUY}, shared_account=True,
+                        risk=RiskConfig(**{"stop_loss_pct": 5.0, "max_position_pct": 10.0, **risk}))
+
+
+def test_switching_to_another_account_and_back_keeps_what_the_bot_bought_there(tmp_path):
+    h = _stop_harness(tmp_path, max_daily_loss_pct=None)
+    h.engine.cfg = replace(h.cfg, mode="live")
+    assert statuses(h.tick()) == [("AAA", "buy", "filled")]
+    h.strategy.actions["AAA"] = Action.HOLD
+    h.engine.cfg = replace(h.cfg, mode="paper")  # a day on paper, same state_dir
+    h.clock.advance(minutes=5)
+    h.tick()
+    assert h.state().owned == {}
+    assert any("account changed" in m and "AAA" in m for m in h.notifier.errors)
+
+    h.engine.cfg = replace(h.cfg, mode="live")  # back to live: its record comes back
+    h.feed.prices["AAA"] = 50.0
+    h.clock.advance(minutes=5)
+    report = h.tick()
+
+    assert statuses(report) == [("AAA", "sell", "filled")]
+    assert "stop_loss" in report.signals["AAA"]
+
+
+def test_a_state_file_that_disappears_while_the_bot_runs_is_written_again_from_memory(tmp_path):
+    h = _stop_harness(tmp_path)
+    h.tick()
+    h.store.path.unlink()  # e.g. someone cleared state/ while `run` kept going
+    h.strategy.actions["AAA"] = Action.HOLD
+    h.feed.prices["AAA"] = 50.0
+    h.clock.advance(minutes=5)
+
+    report = h.tick()
+
+    assert statuses(report) == [("AAA", "sell", "filled")]
+    assert any("state file" in m and "missing" in m for m in h.notifier.errors)
+    assert h.store.path.exists() and h.state().last_tick_at is not None
+
+
+def test_a_fresh_state_does_not_claim_the_bot_did_not_buy_what_the_account_holds(tmp_path):
+    # e.g. the GitHub Actions cache expired: no state file, and the account
+    # holds a configured symbol the bot may well have bought itself.
+    h = make_harness(tmp_path, shared_account=True)
+    h.buy("AAA", 10)
+    h.tick()
+    (notice,) = [m for m in h.notifier.errors if m.startswith("AAA")]
+    assert "no record" in notice and "lost" in notice and "no stop-loss" in notice
+    assert "did not buy" not in notice
+
+
+def test_a_corrupt_state_file_is_left_in_place_and_the_running_bot_keeps_what_it_knew(tmp_path):
+    h = _stop_harness(tmp_path)
+    h.tick()
+    h.store.path.write_text('{"day": "2026-09-24", typo', encoding="utf-8")  # a bad hand edit
+    h.strategy.actions["AAA"] = Action.HOLD
+    h.feed.prices["AAA"] = 90.0
+    h.clock.advance(minutes=5)
+
+    report = h.tick()
+
+    assert statuses(report) == [("AAA", "sell", "filled")]
+    assert any("corrupt" in e for e in report.errors)
+    assert h.store.path.read_text(encoding="utf-8") == '{"day": "2026-09-24", typo'
+
+
+def test_exits_made_while_the_state_file_could_not_be_read_are_not_undone_by_the_older_file(tmp_path):
+    h = _stop_harness(tmp_path)
+    h.tick()  # the bot buys 10 AAA
+    h.buy("AAA", 50)  # then the user buys 50 by hand
+    h.strategy.actions["AAA"] = Action.HOLD
+    real_load = h.store.load
+    h.store.load = Mock(side_effect=PermissionError(13, "Permission denied"))
+    h.feed.prices["AAA"] = 94.0
+    h.clock.advance(minutes=5)
+    assert statuses(h.tick()) == [("AAA", "sell", "filled")]  # the bot's 10 stop out
+    h.store.load = real_load
+
+    for _ in range(2):
+        h.clock.advance(minutes=5)
+        assert h.tick().orders == []
+    assert h.broker.get_positions()["AAA"].qty == pytest.approx(50.0)  # the user's 50 stay
+
+
+def test_a_buy_of_the_bots_that_fills_right_after_the_positions_read_is_not_bought_twice(tmp_path):
+    prices = {"AAA": 100.0}
+    broker = AcceptingBroker(FakeFeed(Clock(T0), prices), cash=10_000.0)
+    h = make_harness(tmp_path, prices=prices, actions={"AAA": Action.BUY}, broker=broker,
+                     risk=RiskConfig(stop_loss_pct=5.0, max_position_pct=20.0))
+    h.engine.broker.feed = h.feed
+    assert [o.status for o in h.tick().orders] == ["accepted"]
+    real_positions = broker.get_positions
+
+    def read_then_fill():
+        broker.get_positions = real_positions
+        held = real_positions()
+        broker.settle()  # fills just after this tick's positions read
+        return held
+
+    broker.get_positions = read_then_fill
+    h.clock.advance(hours=1)  # a new bar: the strategy says BUY again
+
+    assert h.tick().orders == []
+    assert len(broker.buys()) == 1 and h.state().owned["AAA"]["qty"] == pytest.approx(20.0)
+
+
+def test_a_failed_account_reread_after_a_flatten_never_sells_the_users_shares(tmp_path):
+    h = _stop_harness(tmp_path, max_position_pct=20.0, max_daily_loss_pct=3.0, flatten_on_daily_loss=True)
+    h.tick()  # the bot buys 20 AAA
+    h.buy("AAA", 30)  # the user buys 30 by hand
+    h.strategy.actions["AAA"] = Action.HOLD
+    h.feed.prices["AAA"] = 80.0  # the daily-loss limit and the stop both trip
+    real = h.broker.get_account
+    calls = {"n": 0}
+
+    def flaky_account() -> Account:
+        calls["n"] += 1
+        if calls["n"] == 2:  # the re-read right after the flatten sell
+            raise BrokerError("account endpoint timeout")
+        return real()
+
+    h.broker.get_account = flaky_account
+    h.clock.advance(minutes=5)
+
+    report = h.tick()
+
+    assert [(o.side.value, o.qty) for o in report.orders] == [("sell", 20.0)]
+    assert h.broker.get_positions()["AAA"].qty == pytest.approx(30.0)
+
+
+def test_a_brokers_own_day_start_follows_its_trading_day_not_the_configured_timezone(tmp_path):
+    # Alpaca's day start is the previous New York close. With timezone:
+    # Asia/Seoul, Seoul's midnight falls mid-session: it must not drop the
+    # withdrawal booked that morning (a false -5% halt against 10,000).
+    h = make_harness(tmp_path, timezone_name="Asia/Seoul", risk=RiskConfig(max_daily_loss_pct=3.0))
+    h.broker.trading_day_timezone = "America/New_York"
+    real = h.broker.get_account
+    h.broker.get_account = lambda: replace(real(), day_start_equity=10_000.0)
+    h.clock.now = datetime(2026, 9, 24, 14, 0, tzinfo=timezone.utc)  # 10:00 New York, 23:00 Seoul
+    h.tick()
+    h.broker._cash -= 500.0  # a withdrawal
+    h.clock.advance(minutes=30)
+    assert h.tick().halted is False
+    h.clock.advance(hours=1)  # 11:30 New York, 00:30 the next day in Seoul
+
+    report = h.tick()
+
+    assert report.halted is False
+    assert h.state().day == TODAY and h.state().external_flow == pytest.approx(-500.0)
+
+
+# --------------------------------------------------------------------------- regression: review round 2
+
+
+def test_a_reverse_split_that_pays_cash_for_a_fraction_never_sells_the_users_shares(tmp_path):
+    # 115 AAA: 15 the bot bought, 100 the user's. A 1-for-10 reverse split
+    # leaves 11 shares at 1,000 and pays cash for the other half share.
+    h, broker = accepting_harness(tmp_path, {"AAA": 115.0}, {"AAA": 15.0}, stop_loss_pct=5.0, take_profit_pct=20.0)
+    broker.entries["AAA"] = 100.0
+    assert h.tick().orders == []
+    broker.holdings["AAA"], broker.entries["AAA"], h.feed.prices["AAA"] = 11.0, 1_000.0, 1_000.0
+    broker.cash += 0.5 * 1_000.0
+    h.clock.advance(minutes=5)
+
+    assert h.tick().orders == []  # no take-profit at an unchanged value
+    assert h.state().owned == {"AAA": {"qty": pytest.approx(1.5), "avg_entry_price": pytest.approx(1_000.0)}}
+    h.feed.prices["AAA"] = 900.0  # a real -10%: only the bot's share of the holding is sold
+    h.clock.advance(minutes=5)
+    assert [(o.side.value, o.qty) for o in h.tick().orders] == [("sell", pytest.approx(1.5))]
+
+
+def test_a_reverse_split_with_cash_in_lieu_keeps_the_stop_loss_on_the_bots_own_shares(tmp_path):
+    h, broker = accepting_harness(tmp_path, {"AAA": 15.0}, {"AAA": 15.0}, stop_loss_pct=5.0)
+    broker.entries["AAA"] = 100.0
+    h.tick()
+    broker.holdings["AAA"], broker.entries["AAA"], h.feed.prices["AAA"] = 1.0, 1_000.0, 1_000.0  # 1.5 -> 1 + cash
+    h.clock.advance(minutes=5)
+    assert h.tick().orders == []
+    assert h.state().owned == {"AAA": {"qty": 1.0, "avg_entry_price": pytest.approx(1_000.0)}}
+    h.feed.prices["AAA"] = 700.0
+    h.clock.advance(minutes=5)
+    assert [(o.side.value, o.qty) for o in h.tick().orders] == [("sell", 1.0)]
+
+
+def test_a_buy_that_fills_away_from_its_sizing_price_is_not_taken_for_a_split(tmp_path):
+    prices = {"AAA": 100.0}
+    broker = TrackingBroker(FakeFeed(Clock(T0), prices), cash=10_000.0)
+    h = make_harness(tmp_path, prices=prices, actions={"AAA": Action.BUY}, broker=broker,
+                     risk=RiskConfig(stop_loss_pct=None, max_position_pct=20.0))
+    h.engine.broker.feed = h.feed
+    h.notifier.send = Mock()
+    assert [o.status for o in h.tick().orders] == ["accepted"]
+    h.feed.prices["AAA"] = 94.5  # it fills 5.5% lower (a trading halt)
+    broker.settle()
+    h.clock.advance(minutes=5)
+    h.tick()
+    assert not any("split" in str(call) for call in h.notifier.send.call_args_list)
+    assert h.state().owned["AAA"]["qty"] == pytest.approx(20.0)
+
+
+def test_a_sell_that_fills_mid_tick_is_not_reported_as_shares_the_bot_did_not_buy(tmp_path):
+    prices = {"AAA": 100.0}
+    broker = TrackingBroker(FakeFeed(Clock(T0), prices), cash=0.0, holdings={"AAA": 100.0})
+    h = make_harness(tmp_path, prices=prices, broker=broker, risk=RiskConfig(stop_loss_pct=5.0))
+    h.engine.broker.feed = h.feed
+    h.save_state(owned={"AAA": {"qty": 100.0, "avg_entry_price": 100.0}})
+    h.feed.prices["AAA"] = 94.0
+    assert [(o.side.value, o.status) for o in h.tick().orders] == [("sell", "accepted")]
+    h.clock.advance(minutes=5)
+    assert h.tick().orders == []  # still working (a trading halt)
+    real_positions = broker.get_positions
+
+    def read_then_fill():
+        held = real_positions()
+        broker.settle()  # the sell fills right after this tick's positions read
+        return held
+
+    broker.get_positions = read_then_fill
+    h.strategy.actions["AAA"] = Action.BUY
+    h.clock.advance(hours=1)
+
+    report = h.tick()
+
+    assert report.orders == [] and h.state().owned == {}
+    assert not any("did not buy" in m for m in h.notifier.errors)
+    assert "not entering this tick" in report.signals["AAA"]
+    assert h.state().last_signal_bar["AAA"] == LAST_CLOSED.isoformat()  # the new bar is looked at again next tick
+
+
+def test_a_sale_by_hand_is_not_booked_as_a_withdrawal_when_its_price_cannot_be_read(tmp_path):
+    # The user sells their 2 AAA at 1,500 (bought at 2,000): a real -10% day.
+    h = make_harness(tmp_path, prices={"AAA": 2_000.0}, shared_account=True,
+                     risk=RiskConfig(max_daily_loss_pct=3.0))
+    h.buy("AAA", 2)
+    assert h.tick().halted is False
+    h.feed.prices["AAA"] = 1_500.0
+    assert h.broker.submit_order(OrderRequest("AAA", Side.SELL, 2)).status == "filled"
+    h.feed.fail_price["AAA"] = BrokerError("ticker unavailable")
+    h.clock.advance(minutes=5)
+
+    report = h.tick()
+
+    assert report.halted is True
+    assert h.state().external_flow == 0.0
+
+
+def test_a_stop_loss_sell_rejected_every_tick_does_not_let_a_deposit_hide_a_loss(tmp_path):
+    h = make_harness(tmp_path, prices={"AAA": 100.0}, actions={"AAA": Action.BUY},
+                     risk=RiskConfig(risk_per_trade_pct=10.0, max_position_pct=50.0, stop_loss_pct=5.0,
+                                     max_daily_loss_pct=3.0))
+    assert statuses(h.tick()) == [("AAA", "buy", "filled")]  # 50 AAA, 5,000 cash left
+    h.strategy.actions["AAA"] = Action.HOLD
+    real = h.broker.submit_order
+    h.broker.submit_order = lambda order: (real(order) if order.side is Side.BUY else OrderResult(
+        "", order.symbol, order.side, order.qty, "rejected", reason="no shares available"))
+    h.feed.prices["AAA"] = 94.0
+    h.clock.advance(minutes=5)
+    assert statuses(h.tick()) == [("AAA", "sell", "rejected")]
+    h.broker._cash += 5_000.0  # a deposit ...
+    h.feed.prices["AAA"] = 80.0  # ... and a loss of 1,000 on the day (-6.7% of 15,000)
+    h.clock.advance(minutes=5)
+
+    report = h.tick()
+
+    assert h.state().external_flow == pytest.approx(5_000.0)
+    assert report.halted is True
+
+
+def test_a_buy_still_working_from_an_earlier_tick_counts_toward_the_position_limit(tmp_path):
+    prices = {"AAA": 100.0, "BBB": 100.0}
+    broker = AcceptingBroker(FakeFeed(Clock(T0), prices), cash=10_000.0)
+    h = make_harness(tmp_path, prices=prices, actions={"AAA": Action.BUY}, broker=broker,
+                     risk=RiskConfig(max_open_positions=1, max_total_exposure_pct=20.0, stop_loss_pct=None,
+                                     max_daily_loss_pct=None, cash_buffer_pct=0.0))
+    h.engine.broker.feed = h.feed
+    assert [(o.symbol, o.status) for o in h.tick().orders] == [("AAA", "accepted")]
+    h.strategy.actions = {"BBB": Action.BUY}
+    h.clock.advance(hours=1)  # a new bar; AAA's buy is still working (a trading halt)
+
+    report = h.tick()
+
+    assert report.orders == []
+    assert "max open positions" in report.signals["BBB"]
+
+
+def test_after_a_lost_state_the_first_look_at_the_holdings_says_there_is_no_record(tmp_path):
+    # The state is lost and the bot restarts while the market is closed.
+    h = _stop_harness(tmp_path)
+    h.tick()
+    h.store.path.unlink()
+    h.strategy.actions["AAA"] = Action.HOLD
+    engine = TradingEngine(h.cfg, h.broker, h.strategy, RiskManager(h.cfg.risk), h.store, h.notifier,
+                           clock=h.clock)
+    h.feed.market_open = False
+    h.clock.advance(minutes=5)
+    assert engine.run_once().skipped == "market_closed"
+    h.feed.market_open = True
+    h.clock.advance(minutes=5)
+    engine.run_once()
+
+    (notice,) = [m for m in h.notifier.errors if m.startswith("AAA")]
+    assert "no record" in notice and "did not buy" not in notice
+
+
+def test_a_state_older_than_the_account_is_not_traded_on(tmp_path):
+    # Run N sells the bot's 10 AAA by its stop-loss, but its state is not saved
+    # (a failed GitHub Actions cache save): run N+1 gets run N-1's state back.
+    h = _stop_harness(tmp_path)
+    sent: list[str] = []
+    real = h.broker.submit_order
+
+    def recording(order: OrderRequest) -> OrderResult:
+        sent.append(order.client_order_id)
+        return real(order)
+
+    h.broker.submit_order = recording
+    h.broker.latest_bot_order_id = lambda: sent[-1] if sent else None
+
+    def run() -> TickReport:  # each `once` run is a new process
+        h.clock.advance(minutes=15)
+        return TradingEngine(h.cfg, h.broker, h.strategy, RiskManager(h.cfg.risk), h.store, h.notifier,
+                             clock=h.clock).run_once()
+
+    assert statuses(run()) == [("AAA", "buy", "filled")]
+    h.strategy.actions["AAA"] = Action.HOLD
+    h.buy("AAA", 5)  # the user's own 5
+    assert run().orders == []  # a restart with a current state trades as usual
+    older = h.store.path.read_bytes()
+    h.feed.prices["AAA"] = 94.0
+    assert statuses(run()) == [("AAA", "sell", "filled")]
+    h.store.path.write_bytes(older)  # run N's save was lost
+
+    report = run()
+
+    assert report.orders == [] and report.failed is True
+    assert any("does not know" in e for e in report.errors)
+    assert h.broker.get_positions()["AAA"].qty == pytest.approx(5.0)

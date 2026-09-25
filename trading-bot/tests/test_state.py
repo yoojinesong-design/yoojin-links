@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import math
 import os
 from pathlib import Path
@@ -13,6 +12,7 @@ from bot import state as state_mod
 from bot.state import (
     KILL_FILE,
     BotState,
+    CorruptStateError,
     StateStore,
     kill_switch_active,
     kill_switch_reason,
@@ -39,7 +39,12 @@ def full_state() -> BotState:
         pending_orders={"bot-AAPL-sell-202609241400-ab12cd34": {
             "symbol": "AAPL", "side": "sell", "qty": 10.0, "booked": 0.0, "held": 10.0, "order_id": "o-1"}},
         seen_holdings={"AAPL": [10.0, 180.5]},
+        recent_order_ids=["bot-AAPL-buy-202609231400-12345678", "bot-AAPL-sell-202609241400-ab12cd34"],
         warned_short_history=["NEWIPO"],
+        holdings_checked=True,
+        other_ledgers={"paper:alpaca::USD": {"owned": {"SPY": {"qty": 3.0, "avg_entry_price": 550.0}},
+                                             "unsettled": [], "pending_orders": {}, "seen_holdings": {},
+                                             "recent_order_ids": ["bot-SPY-buy-202609220000-0badcafe"]}},
     )
 
 
@@ -185,6 +190,14 @@ def test_missing_keys_take_defaults(tmp_path):
     assert StateStore(path).load() == BotState(day="2026-01-02", trades_today=4)
 
 
+def test_a_state_saved_before_holdings_checked_existed_has_checked_them_once_it_ran(tmp_path):
+    path = tmp_path / "state.json"
+    path.write_text(json.dumps({"day": "2026-01-02", "last_tick_at": "2026-01-02T15:00:00+00:00"}))
+    assert StateStore(path).load().holdings_checked is True
+    path.write_text(json.dumps({"day": "2026-01-02"}))
+    assert StateStore(path).load().holdings_checked is False
+
+
 # --------------------------------------------------------------------------- corrupt files
 
 
@@ -220,42 +233,37 @@ def test_missing_keys_take_defaults(tmp_path):
         '{"pending_orders": {"bot-1": {"symbol": "AAPL", "side": "buy", "qty": 1}}}',
         '{"seen_holdings": {"AAPL": [10, 0]}}',
         '{"warned_short_history": "AAPL"}',
+        '{"other_ledgers": {"paper:sim::USD": {"owned": {"AAPL": 10}}}}',
+        '{"other_ledgers": {"paper:sim::USD": {"day": "2026-09-24"}}}',
+        '{"other_ledgers": ["paper:sim::USD"]}',
     ],
 )
-def test_corrupt_file_is_moved_aside_and_fresh_state_returned(tmp_path, caplog, content):
+def test_corrupt_file_raises_and_is_left_in_place(tmp_path, content):
+    # A fresh state would forget what the bot bought (its positions would
+    # lose their stop-loss), so the engine must see the problem instead.
     path = tmp_path / "state.json"
     path.write_text(content)
-    with caplog.at_level(logging.WARNING, logger="bot.state"):
-        loaded = StateStore(path).load()
-    assert loaded == BotState()
-    assert not path.exists()
-    backup = tmp_path / "state.json.corrupt-1"
-    assert backup.read_text() == content  # original bytes kept for inspection
-    assert any("corrupt" in r.getMessage() for r in caplog.records)
+    with pytest.raises(CorruptStateError, match="corrupt") as caught:
+        StateStore(path).load()
+    assert isinstance(caught.value, ValueError) and "delete it" in str(caught.value)
+    assert path.read_text() == content  # original bytes kept for inspection
+    assert list(tmp_path.iterdir()) == [path]
 
 
 def test_non_utf8_file_is_treated_as_corrupt(tmp_path):
     path = tmp_path / "state.json"
     path.write_bytes(b"\xff\xfe\x00garbage")
-    assert StateStore(path).load() == BotState()
-    assert (tmp_path / "state.json.corrupt-1").read_bytes() == b"\xff\xfe\x00garbage"
+    with pytest.raises(CorruptStateError):
+        StateStore(path).load()
+    assert path.read_bytes() == b"\xff\xfe\x00garbage"
 
 
-def test_corrupt_backups_are_numbered_and_never_overwritten(tmp_path):
-    path = tmp_path / "state.json"
-    store = StateStore(path)
-    for n, content in enumerate(["bad one", "bad two", "bad three"], start=1):
-        path.write_text(content)
-        assert store.load() == BotState()
-        assert (tmp_path / f"state.json.corrupt-{n}").read_text() == content
-    assert (tmp_path / "state.json.corrupt-1").read_text() == "bad one"
-
-
-def test_store_recovers_after_corruption(tmp_path):
+def test_store_recovers_once_a_corrupt_file_is_replaced(tmp_path):
     path = tmp_path / "state.json"
     path.write_text("{{{")
     store = StateStore(path)
-    assert store.load() == BotState()
+    with pytest.raises(CorruptStateError):
+        store.load()
     store.save(full_state())
     assert store.load() == full_state()
 

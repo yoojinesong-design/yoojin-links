@@ -11,7 +11,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from .base import Broker, BrokerError
+from .base import ALPACA_TRADING_DAY_TIMEZONE, Broker, BrokerError
 
 if TYPE_CHECKING:
     from ..config import BotConfig
@@ -19,6 +19,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 PAPER_ACCOUNT_FILE = "paper_account.json"
+
+
+def trading_day_timezone(cfg: BotConfig) -> str:
+    """The time zone whose days the daily limits count (the live engine takes
+    it from the broker, the backtest from here): New York on Alpaca, whose
+    day start equity is the previous New York close; else ``timezone``."""
+    return ALPACA_TRADING_DAY_TIMEZONE if cfg.broker.type == "alpaca" else cfg.timezone
 
 
 def ccxt_entries_file(exchange: str, sandbox: bool) -> str:

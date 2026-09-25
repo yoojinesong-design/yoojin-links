@@ -19,7 +19,12 @@ objects the live engine uses, so what you backtest is what trades:
   a buy is SENT, i.e. its fill bar, like the live engine: a signal at a day's
   last close is sent the next day, after the daily counters reset. The loss
   limit is checked at each open too (holdings valued at the open), before
-  queued buys fill, as the live engine does on its first tick of a session.
+  queued buys fill, as the live engine does on its first tick of a session,
+  and at each bar's lows: the live engine checks it on every tick, so a dip
+  through the limit halts the day (and with flatten_on_daily_loss sells where
+  the account crosses it) even when the bar recovers by its close. The lows
+  of several symbols in one bar are taken as reached together, and before any
+  take-profit at a high in that bar (a worst case, like the stop-loss).
 * An exit queued at a close frees its position slot and (estimated) cash for
   the symbols after it in the same close, like the live engine, which sells
   and re-reads the account before sizing the next symbol. Likewise at an open:
@@ -337,7 +342,13 @@ class _Simulation:
                     self.deferred.pop(symbol, None)
                     if symbol in self.queued:
                         self._fill_queued(symbol, row, t)
-            # 2. Protective exits inside the bar (entry bar included).
+            # 2. Protective exits inside the bar (entry bar included): the lows
+            #    first (stop-losses, then the daily loss limit at the lows), and
+            #    only then take-profits at the highs, as the order of the high
+            #    and the low is unknown (the worst case, like a single stop).
+            for symbol, row in bars:
+                self._protective_exit(symbol, row, t, take_profit=False)
+            self._check_daily_loss_intrabar(bars, t)
             for symbol, row in bars:
                 self._protective_exit(symbol, row, t)
             # 3. Mark to market at the close; daily loss limit.
@@ -408,12 +419,13 @@ class _Simulation:
             elif self._buy(symbol, open_ * (1.0 + self.slip), order.qty, t):
                 self.trades_today += 1
 
-    def _protective_exit(self, symbol: str, row: int, t: pd.Timestamp, at_open: bool = False) -> bool:
+    def _protective_exit(self, symbol: str, row: int, t: pd.Timestamp, at_open: bool = False,
+                         take_profit: bool = True) -> bool:
         """Stop-loss / take-profit. The open comes first: a bar that opens
         through either level exits at the open with that level's reason (what
         the live engine's first tick sees). Otherwise, inside the bar, the stop
-        wins when both levels were touched. ``at_open``: only the open. True
-        when it sold."""
+        wins when both levels were touched. ``at_open``: only the open;
+        ``take_profit=False``: not the bar's high. True when it sold."""
         holding = self.holdings.get(symbol)
         if holding is None:
             return False
@@ -429,7 +441,7 @@ class _Simulation:
         stop, target = self.risk.stop_price(pos), self.risk.take_profit_price(pos)
         if stop is not None and self.risk.exit_reason(pos, low) == EXIT_STOP:
             self._sell(symbol, stop * (1.0 - self.slip), t, EXIT_STOP)
-        elif target is not None and self.risk.exit_reason(pos, high) == EXIT_TAKE_PROFIT:
+        elif take_profit and target is not None and self.risk.exit_reason(pos, high) == EXIT_TAKE_PROFIT:
             self._sell(symbol, target * (1.0 - self.slip), t, EXIT_TAKE_PROFIT)
         else:
             return False
@@ -460,6 +472,35 @@ class _Simulation:
                     self._sell(symbol, opens[symbol] * (1.0 - self.slip), t, EXIT_DAILY_LOSS)
                 else:
                     self.queued.setdefault(symbol, _Order(Side.SELL, holding.qty, EXIT_DAILY_LOSS))
+
+    def _check_daily_loss_intrabar(self, bars: list[tuple[str, int]], t: pd.Timestamp) -> None:
+        """The loss limit against the holdings valued at this bar's lows (the
+        last close for symbols without a bar now). A flatten sells where the
+        account crosses the limit as the holdings move from their opens to
+        their lows together; symbols without a bar now sell at their next open."""
+        if self.halted or not self.holdings:
+            return
+        rows = {symbol: self.prices[symbol][row] for symbol, row in bars if symbol in self.holdings}
+
+        def value(column: int) -> float:
+            return self.cash + sum(h.qty * (float(rows[s][column]) if s in rows else self.last_close[s])
+                                   for s, h in self.holdings.items())
+
+        low = value(2)
+        if not self.risk.daily_loss_breached(low, self.day_start_equity):
+            return
+        self._halt(t, low)
+        if not self.cfg.risk.flatten_on_daily_loss:
+            return
+        opened = value(0)
+        floor = self.day_start_equity * (1.0 - float(self.cfg.risk.max_daily_loss_pct or 0.0) / 100.0)
+        share = min(max((opened - floor) / (opened - low), 0.0), 1.0) if opened > low else 1.0
+        for symbol, holding in list(self.holdings.items()):
+            if symbol in rows:
+                open_, low_ = float(rows[symbol][0]), float(rows[symbol][2])
+                self._sell(symbol, (open_ + share * (low_ - open_)) * (1.0 - self.slip), t, EXIT_DAILY_LOSS)
+            else:
+                self.queued.setdefault(symbol, _Order(Side.SELL, holding.qty, EXIT_DAILY_LOSS))
 
     def _halt(self, t: pd.Timestamp, equity: float) -> None:
         """Daily loss limit hit: no new entries today; buys still queued are dropped."""

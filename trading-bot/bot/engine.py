@@ -40,8 +40,13 @@ Safety rules enforced here, on top of the risk manager and broker adapters:
   (booked as sent before it goes out, as reported once its reply is in), so a
   crash mid-tick never forgets what the bot bought: if saving fails, the
   counters are kept in memory and no new entries are made until a save
-  succeeds; if it cannot be read, no new entries either; exits and
-  stop-losses still run;
+  succeeds; if it cannot be read (or is corrupt: it is left in place), no new
+  entries either; exits and stop-losses still run; a file that vanishes while
+  the bot runs is written again from memory, and switching the config to
+  another account keeps each account's record of what the bot bought;
+* a state older than the account (the broker's order history has an order of
+  the bot's it does not know, e.g. a save that was lost) is not traded on at
+  all, not even for stop-losses: its record of what the bot bought is stale;
 * order sizes are rounded DOWN and never exceed what was sized or held.
 """
 from __future__ import annotations
@@ -64,7 +69,7 @@ import pandas as pd
 
 from .brokers.base import BOT_ORDER_PREFIX, BrokerError, OpenOrder
 from .models import Account, Action, OrderRequest, OrderResult, Position, Side, Signal
-from .state import BotState, kill_switch_active, loss_baseline
+from .state import ACCOUNT_LEDGER, MAX_RECENT_ORDER_IDS, BotState, kill_switch_active, loss_baseline
 from .utils import drop_incomplete_bars, timeframe_to_timedelta, utcnow, validate_bars
 
 if TYPE_CHECKING:
@@ -94,9 +99,10 @@ _QTY_TOLERANCE = 1e-9
 _FLOW_LOG_SHARE = 0.001
 # What an order books in the state (restored when its reply replaces the write-ahead booking).
 _LEDGER_FIELDS = ("owned", "unsettled", "pending_orders", "seen_holdings", "trades_today")
-# A holding whose quantity changed by at least this factor while its cost
-# (qty x the broker's average price) stayed within _SPLIT_COST_TOLERANCE is
-# taken to be a stock split (or another corporate action of that kind).
+# A holding whose broker average price changed by at least this factor while
+# its quantity changed by the inverse (within _SPLIT_COST_TOLERANCE, less at
+# most one share paid out in cash) is taken to be a stock split (or another
+# corporate action of that kind).
 _SPLIT_MIN_CHANGE = 0.05
 _SPLIT_COST_TOLERANCE = 0.01
 
@@ -138,8 +144,12 @@ class _Tick:
     # BUYs sent this tick that the broker accepted but has not filled yet, so
     # its positions (and, on Alpaca, its cash) do not show them.
     pending: dict[str, Position] = field(default_factory=dict)
-    # Symbols the bot sent an order for this tick.
+    # Symbols the bot sent an order for this tick (not counting ones rejected
+    # before anything was placed).
     ordered: set[str] = field(default_factory=set)
+    # Symbols whose earlier orders of the bot's settled during this tick: the
+    # tick's holdings may predate their fills.
+    settled: set[str] = field(default_factory=set)
     # Short positions (qty < 0) a person holds on a margin account.
     shorts: dict[str, Position] = field(default_factory=dict)
     # An order of the bot's was still settling when the tick started, so it
@@ -159,7 +169,6 @@ class TradingEngine:
         self.store = state_store
         self.notifier = notifier
         self.clock = clock
-        self.tz = ZoneInfo(cfg.timezone)
         self.trades_path = Path(cfg.log_dir) / TRADES_FILE
         # Trading day on which the daily-loss flatten completed. In memory only:
         # after a restart a halted day with open positions is flattened again.
@@ -172,6 +181,8 @@ class TradingEngine:
         self._unsaved_state: BotState | None = None
         # The last state loaded or saved: stands in when the file cannot be read.
         self._last_state: BotState | None = None
+        # The state was checked against the broker's order history (once per process).
+        self._history_checked = False
 
     # ------------------------------------------------------------------ public
     def run_once(self) -> TickReport:
@@ -207,6 +218,14 @@ class TradingEngine:
                 state = BotState() if last is None else copy.deepcopy(last)
                 self._error(report, f"could not load bot state ({_describe(exc)}); no new entries until it can "
                                     f"be read ({self._unreadable_exits_note()})", exc)
+            else:
+                if state.last_tick_at is None and self._last_state is not None:
+                    # The file is gone (deleted, or a blank one in its place); what the bot knew is not.
+                    state = copy.deepcopy(self._last_state)
+                    self.notifier.error(f"the bot state file {self.store.path} was missing or reset while the bot "
+                                        "was running; it goes on with what it remembers (what it bought, today's "
+                                        "counters) and writes the file again. To really start over, stop the bot "
+                                        "first, then delete the file.")
 
         # Fail closed: the counters (today's trades, the loss halt, the evaluated
         # bars, what the bot bought) must be on disk before any order, or a
@@ -221,8 +240,13 @@ class TradingEngine:
         state.consecutive_errors = state.consecutive_errors + 1 if report.errors else 0
         state.last_tick_at = now.isoformat()
         report.halted = state.halted_today
-        if not unreadable:  # never overwrite a file that could not be read (it may be fine)
+        if not unreadable:  # never overwrite a file that could not be read (it may be fine) ...
             self._save(state, report, quiet=save_failed)
+        elif not blank and report.orders:
+            # ... unless orders were booked on what the bot remembered: that is
+            # newer than the file, which must not bring back what they sold.
+            # Written as soon as a save works (entries stay paused until then).
+            self._unsaved_state = state
         if not blank:
             self._last_state = state
         return self._end_tick(report)
@@ -305,6 +329,11 @@ class TradingEngine:
             report.skipped = "trading_blocked"
             return
         fresh_baseline = self._roll_day(state, account)
+        stale = None if self._history_checked else self._stale_state(state)
+        if stale:
+            report.failed = True
+            self._error(report, stale)
+            return
         if not self.broker.is_market_open():
             logger.info("Market is closed; nothing to do this tick")
             report.skipped = "market_closed"
@@ -337,22 +366,17 @@ class TradingEngine:
         """Start a new trading day (or account) when due. True when the loss
         baseline was just set from the current equity, which then already
         includes any money moved since the last tick."""
-        today = self._now().astimezone(self.tz).date().isoformat()
+        today = self._now().astimezone(ZoneInfo(self._day_zone())).date().isoformat()
         key = self._account_key(account)
         broker_start = _positive(account.day_start_equity)
         start = broker_start or (None if account.unpriced else _positive(account.equity))
         switched = state.account_key is not None and state.account_key != key
         fresh = False
         if switched:
-            # What the bot bought in the other account is not in this one.
-            state.owned, state.unsettled, state.notified_unmanaged = {}, [], []
-            state.pending_orders, state.seen_holdings = {}, {}
+            self._switch_ledger(state, key)
         if state.day != today or switched:
-            if state.day == today:
-                logger.warning("The account changed (%s -> %s): today's counters, the loss baseline and the "
-                               "record of what the bot bought start over", state.account_key, key)
-            else:
-                logger.info("New trading day %s (%s); day start equity %s", today, self.cfg.timezone, start)
+            if state.day != today:
+                logger.info("New trading day %s (%s); day start equity %s", today, self._day_zone(), start)
             state.day, state.day_start_equity = today, start
             state.trades_today, state.halted_today = 0, False
             state.external_flow, state.flow_cash, state.flow_holdings = 0.0, None, {}
@@ -368,8 +392,63 @@ class TradingEngine:
         state.account_key = key
         return fresh
 
+    def _switch_ledger(self, state: BotState, key: str) -> None:
+        """Another account (e.g. the config went from live to paper): keep what
+        the bot bought in the old one aside and pick up this one's own record,
+        so switching back keeps the stop-loss on the positions it bought there."""
+        old = {name: getattr(state, name) for name in ACCOUNT_LEDGER}
+        back = state.other_ledgers.pop(key, {})
+        blank = BotState()
+        for name in ACCOUNT_LEDGER:
+            setattr(state, name, back.get(name, getattr(blank, name)))
+        if any(old.values()):
+            state.other_ledgers[str(state.account_key)] = old
+        state.notified_unmanaged = []
+        kept = ", ".join(sorted(old["owned"])) or "nothing"
+        self.notifier.error(
+            f"The account changed ({state.account_key} -> {key}): today's counters and the daily loss baseline start "
+            f"over. The bot's record of what it bought in the other account ({kept}) is kept and comes back when "
+            "you switch back; until then those positions get no stop-loss or exits from the bot. In this account "
+            f"it manages what it bought here: {', '.join(sorted(state.owned)) or 'nothing yet'}.")
+
+    def _stale_state(self, state: BotState) -> str | None:
+        """What is wrong when the broker has an order of the bot's that this
+        state does not know: a later state was lost (on GitHub Actions: a run
+        whose cache save failed, or a run on another branch) or another bot
+        trades the account. Its record of what the bot bought is then out of
+        date: trading on it could sell shares the bot already sold (so the
+        user's own) or leave ones it bought since without a stop-loss, so the
+        bot trades nothing until it is sorted out. Checked once per process
+        (every `once` run) against the broker's order history, where the
+        broker keeps one; a failed read is retried next tick."""
+        if not state.recent_order_ids:  # a new state, or no order yet: nothing to compare (yet)
+            return None
+        try:
+            newest = self.broker.latest_bot_order_id()
+        except Exception as exc:
+            logger.warning("Could not read the broker's recent orders to check that the bot state is current "
+                           "(%s); checking again next tick", _describe(exc))
+            return None
+        if newest is None or newest in state.recent_order_ids:
+            self._history_checked = True
+            return None
+        return (f"the broker has an order from this bot ({newest}) that its state file {self.store.path} does not "
+                "know: the file is older than the account (on GitHub Actions: a run's state was not saved, or "
+                "the workflow ran on another branch), or another bot trades this account. Its record of what it "
+                "bought is out of date, so it sends NO orders, not even stop-losses. Check the positions in the "
+                "broker's app and sell what the bot bought yourself, then start from a blank state (GitHub "
+                "Actions: run the workflow once with fresh_state; elsewhere: stop the bot and delete that file). "
+                "Run only one bot per account.")
+
     def _account_key(self, account: Account) -> str:
         return account_key(self.cfg, account.currency)
+
+    def _day_zone(self) -> str:
+        """The trading day's time zone: the broker's own when its day start
+        equity is tied to one (Alpaca: the previous New York close), else the
+        configured ``timezone``."""
+        zone = getattr(self.broker, "trading_day_timezone", None)
+        return zone if isinstance(zone, str) and zone else self.cfg.timezone
 
     def _check_priced(self, tick: _Tick) -> None:
         if tick.account.unpriced and not tick.entries_blocked:
@@ -644,6 +723,10 @@ class TradingEngine:
             blocked = "daily loss limit hit, no new entries today"
         elif state.trades_today >= cfg.max_trades_per_day:
             blocked = f"max trades per day reached ({state.trades_today}/{cfg.max_trades_per_day})"
+        elif (symbol in state.owned and held is None) or (symbol in tick.settled and held is not None):
+            # Its own order filled after this tick's positions read: the next tick's read decides.
+            report.signals[symbol] = f"{text} (not entering this tick: the bot's own earlier order just settled)"
+            return False
         elif held is not None and not tick.ledger_unknown:
             blocked = (f"the account already holds {held.qty:.8g} {_units(symbol)} that this bot did not buy; "
                        "it does not add to a holding it does not manage")
@@ -686,10 +769,14 @@ class TradingEngine:
 
     def _sizing_view(self, tick: _Tick) -> tuple[Account, dict[str, Position]]:
         """Account and positions to size a new entry against: the broker's, plus
-        this tick's accepted-but-unfilled BUYs, which count toward the position
-        and exposure limits and come out of cash. (Alpaca and ccxt already take
-        working orders out of buying power, but not out of cash.)"""
-        waiting = {s: p for s, p in tick.pending.items() if s not in tick.holdings}
+        the bot's accepted-but-unfilled BUYs (this tick's, and earlier ticks'
+        still working), which count toward the position and exposure limits
+        and come out of cash. (Alpaca and ccxt already take working orders out
+        of buying power, but not out of cash.)"""
+        owned = tick.state.owned
+        earlier = {o["symbol"]: Position(o["symbol"], o["qty"], p, p) for o in tick.state.pending_orders.values()
+                   if o["side"] == Side.BUY.value and (p := owned.get(o["symbol"], {}).get("avg_entry_price"))}
+        waiting = {s: p for s, p in {**earlier, **tick.pending}.items() if s not in tick.holdings}
         if not waiting:
             return tick.account, tick.holdings
         reserved = sum(p.market_value for p in waiting.values())
@@ -709,12 +796,14 @@ class TradingEngine:
         is corrected to what the broker reports filled (looked up by the client
         order id), else to how the holding changed. Once the reply is in, the
         order is booked as reported instead, and saved again."""
-        order = OrderRequest(symbol=symbol, side=side, qty=qty, reason=reason,
-                             client_order_id=make_client_order_id(symbol, side, bar_key))
+        client_order_id = make_client_order_id(symbol, side, bar_key)
+        order = OrderRequest(symbol=symbol, side=side, qty=qty, reason=reason, client_order_id=client_order_id)
         state = tick.state
+        first = symbol not in tick.ordered
         tick.ordered.add(symbol)
         logger.info("Submitting %s %.8g %s (%s) [%s]", side.value.upper(), qty, symbol, reason, order.client_order_id)
         before = {name: copy.deepcopy(getattr(state, name)) for name in _LEDGER_FIELDS}
+        state.recent_order_ids = [*state.recent_order_ids, client_order_id][-MAX_RECENT_ORDER_IDS:]
         self._record_in_ledger(tick, OrderResult("", symbol, side, qty, "accepted", reason="in flight"), ref_price,
                                order.client_order_id)
         if side is Side.BUY:
@@ -728,6 +817,8 @@ class TradingEngine:
             state.trades_today = before["trades_today"]
             tick.entries_blocked = f"an order for {symbol} failed to submit"
             raise
+        if first and not result.ok and not _positive(result.filled_qty):
+            tick.ordered.discard(symbol)  # rejected, nothing filled: no fill can straddle this tick's reads
         for name, value in before.items():
             setattr(state, name, value)
         self._record_in_ledger(tick, result, ref_price, order.client_order_id)
@@ -752,6 +843,8 @@ class TradingEngine:
             tick.positions = self._managed_positions(tick.state, tick.holdings)
         except Exception as exc:
             tick.entries_blocked = "could not re-read the account after an order"
+            # What the order took off the bot's record must not be sold again from the old read.
+            tick.positions = self._managed_positions(tick.state, tick.holdings)
             self._error(tick.report, f"could not refresh account/positions after an order: {_describe(exc)}", exc)
             return
         self._check_priced(tick)
@@ -860,6 +953,7 @@ class TradingEngine:
             self._settle_orders(tick, symbol)
             tick.positions = self._managed_positions(state, tick.holdings)
         state.unsettled.remove(symbol)
+        tick.settled.add(symbol)
         return True
 
     def _settle_orders(self, tick: _Tick, symbol: str) -> None:
@@ -956,33 +1050,40 @@ class TradingEngine:
                 own["qty"] = pos.qty
 
     def _check_split(self, tick: _Tick, symbol: str) -> None:
-        """A holding whose quantity changed by a clear factor at an unchanged
-        cost (qty x the broker's average price) was split (or reverse split):
-        the broker then reports N times the shares at 1/N the average price,
-        and the bars are split-adjusted, but the bot's own record is not. It
-        is rescaled the same way, or the old entry price would fire a false
-        stop-loss (or, after a reverse split, never fire one). A trade changes
-        the cost, a split does not; and it is only checked while no order of
-        the bot's is pending on the symbol, so its own fill cannot look like one."""
+        """A holding whose broker average price fell (or rose) by a clear
+        factor while its quantity rose (or fell) by the same factor was split
+        (or reverse split): the broker then reports N times the shares at 1/N
+        the average price, and the bars are split-adjusted, but the bot's own
+        record is not. It is rescaled by the average price's factor, or the
+        old entry price would fire a false stop-loss (or, after a reverse
+        split, never fire one). The holding may come out up to one share short
+        of that: a fraction of a share the broker paid out in cash ("cash in
+        lieu"); the trim that follows caps the bot's record at the holding. A
+        sale leaves the average price as it is and a purchase raises the cost;
+        and it is only checked while no order of the bot's is pending on the
+        symbol, so its own fill cannot look like one."""
         state = tick.state
         seen, pos, own = state.seen_holdings.get(symbol), tick.holdings.get(symbol), state.owned.get(symbol)
-        if seen is None or pos is None or own is None:
+        if seen is None or pos is None or own is None or not _positive(pos.avg_entry_price):
             return
         old_qty, old_avg = seen
-        ratio = pos.qty / old_qty
-        old_cost, new_cost = old_qty * old_avg, pos.qty * pos.avg_entry_price
-        if (not math.isfinite(ratio) or abs(ratio - 1.0) < _SPLIT_MIN_CHANGE or not old_cost > 0
-                or abs(new_cost / old_cost - 1.0) > _SPLIT_COST_TOLERANCE):
+        factor = old_avg / pos.avg_entry_price
+        expected = old_qty * factor
+        if (not math.isfinite(factor) or abs(factor - 1.0) < _SPLIT_MIN_CHANGE
+                or abs(pos.qty - old_qty) <= old_qty * _QTY_TOLERANCE  # a split changes the quantity
+                or not expected * (1.0 - _SPLIT_COST_TOLERANCE) - 1.0 <= pos.qty
+                <= expected * (1.0 + _SPLIT_COST_TOLERANCE)):
             return
         before = (own["qty"], own["avg_entry_price"])
-        own["qty"], own["avg_entry_price"] = own["qty"] * ratio, own["avg_entry_price"] / ratio
+        own["qty"], own["avg_entry_price"] = own["qty"] * factor, own["avg_entry_price"] / factor
         state.seen_holdings[symbol] = [pos.qty, pos.avg_entry_price]
         if (flow := state.flow_holdings.get(symbol)) is not None:
-            state.flow_holdings[symbol] = [flow[0] * ratio, flow[1] / ratio]
+            state.flow_holdings[symbol] = [flow[0] * factor, flow[1] / factor]
         units = _units(symbol)
-        message = (f"{symbol}: the holding went from {old_qty:.8g} to {pos.qty:.8g} {units} at the same cost, a "
-                   f"stock split (x{ratio:.6g}). The bot now counts its {own['qty']:.8g} {units} at an entry of "
-                   f"{own['avg_entry_price']:.6g} (was {before[0]:.8g} at {before[1]:.6g}).")
+        message = (f"{symbol}: the holding went from {old_qty:.8g} {units} at {old_avg:.6g} to {pos.qty:.8g} at "
+                   f"{pos.avg_entry_price:.6g}, a stock split (x{factor:.6g}). The bot now counts its "
+                   f"{min(own['qty'], pos.qty):.8g} {units} at an entry of {own['avg_entry_price']:.6g} (was "
+                   f"{before[0]:.8g} at {before[1]:.6g}).")
         logger.warning("%s", message)
         self.notifier.send(message, "warning")
 
@@ -1018,14 +1119,21 @@ class TradingEngine:
                 managed = tick.positions.get(symbol)
                 extra = held.qty - (managed.qty if managed else 0.0)
                 if (extra <= held.qty * _QTY_TOLERANCE or tick.ledger_unknown
-                        or symbol in state.unsettled or symbol in tick.ordered):
+                        or symbol in state.unsettled or symbol in tick.ordered or symbol in tick.settled):
                     continue
                 current.add(symbol)
                 units = _units(symbol)
                 note = f"{extra:.8g} {units} in the account were not bought by this bot: left alone"
                 signals = tick.report.signals
                 signals[symbol] = f"{signals[symbol]} | {note}" if symbol in signals else note
-                if managed is None:
+                if managed is None and not state.holdings_checked:  # no record at all: it cannot tell
+                    message = (f"{symbol}: the account holds {held.qty:.8g} {units} and the bot has no record of "
+                               "buying them: this is its first run with this state, or its state file was lost or "
+                               "reset (e.g. an expired GitHub Actions cache). It leaves them alone: no stop-loss, "
+                               f"no strategy exits, no flatten, and no new {symbol} entries while they are held. If "
+                               "the bot bought them, sell them yourself or set adopt_existing_positions: true (it "
+                               "then manages, and may sell, the whole holding).")
+                elif managed is None:
                     message = (f"{symbol}: the account holds {held.qty:.8g} {units} that this bot did not buy. "
                                "It leaves them alone: no stop-loss, no strategy exits, no flatten, and no new "
                                f"{symbol} entries while they are held. To let the bot manage (and possibly sell) "
@@ -1037,6 +1145,7 @@ class TradingEngine:
                 state.notified_unmanaged.append(symbol)
                 self.notifier.error(message)
         state.notified_unmanaged = [s for s in state.notified_unmanaged if s in current]
+        state.holdings_checked = True
 
     # ------------------------------------------------------------------ money moved without trading
     def _track_external_flows(self, tick: _Tick) -> None:
@@ -1045,22 +1154,34 @@ class TradingEngine:
         or withdrawal, or a trade in an asset the broker does not value here
         (ccxt values only the configured coins). A trade in a holding it does
         value swaps cash for an asset of about the same value and nets out.
-        Holdings are valued at the last tick's prices (a new one at its entry
-        price), so price moves stay gains and losses."""
+        Only a quantity that changed is valued, at THIS tick's price (a holding
+        that is gone: its latest price): a trade between two ticks is then off
+        only by the move since it, and price moves stay gains and losses. When
+        one of them has no current price (the broker could not price it, or
+        its latest price cannot be read), nothing is booked for this tick,
+        never a flow at an old price: a trade does not change the equity when
+        it happens, so only a deposit or withdrawal in the same interval is
+        missed (it then counts as a gain or loss)."""
         state = tick.state
         if state.flow_cash is None:
             return
         flow = tick.account.cash - state.flow_cash
         current = {**tick.holdings, **tick.shorts}  # a short is a negative quantity
         for symbol in set(state.flow_holdings) | set(current):
-            old_qty, old_price = state.flow_holdings.get(symbol, (0.0, 0.0))
+            old_qty = state.flow_holdings.get(symbol, (0.0, 0.0))[0]
             pos = current.get(symbol)
             new_qty = pos.qty if pos is not None else 0.0
             if new_qty == old_qty:
                 continue
-            ref = (_positive(old_price) if old_qty != 0 else None) or (
-                (_positive(pos.avg_entry_price) or _positive(pos.market_price)) if pos is not None else None)
-            flow += (new_qty - old_qty) * (ref or 0.0)
+            if pos is None:
+                price = self._price_now(symbol)
+            else:
+                price = None if symbol in tick.account.unpriced else _positive(pos.market_price)
+            if price is None:
+                logger.warning("%s: no current price for a holding that changed; money moved in or out of the "
+                               "account is not tracked for this tick", symbol)
+                return
+            flow += (new_qty - old_qty) * price
         if not flow or not math.isfinite(flow):
             return
         state.external_flow += flow
@@ -1068,6 +1189,13 @@ class TradingEngine:
             logger.warning("%s %s moved in/out of the account without the bot trading (a deposit, a "
                            "withdrawal, or a trade in an asset the bot does not value); the daily loss baseline "
                            "is now %s", f"{flow:+,.2f}", tick.account.currency, _fmt_money(loss_baseline(state)))
+
+    def _price_now(self, symbol: str) -> float | None:
+        try:
+            return _positive(self.broker.get_latest_price(symbol))
+        except Exception as exc:
+            logger.warning("%s: latest price unavailable (%s)", symbol, _describe(exc))
+            return None
 
     def _remember_holdings(self, tick: _Tick) -> None:
         """Keep the broker's holdings of what the bot owns (to recognise a

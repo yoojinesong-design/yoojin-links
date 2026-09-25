@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import pandas as pd
 import pytest
 
-from bot.utils import drop_incomplete_bars, floor_to_step
+from bot.utils import bars_per_year, drop_incomplete_bars, floor_to_step
 
 
 @pytest.mark.parametrize("value, step, expected", [
@@ -70,3 +70,13 @@ def test_drop_incomplete_bars_keeps_bars_closed_by_now():
     now = datetime(2026, 1, 1, 2, 0, tzinfo=timezone.utc)  # the 01:00 bar closes exactly now
     assert list(drop_incomplete_bars(bars, "1h", now).index) == list(index[:2])
     assert list(drop_incomplete_bars(bars, "1h", now.replace(tzinfo=None)).index) == list(index[:2])
+
+
+@pytest.mark.parametrize("timeframe, days, expected", [
+    # A 6.5h stock session gives 7 1h bars (the last one short) and 2 4h bars,
+    # as the Alpaca adapter builds them; crypto trades 24h.
+    ("1m", 252, 252 * 390), ("30m", 252, 252 * 13), ("1h", 252, 252 * 7), ("4h", 252, 252 * 2),
+    ("1d", 252, 252), ("1h", 365, 365 * 24), ("4h", 365, 365 * 6),
+])
+def test_bars_per_year_counts_the_bars_a_session_really_has(timeframe, days, expected):
+    assert bars_per_year(timeframe, days) == pytest.approx(expected)

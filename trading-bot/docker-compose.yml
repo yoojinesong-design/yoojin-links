@@ -1,7 +1,12 @@
 # docker compose up -d        start in the background (restarts after reboots)
 # docker compose logs -f      watch what it is doing
-# docker compose restart      apply config edits (configs/ is mounted, no rebuild needed)
-# docker compose down         stop
+# docker compose restart      apply edits to files in configs/ (mounted, no rebuild needed)
+# docker compose up -d        after changing `command` below or .env: `restart` keeps the OLD ones
+# docker compose stop         stop the bot (the container stays; `docker compose start` resumes)
+# docker compose down         stop and remove the container
+# The README's commands (kill, resume, status, flatten --yes) run INSIDE the container,
+# which has Python and the packages (the host may not), e.g.:
+#   docker compose exec trading-bot python -m bot -c configs/stocks.yaml kill
 # After changing code or requirements.txt: docker compose up -d --build
 services:
   trading-bot:
@@ -9,7 +14,7 @@ services:
     restart: unless-stopped
     env_file: .env
     # Change the config here: configs/stocks.yaml, configs/crypto.yaml or your own
-    # file inside configs/ (e.g. configs/my.yaml).
+    # file inside configs/ (e.g. configs/my.yaml). Then `docker compose up -d`.
     command: ["-c", "configs/stocks.yaml", "run"]
     volumes:
       - ./configs:/app/configs:ro

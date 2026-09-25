@@ -32,7 +32,7 @@ symbols: [SPY, QQQ]         # S&P 500 ETF and Nasdaq-100 ETF
 
 timeframe: 1d               # daily bars (일봉)
 bars_lookback: 300          # needs >= 202 for the 200-day trend filter below
-timezone: America/New_York  # the trading "day" follows the US market clock (뉴욕 시간)
+timezone: America/New_York  # the trading "day" follows the US market clock (뉴욕 시간); Alpaca (and its backtest) always uses New York
 poll_interval_seconds: 300  # check every 5 minutes
 
 # Connors-style RSI(2) mean reversion: buy a short, sharp dip while the long-term
@@ -76,6 +76,8 @@ notify:
 # the account, even in the symbols above (e.g. SPY you bought yourself), are left alone and
 # the bot does not buy more of them. true = let the bot manage them too, which
 # means its stop-loss and strategy may SELL them. 봇은 자기가 산 것만 팔아요.
+# Exception: the manual `flatten --yes` command closes EVERY position in the account, yours
+# too (shorts and other symbols included), and cancels every open order in the account.
 # adopt_existing_positions: false
 
 state_dir: ../state/stocks

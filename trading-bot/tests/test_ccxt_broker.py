@@ -1266,7 +1266,7 @@ def test_engine_on_a_live_account_leaves_coins_the_user_already_held_alone(tmp_p
 
     assert order_calls(ex) == [] and report.orders == []
     assert "BTC/USDT" not in broker.entries or broker.entries["BTC/USDT"]["avg_entry_price"] == 26_000.0
-    assert any("BTC/USDT" in m and "did not buy" in m for m in notifier.errors)
+    assert any("BTC/USDT" in m and "no record of buying" in m for m in notifier.errors)  # its first run
 
 
 def test_moving_cash_into_a_coin_outside_symbols_is_not_a_daily_loss(tmp_path):
@@ -1308,6 +1308,25 @@ def test_cash_moved_in_from_another_coin_does_not_hide_a_real_daily_loss(tmp_pat
     assert report.halted is True
     assert "daily loss limit" in report.signals["ETH/USDT"]
     assert order_calls(ex) == []
+
+
+def test_a_coin_bought_back_by_hand_is_not_valued_at_an_old_entry_price(tmp_path):
+    # Weeks ago the bot saw the user's BTC at 14,000 and anchored that as its
+    # entry; the user sold it since. Buying 0.1 BTC back at 20,000 moves no
+    # money out of the account (it would hide 600 of real losses).
+    ex = FakeExchange()
+    ex.set_balance("USDT", 10_000.0)
+    ex.candles["ETH/USDT"] = hourly_rows(10)
+    broker = make_broker(ex)
+    broker._entries["BTC/USDT"] = {"qty": 0.1, "avg_entry_price": 14_000.0}
+    engine, _ = ccxt_engine(tmp_path, broker, max_daily_loss_pct=3.0, stop_loss_pct=None)
+    assert engine.run_once().halted is False
+
+    ex.set_balance("USDT", 8_000.0)
+    ex.set_balance("BTC", 0.1)
+    engine.run_once()
+
+    assert engine.store.load().external_flow == pytest.approx(0.0)
 
 
 # ---- regression: how much of one of the bot's orders filled -------------------------------

@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 import math
 import uuid
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import pytest
@@ -383,6 +385,17 @@ def test_get_positions_maps_long_positions_only():
     aapl = positions["AAPL"]
     assert (aapl.symbol, aapl.qty, aapl.avg_entry_price, aapl.market_price) == ("AAPL", 3.0, 100.0, 110.0)
     assert positions["SPY"].market_price == 420.0  # market_value / qty when current_price missing
+
+
+def test_an_option_position_is_valued_per_contract_not_per_share():
+    # 10 contracts bought at $5.00 a share cost 5,000 (x100): valued per share,
+    # buying them by hand would look like 4,950 withdrawn from the account.
+    broker, trading, _ = make_broker()
+    option = position("SPY260320C00600000", qty="10", avg="5", current="4").model_copy(
+        update={"asset_class": "us_option", "market_value": "4000", "cost_basis": "5000"})
+    trading.get_all_positions.return_value = [option]
+    held = broker.get_positions()["SPY260320C00600000"]
+    assert (held.avg_entry_price, held.market_price, held.market_value) == (500.0, 400.0, 4_000.0)
 
 
 def test_get_positions_empty():
@@ -1126,7 +1139,7 @@ def test_engine_never_sells_spy_the_account_held_before_the_bot_started(tmp_path
 
     trading.submit_order.assert_not_called()
     assert report.orders == [] and report.errors == []
-    assert any("SPY" in m and "did not buy" in m for m in notifier.errors)
+    assert any("SPY" in m and "no record of buying" in m for m in notifier.errors)  # its first run
 
 
 def test_stop_loss_uses_the_positions_price_when_the_market_data_api_is_down(tmp_path):
@@ -1218,6 +1231,8 @@ class FakeAlpaca:
         return self._order({**placed, "status": "accepted"})
 
     def get_orders(self, request: GetOrdersRequest) -> list[Order]:
+        if request.status is QueryOrderStatus.ALL:  # the latest orders of any status, newest first
+            return [self._order(o) for o in reversed(self.orders)][:request.limit]
         return [self._order(o) for o in self.working() if not request.symbols or o["symbol"] in request.symbols]
 
     def get_order_by_id(self, order_id: str) -> Order:
@@ -1381,6 +1396,31 @@ def test_daily_loss_flatten_cancels_only_the_bots_own_orders(tmp_path):
     assert [(o.symbol, o.side, o.qty) for o in report.orders] == [("SPY", Side.SELL, 30.0)]
 
 
+def test_the_trading_day_is_new_yorks_whatever_the_configured_timezone(tmp_path):
+    # last_equity is the previous New York close: a Seoul day would roll mid-session.
+    fake = FakeAlpaca({"SPY": 100.0}, cash=10_000.0, last_equity=10_000.0)
+    engine, _, store = fake_alpaca_engine(tmp_path, fake)
+    engine.cfg = replace(engine.cfg, timezone="Asia/Seoul")
+    engine.run_once()  # NOW is 11:30 New York on 2026-03-10, already 00:30 on the 11th in Seoul
+    assert NOW.astimezone(ZoneInfo("Asia/Seoul")).date().isoformat() == "2026-03-11"
+    assert store.load().day == "2026-03-10"
+
+
+def test_a_sale_the_bot_did_not_make_between_two_ticks_is_a_loss_not_money_taken_out(tmp_path):
+    # The user's own 200 SPY are sold by their stop at 95 between two ticks:
+    # a real loss of 1,000 (-3.3% of 30,000), past the 3% limit.
+    fake = FakeAlpaca({"SPY": 100.0}, cash=10_000.0, positions={"SPY": 200.0}, last_equity=30_000.0)
+    engine, notifier, store = fake_alpaca_engine(tmp_path, fake, stop_loss_pct=None, max_daily_loss_pct=3.0)
+    assert engine.run_once().halted is False
+    fake.prices["SPY"] = 95.0
+    fake.qty["SPY"], fake.cash = 0.0, fake.cash + 200 * 95.0
+
+    report = engine.run_once()
+
+    assert report.halted is True
+    assert store.load().external_flow == pytest.approx(0.0)
+
+
 def test_the_bot_never_buys_into_a_short_position_it_would_cover(tmp_path):
     # The user is short 60 SPY by hand on a margin account.
     fake = FakeAlpaca({"SPY": 100.0}, cash=20_000.0, positions={"SPY": -60.0}, last_equity=14_000.0)
@@ -1435,11 +1475,45 @@ def test_an_order_still_working_is_not_settled_yet():
         broker.order_filled_qty("AAPL", "bot-AAPL-buy-1-ab")
 
 
-@pytest.mark.parametrize("exc", [api_error(500, "internal"), requests.ConnectionError("reset")])
-def test_an_order_lookup_that_fails_is_unknown(exc):
+@pytest.mark.parametrize("exc", [api_error(500, "internal"), api_error(429, "rate limit"),
+                                 requests.ConnectionError("reset")])
+def test_an_order_lookup_that_fails_is_looked_up_again_later(exc):
     broker, trading, _ = make_broker()
     trading.get_order_by_client_id.side_effect = exc
-    assert broker.order_filled_qty("AAPL", "bot-AAPL-buy-1-ab") is None
+    with pytest.raises(BrokerError, match="could not look up"):
+        broker.order_filled_qty("AAPL", "bot-AAPL-buy-1-ab")
+
+
+def test_the_newest_order_of_the_bots_comes_from_the_accounts_latest_orders():
+    broker, trading, _ = make_broker()
+    trading.get_orders.return_value = [order(symbol="SPY").model_copy(update={"client_order_id": cid})
+                                       for cid in ("web-order-1", "bot-SPY-sell-202603100930-ab12cd34",
+                                                   "bot-SPY-buy-202603090930-00000000")]
+    assert broker.latest_bot_order_id() == "bot-SPY-sell-202603100930-ab12cd34"
+    (request,), _ = trading.get_orders.call_args
+    assert request.status is QueryOrderStatus.ALL and request.direction.value == "desc" and request.limit >= 50
+    trading.get_orders.return_value = [order().model_copy(update={"client_order_id": "web-order-1"})]
+    assert broker.latest_bot_order_id() is None
+
+
+def test_a_brief_order_lookup_outage_never_sells_the_users_shares(tmp_path):
+    # The bot owns 20 of 120 SPY (the user's 100). Its stop-loss SELL fills, the
+    # user buys 30 more, then the next tick's order lookups fail (HTTP 503).
+    fake = FakeAlpaca({"SPY": 100.0}, cash=8_000.0, positions={"SPY": 120.0}, last_equity=20_000.0)
+    engine, notifier, store = fake_alpaca_engine(tmp_path, fake, owned={"SPY": 20.0}, stop_loss_pct=5.0,
+                                                 max_daily_loss_pct=None)
+    fake.prices["SPY"] = 94.0
+    assert [(o.side, o.qty, o.status) for o in engine.run_once().orders] == [(Side.SELL, 20.0, "accepted")]
+    fake.fill()
+    fake.qty["SPY"] += 30.0
+    real_lookup = fake.get_order_by_id
+    fake.get_order_by_id = MagicMock(side_effect=api_error(503, "service unavailable", code=50300000))
+    assert engine.run_once().orders == []  # unknown yet: nothing is sold blind
+    fake.get_order_by_id = real_lookup
+
+    for _ in range(2):
+        assert engine.run_once().orders == []
+    assert fake.qty["SPY"] == 130.0 and store.load().owned == {}
 
 
 def test_a_buy_whose_reply_was_lost_is_looked_up_and_keeps_its_stop_loss(tmp_path):

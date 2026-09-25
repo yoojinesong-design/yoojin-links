@@ -96,7 +96,7 @@ class BotConfig:
     symbols: list[str] = field(default_factory=list)
     timeframe: str = "1d"
     bars_lookback: int = 300
-    timezone: str = "America/New_York"    # defines the trading "day" for daily limits
+    timezone: str = "America/New_York"    # defines the trading "day" for daily limits (not on Alpaca: New York)
     poll_interval_seconds: int = 300
     strategy: StrategyConfig = field(default_factory=StrategyConfig)
     risk: RiskConfig = field(default_factory=RiskConfig)
@@ -160,16 +160,20 @@ def load_config(path: str | Path, env: Mapping[str, str] | None = None) -> BotCo
 def state_dir_only(path: str | Path) -> Path:
     """The state folder a config uses, WITHOUT validating anything else, so
     the emergency commands (``kill``/``resume``) still reach a running bot
-    after its config was edited into an invalid state. Resolved exactly like
-    :func:`load_config` does. Raises ConfigError only when the file cannot be
-    read as YAML or ``state_dir`` itself is invalid."""
+    after its config was edited into an invalid state (a YAML syntax error
+    included: then the top-level ``state_dir:`` line is read as text).
+    Resolved exactly like :func:`load_config` does. Raises ConfigError only
+    when the file cannot be read or ``state_dir`` itself is invalid."""
     config_path = Path(path).expanduser().resolve()
     try:
-        raw = yaml.load(config_path.read_text(encoding="utf-8"), Loader=_StrictLoader)  # noqa: S506
+        text = config_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         raise ConfigError(f"Cannot read config file {config_path}: {exc}") from exc
-    except yaml.YAMLError as exc:
-        raise ConfigError(f"{config_path} is not valid YAML:\n{exc}") from exc
+    try:
+        raw = yaml.load(text, Loader=_StrictLoader)  # noqa: S506
+    except yaml.YAMLError:
+        line = re.search(r"^state_dir:[ \t]*(.*?)[ \t]*(?:#.*)?$", text, re.MULTILINE)
+        raw = {"state_dir": line.group(1).strip("'\"")} if line and line.group(1) else {}
     value = raw.get("state_dir", "state") if isinstance(raw, Mapping) else "state"
     return _path(value, "state_dir", config_path.parent)
 

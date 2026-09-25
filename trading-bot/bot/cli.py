@@ -206,9 +206,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("status", cmd_status, "show account, positions, bot state and kill switch")
 
-    p = add("flatten", cmd_flatten, "sell ALL open positions at the market price (on Alpaca: every position in "
-                                    "the account, not only the configured symbols, and every open order is "
-                                    "cancelled)")
+    p = add("flatten", cmd_flatten, "close ALL open positions at the market price, also ones the bot did not buy, "
+                                    "and cancel open orders, also yours (on Alpaca: every long AND short position "
+                                    "and every open order in the account, on any symbol; on an exchange: the whole "
+                                    "balance of every configured coin and the open orders on those coins)")
     p.add_argument("--yes", action="store_true", help="confirm that you really want to sell everything")
 
     p = add("kill", cmd_kill, "turn the kill switch ON: the bot stops placing orders")
@@ -230,7 +231,8 @@ def cmd_strategies(args: argparse.Namespace) -> int:
         print(f"    Defaults: {_params_text(strategy.params)}  (needs {strategy.min_bars} bars of history)")
     print("\nChange settings under strategy.params, for example:")
     print("  strategy:\n    name: rsi_reversion\n    params:\n      entry_rsi: 5")
-    print("Then test it before trading:  python -m bot backtest --synthetic")
+    print("Then test it before trading:  python -m bot -c configs/stocks.yaml backtest --synthetic  "
+          "(or -c <your config>)")
     return EXIT_OK
 
 
@@ -292,6 +294,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
 
 def cmd_backtest(args: argparse.Namespace) -> int:
     from .backtest import BacktestConfig, run_backtest
+    from .brokers import trading_day_timezone
 
     cfg = _load(args)
     strategy = _make_strategy(cfg)
@@ -319,11 +322,12 @@ def cmd_backtest(args: argparse.Namespace) -> int:
         starting_cash=b.starting_cash, fee_pct=b.fee_pct, slippage_pct=b.slippage_pct,
         lookback=cfg.bars_lookback, timeframe=cfg.timeframe,
         trading_days_per_year=days_per_year,
-        timezone=cfg.timezone, risk=cfg.risk,
+        timezone=trading_day_timezone(cfg), risk=cfg.risk,  # the day the live bot's daily limits count
     )
     print(f"Backtest: {_strategy_label(cfg)}")
     print(f"Data:     {source}; " + ", ".join(f"{s} {len(f):,} bars" for s, f in data.items()))
-    print(f"          {cfg.timeframe} bars; Sharpe/volatility annualised with {days_per_year} trading days a year")
+    print(f"          {cfg.timeframe} bars; Sharpe/volatility annualised with {days_per_year} trading days a year; "
+          f"daily limits count {bt_cfg.timezone} days")
     print(f"Costs:    fee {b.fee_pct:g}% + slippage {b.slippage_pct:g}% per trade, "
           f"starting cash {_money(b.starting_cash, _currency(cfg))}\n")
     try:
@@ -419,7 +423,9 @@ def cmd_status(args: argparse.Namespace) -> int:
             print(f"  Not in `symbols`, so not managed by the bot (no stop-loss, no exits): {', '.join(unmanaged)}")
         not_bought = _not_bought_by_bot(cfg, broker, account.currency, positions, state)
         if not_bought:
-            print("  Not bought by this bot, so left alone (never sold by it; set adopt_existing_positions to "
+            what = ("Not bought by this bot" if state is not None and state.holdings_checked
+                    else "No record of the bot buying these (a first run, or its state was lost)")
+            print(f"  {what}, so left alone (never sold by it; set adopt_existing_positions to "
                   f"change that): {', '.join(not_bought)}")
 
     print("\nBot state")
@@ -430,7 +436,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     else:
         print(f"  Last check        {_ago(state.last_tick_at)}")
         if state.day:
-            day = f"{state.day} ({cfg.timezone})"
+            day = f"{state.day} ({getattr(broker, 'trading_day_timezone', None) or cfg.timezone})"
             baseline = loss_baseline(state)
             if baseline:
                 day += f", started at {state.day_start_equity:,.2f}"
@@ -452,8 +458,10 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 def cmd_flatten(args: argparse.Namespace) -> int:
     if not args.yes:
-        _error("flatten sells EVERY open position at the market price (on Alpaca: every position in the "
-               "account, also ones the bot did not buy, and every open order is cancelled). Nothing was done.\n"
+        _error("flatten closes EVERY open position at the market price, also shares or coins the bot did not buy, "
+               "and cancels open orders, also yours (on Alpaca: every long AND short position and every open order "
+               "in the account, on any symbol; on an exchange: the whole balance of every configured coin and the "
+               "open orders on those coins). Nothing was done.\n"
                f"To confirm, run:  {_hint(args, 'flatten --yes')}")
         return EXIT_USAGE
     from .brokers.paper import PaperBroker
@@ -494,7 +502,7 @@ def cmd_flatten(args: argparse.Namespace) -> int:
     rejected = [r for r in results if not r.ok]
     if results or failures:
         total = len(results) + len(failures)
-        print(f"{len(results) - len(rejected)} of {total} sell order(s) sent."
+        print(f"{len(results) - len(rejected)} of {total} close order(s) sent."
               + (" Some were REJECTED or FAILED: check them with the broker." if rejected or failures else ""))
     if not kill_switch_active(cfg.state_dir):
         print(f"The bot will open new positions on its next buy signal. To stop that too:  {_hint(args, 'kill')}")
@@ -1089,14 +1097,17 @@ def _not_bought_by_bot(cfg: BotConfig, broker: Broker, currency: str, positions:
 
     if cfg.adopt_existing_positions or getattr(broker, "bot_owned_account", False) or state is None:
         return []
-    same_account = state.account_key in (None, account_key(cfg, currency))
-    owned = state.owned if same_account else {}  # the bot starts a new record for another account
+    key = account_key(cfg, currency)
+    # Another account's record is kept aside and comes back when the bot runs on it again.
+    ledger: dict[str, Any] = ({"owned": state.owned, "unsettled": state.unsettled} if state.account_key in (None, key)
+                              else state.other_ledgers.get(key, {}))
+    owned, unsettled = ledger.get("owned", {}), ledger.get("unsettled", [])
     texts = []
     for symbol, pos in positions.items():
         if symbol not in cfg.symbols:
             continue
         extra = pos.qty - owned.get(symbol, {}).get("qty", 0.0)
-        if extra > pos.qty * 1e-9 and symbol not in state.unsettled:
+        if extra > pos.qty * 1e-9 and symbol not in unsettled:
             texts.append(f"{symbol} {_qty(extra)}")
     return texts
 
@@ -1134,7 +1145,7 @@ def _banner(cfg: BotConfig, args: argparse.Namespace) -> str:
         ("Timeframe", f"{cfg.timeframe} bars, checking every {cfg.poll_interval_seconds}s"),
         ("Strategy", _strategy_label(cfg)),
         ("Risk", risk[0]), *(("", text) for text in risk[1:]),
-        ("Trading day", f"midnight to midnight {cfg.timezone} (for daily limits)"),
+        ("Trading day", _trading_day_text(cfg)),
         ("Notify", _notify_text(cfg.notify)),
         ("State", str(cfg.state_dir)),
         ("Logs", f"{Path(cfg.log_dir) / LOG_FILE} (trades in trades.csv)"),
@@ -1145,6 +1156,13 @@ def _banner(cfg: BotConfig, args: argparse.Namespace) -> str:
     if cfg.is_live:
         lines = [_live_warning(args), *lines]
     return "\n".join(lines)
+
+
+def _trading_day_text(cfg: BotConfig) -> str:
+    from .brokers import trading_day_timezone
+
+    text = f"midnight to midnight {trading_day_timezone(cfg)} (for daily limits)"
+    return text + ", from the previous close's equity" if cfg.broker.type == "alpaca" else text
 
 
 def _live_warning(args: argparse.Namespace) -> str:
@@ -1212,7 +1230,9 @@ def _read_state(path: Path) -> tuple[BotState | None, str | None]:
     try:
         return BotState.from_dict(json.loads(raw)), None
     except (ValueError, TypeError) as exc:
-        return None, f"{path} is unreadable ({exc}); the bot starts a fresh state on its next check."
+        return None, (f"{path} is unreadable ({exc}). The bot leaves it in place and makes no new entries until "
+                      "you fix or delete it; a running bot keeps protecting what it remembers, a newly started "
+                      "one cannot tell what it bought. Deleting it makes the bot forget what it bought.")
 
 
 def _mode_label(cfg: BotConfig) -> str:
