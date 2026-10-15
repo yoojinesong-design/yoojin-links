@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>퀀트 포트폴리오 — Yoojin Song</title>
 <style>
 :root{
@@ -10,7 +11,7 @@
   --rd:#8E3430;--rd-bg:#F0E6E4;
   --vi:#5A4490;--vi-bg:#EAE8F2;
 }
-@media(prefers-color-scheme:dark){:root{
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --g:#111315;--s:#1A1D22;--s2:#24282E;
   --ink:#D4D2CE;--ink2:#8C8E8A;--ink3:#5E6060;
   --rule:#2A2D32;--rule2:#22252A;
@@ -20,16 +21,6 @@
   --rd:#CE5650;--rd-bg:#1C1210;
   --vi:#9680C6;--vi-bg:#161228;
 }}
-:root[data-theme="light"]{
-  --g:#EBEAE6;--s:#FFFFFF;--s2:#DFDEDA;
-  --ink:#161A1F;--ink2:#52565E;--ink3:#7A7E86;
-  --rule:#CDCCC8;--rule2:#DDDCD8;
-  --ac:#335A6E;--ac-bg:#E6EEF2;--ac-brd:#AABFCE;
-  --gn:#2A7648;--gn-bg:#E4F0EA;--gn-brd:#A4CEB8;
-  --am:#8E6620;--am-bg:#F0EBE0;--am-brd:#CCBE96;
-  --rd:#8E3430;--rd-bg:#F0E6E4;
-  --vi:#5A4490;--vi-bg:#EAE8F2;
-}
 :root[data-theme="dark"]{
   --g:#111315;--s:#1A1D22;--s2:#24282E;
   --ink:#D4D2CE;--ink2:#8C8E8A;--ink3:#5E6060;
@@ -117,10 +108,11 @@ canvas{width:100%;height:280px;display:block}
   .stk-r{flex-direction:column;align-items:flex-start;gap:3px}
 }
 </style>
+</head><body>
 
 <div class="page">
   <header class="hdr">
-    <span class="hdr-date m">QUANT PORTFOLIO &middot; 2026. 08</span>
+    <span class="hdr-date m">QUANT PORTFOLIO &middot; 2026. 10</span>
     <h1>너는 이미 $1.85M 채권 부자다</h1>
     <p class="hdr-sub">VA disability + CRSC + PCAFC의 현재가치를 계산하면, 금융자산 100% 주식이 <strong>수학적으로 맞는 유일한 답</strong>이다. 팩터 프리미엄으로 수익을 올리고, TSP와 Roth IRA에 최적 배치한다.</p>
   </header>
@@ -149,7 +141,7 @@ canvas{width:100%;height:280px;display:block}
   <span class="sl sl-ac m">전략의 수학</span>
   <h2>100% 주식이 맞는 이유</h2>
 
-  <p class="p">일반적인 재테크 조언: <strong>"60% 주식 + 40% 채권"</strong>. 이건 채권 자산이 없는 사람 기준이다.</p>
+  <p class="p">일반적인 재테크 조언: <strong>&ldquo;60% 주식 + 40% 채권&rdquo;</strong>. 이건 채권 자산이 없는 사람 기준이다.</p>
   <p class="p">너의 전체 자산 구성:</p>
 
   <div class="stk">
@@ -163,26 +155,28 @@ canvas{width:100%;height:280px;display:block}
     <p>금융 자산을 100% 주식에 넣어도 전체 포트폴리오의 <strong>주식 비중은 0.3%</strong>다. 오히려 <strong>채권 과다</strong> 상태. 금융 자산은 전부 주식, 그것도 <strong>팩터 프리미엄이 있는 주식</strong>에 넣어야 전체 포트폴리오가 균형을 잡는다.</p>
   </div>
 
-  <p class="p">추가: 인적 자본 (미래 급여 현재가치)은 ~$2.5M 이상. 이것도 경기에 연동되는 "주식형" 자산이라 금융 자산에서 <strong>국내 대형주 대신 해외 + 소형 가치주</strong>를 더 사야 분산이 된다.</p>
+  <p class="p">인적 자본 (미래 급여 현재가치)은 ~$2.5M 이상. 이것도 경기에 연동되는 &ldquo;주식형&rdquo; 자산이라 금융 자산에서 <strong>국내 대형주 대신 해외 + 소형 가치주</strong>를 더 사야 분산이 된다.</p>
 
   <hr class="hr">
 
   <span class="sl sl-vi m">팩터 프리미엄</span>
   <h2>공짜 점심은 없지만, 할인 점심은 있다</h2>
-  <p class="p">Fama-French 이후 50년간 검증된 팩터들. "시장 평균을 사라"보다 <strong>구조적으로 높은 기대수익</strong>.</p>
+  <p class="p">Fama-French 이후 50년간 검증된 팩터들. &ldquo;시장 평균을 사라&rdquo;보다 <strong>구조적으로 높은 기대수익</strong>.</p>
 
   <div class="tbl"><div class="tbl-wrap">
     <table>
-      <tr><th>팩터</th><th>연간 프리미엄</th><th>왜 존재하는가</th></tr>
-      <tr><td><strong>시장 (beta)</strong></td><td class="m n">+7.0%</td><td>주식 자체의 위험 보상</td></tr>
-      <tr><td><strong>규모 (size)</strong></td><td class="m n">+2.5%</td><td>소형주가 더 위험 &rarr; 더 높은 수익</td></tr>
-      <tr><td><strong>가치 (value)</strong></td><td class="m n">+3.5%</td><td>저평가 종목이 평균 회귀</td></tr>
-      <tr><td><strong>모멘텀</strong></td><td class="m n">+6.0%</td><td>추세가 지속되는 행동 편향 착취</td></tr>
-      <tr><td><strong>수익성 (quality)</strong></td><td class="m n">+3.0%</td><td>고수익 기업이 과소평가됨</td></tr>
+      <tr><th>팩터</th><th>연간 프리미엄</th><th>왜 존재하는가</th><th>이 포트폴리오</th></tr>
+      <tr><td><strong>시장 (beta)</strong></td><td class="m n">+7.0%</td><td>주식 자체의 위험 보상</td><td class="m n">&#x2713;</td></tr>
+      <tr><td><strong>규모 (size)</strong></td><td class="m n">+2.0%</td><td>소형주가 더 위험 &rarr; 더 높은 수익</td><td class="m n">&#x2713;</td></tr>
+      <tr><td><strong>가치 (value)</strong></td><td class="m n">+3.5%</td><td>저평가 종목이 평균 회귀</td><td class="m n">&#x2713;</td></tr>
+      <tr><td><strong>수익성 (quality)</strong></td><td class="m n">+3.0%</td><td>고수익 기업이 과소평가됨</td><td class="m n">&#x2713;</td></tr>
+      <tr><td><strong>모멘텀</strong></td><td class="m n">+5.0%</td><td>추세가 지속되는 행동 편향 착취</td><td class="m" style="color:var(--ink3)">&mdash;</td></tr>
     </table>
   </div></div>
 
-  <p class="p">모멘텀은 회전율이 높아 세금 부담이 크다 &rarr; <strong>세금 이연 계좌(TSP)에 넣어야</strong>. 가치+규모는 장기 보유 &rarr; <strong>비과세 계좌(Roth IRA)에 넣어야</strong>. 이게 <strong>tax alpha</strong>.</p>
+  <p class="p"><strong>이 포트폴리오가 잡는 팩터:</strong> AVUV와 AVDV는 소형 가치주를 선별할 때 <strong>수익성(profitability) 스크린</strong>을 적용한다. 시장 + 규모 + 가치 + 수익성, 4개 팩터에 동시 노출. 모멘텀은 회전율이 높아 거래 비용과 세금이 크고, TSP/ETF로 저비용 구현이 어려워 <strong>이 전략에서는 제외</strong>했다.</p>
+
+  <p class="p">가치 + 규모는 장기 보유 &rarr; <strong>비과세 계좌(Roth IRA)에 배치</strong>. TSP의 S Fund(소형/중형)는 세금 이연 안에서 규모 프리미엄 확보. 이게 <strong>tax alpha</strong>.</p>
 
   <hr class="hr">
 
@@ -193,14 +187,14 @@ canvas{width:100%;height:280px;display:block}
     <table>
       <tr><th>펀드</th><th>배분</th><th>비용</th><th>근거</th></tr>
       <tr><td><strong>C Fund</strong><br><span style="font-size:11px;color:var(--ink3)">S&P 500</span></td><td class="m" style="font-weight:700">35%</td><td class="m">0.04%</td><td>대형 우량주 코어. 세계 최저 수수료.</td></tr>
-      <tr><td><strong>S Fund</strong><br><span style="font-size:11px;color:var(--ink3)">DJ Completion</span></td><td class="m" style="font-weight:700;color:var(--ac)">45%</td><td class="m">0.04%</td><td><strong>소형/중형주 오버웨이트.</strong> 규모 프리미엄 +2.5%/yr. TSP에서 유일한 팩터 틸트.</td></tr>
+      <tr><td><strong>S Fund</strong><br><span style="font-size:11px;color:var(--ink3)">DJ Completion</span></td><td class="m" style="font-weight:700;color:var(--ac)">45%</td><td class="m">0.04%</td><td><strong>소형/중형주 오버웨이트.</strong> 규모 프리미엄 +2%/yr. TSP에서 유일한 팩터 틸트.</td></tr>
       <tr><td><strong>I Fund</strong><br><span style="font-size:11px;color:var(--ink3)">MSCI EAFE</span></td><td class="m" style="font-weight:700">20%</td><td class="m">0.04%</td><td>해외 선진국. 인적 자본이 미국 정부/의료에 집중 &rarr; 해외로 분산.</td></tr>
       <tr><td><strong>F Fund</strong><br><span style="font-size:11px;color:var(--ink3)">채권 인덱스</span></td><td class="m rn">0%</td><td class="m">0.04%</td><td>VA disability = $1.18M 채권. 추가 불필요.</td></tr>
       <tr><td><strong>G Fund</strong><br><span style="font-size:11px;color:var(--ink3)">국채</span></td><td class="m rn">0%</td><td class="m">0.04%</td><td>같은 이유. 안전자산은 이미 충분.</td></tr>
     </table>
   </div></div>
 
-  <p class="p">기여율: 최소 <strong>5%</strong> (매칭 풀 수령). 여유 있으면 10-15%. PMHNP 전환 후 최대 $23,500/yr까지.</p>
+  <p class="p">기여율: 최소 <strong>5%</strong> (매칭 풀 수령). 여유 있으면 10&ndash;15%. PMHNP 전환 후 최대 $23,500/yr까지.</p>
 
   <hr class="hr">
 
@@ -211,14 +205,14 @@ canvas{width:100%;height:280px;display:block}
   <div class="tbl"><div class="tbl-wrap">
     <table>
       <tr><th>ETF</th><th>배분</th><th>비용</th><th>팩터 노출</th></tr>
-      <tr><td><strong>AVUV</strong><br><span style="font-size:11px;color:var(--ink3)">Avantis US Small Cap Value</span></td><td class="m" style="font-weight:700;color:var(--ac)">60%</td><td class="m">0.25%</td><td>규모 + 가치. 기대 초과수익 +3~5%/yr. <strong>핵심 보유</strong>.</td></tr>
-      <tr><td><strong>AVDV</strong><br><span style="font-size:11px;color:var(--ink3)">Avantis Int'l Small Cap Value</span></td><td class="m" style="font-weight:700;color:var(--ac)">40%</td><td class="m">0.36%</td><td>해외 + 규모 + 가치. TSP I Fund와 다른 유니버스(소형 가치).</td></tr>
+      <tr><td><strong>AVUV</strong><br><span style="font-size:11px;color:var(--ink3)">Avantis US Small Cap Value</span></td><td class="m" style="font-weight:700;color:var(--ac)">60%</td><td class="m">0.25%</td><td>규모 + 가치 + 수익성. 기대 초과수익 +3~5%/yr. <strong>핵심 보유</strong>.</td></tr>
+      <tr><td><strong>AVDV</strong><br><span style="font-size:11px;color:var(--ink3)">Avantis Int'l Small Cap Value</span></td><td class="m" style="font-weight:700;color:var(--ac)">40%</td><td class="m">0.36%</td><td>해외 + 규모 + 가치 + 수익성. TSP I Fund와 다른 유니버스(소형 가치).</td></tr>
     </table>
   </div></div>
 
   <div class="wrn">
     <h3>계좌 커지면 추가</h3>
-    <p>$21K+ 되면: <strong>AVES</strong> (이머징 가치) 15%, <strong>AVUV</strong> 45%, <strong>AVDV</strong> 25%, AVES 15% 로 확장. $50K+ 되면 <strong>DFAC</strong> (Dimensional Core) 10% 추가로 퀄리티 팩터.</p>
+    <p>$21K+ 되면: <strong>AVES</strong> (이머징 가치) 15%, <strong>AVUV</strong> 45%, <strong>AVDV</strong> 25%, AVES 15%로 확장. $50K+ 되면 <strong>DFAC</strong> (Dimensional Core) 10% 추가로 대형주 퀄리티 팩터.</p>
   </div>
 
   <hr class="hr">
@@ -233,7 +227,7 @@ canvas{width:100%;height:280px;display:block}
 
   <div class="kpi">
     <div class="kpi-i"><div class="kpi-v m" id="kpi-med">-</div><div class="kpi-l">65세 중위값</div></div>
-    <div class="kpi-i"><div class="kpi-v m" id="kpi-p90">-</div><div class="kpi-l">90% 확률 이상</div></div>
+    <div class="kpi-i"><div class="kpi-v m" id="kpi-p90">-</div><div class="kpi-l">90% 확률 최소</div></div>
     <div class="kpi-i"><div class="kpi-v m" id="kpi-1m">-</div><div class="kpi-l">$1M 도달 확률</div></div>
   </div>
 
@@ -256,15 +250,15 @@ canvas{width:100%;height:280px;display:block}
   <div class="tbl"><div class="tbl-wrap">
     <table>
       <tr><th>시나리오</th><th>예상 하락</th><th>회복 기간</th><th>VA disability 영향</th></tr>
-      <tr><td><strong>일반 조정</strong> (연 1-2회)</td><td class="m rn">&minus;10~15%</td><td class="m">2-4개월</td><td class="m n">$0 변화</td></tr>
-      <tr><td><strong>약세장</strong> (3-5년 주기)</td><td class="m rn">&minus;20~35%</td><td class="m">1-2년</td><td class="m n">$0 변화</td></tr>
-      <tr><td><strong>대공황급</strong> (2008)</td><td class="m rn">&minus;50%+</td><td class="m">3-5년</td><td class="m n">$0 변화</td></tr>
+      <tr><td><strong>일반 조정</strong> (연 1&ndash;2회)</td><td class="m rn">&minus;10~15%</td><td class="m">2&ndash;4개월</td><td class="m n">$0 변화</td></tr>
+      <tr><td><strong>약세장</strong> (3&ndash;5년 주기)</td><td class="m rn">&minus;20~35%</td><td class="m">1&ndash;2년</td><td class="m n">$0 변화</td></tr>
+      <tr><td><strong>대공황급</strong> (2008)</td><td class="m rn">&minus;50%+</td><td class="m">3&ndash;5년</td><td class="m n">$0 변화</td></tr>
     </table>
   </div></div>
 
   <div class="ok">
     <h3>핵심: VA disability는 주식시장과 상관관계 0</h3>
-    <p>2008년 금융위기 때 S&P 500이 -57% 떨어졌을 때도 VA disability는 COLA +5.8% <strong>올랐다</strong>. 너의 생활비 베이스는 시장과 완전히 독립. 그래서 금융 자산의 일시적 하락을 <strong>감당할 수 있다</strong> &mdash; 아니, 적립 중에는 싸게 사는 기회다.</p>
+    <p>2008년 금융위기 때 S&P 500이 &minus;57% 떨어졌을 때도 VA disability는 COLA +5.8% <strong>올랐다</strong>. 너의 생활비 베이스는 시장과 완전히 독립. 금융 자산의 일시적 하락을 <strong>감당할 수 있다</strong> &mdash; 적립 중에는 싸게 사는 기회다.</p>
   </div>
 
   <p class="p"><strong>VaR (95%, 1년):</strong> 최악의 경우 1년 내 포트폴리오의 ~28% 손실 가능. $100K 포트폴리오면 $28K. 아프지만, 월 $4,158 VA disability는 그대로 들어온다.</p>
@@ -291,7 +285,7 @@ canvas{width:100%;height:280px;display:block}
     <div class="step-c">TSP 기여율 확인: 최소 <strong>5%</strong> (매칭 풀 수령 = 공짜 돈). 가능하면 10%.</div>
   </div>
 
-  <p class="p">이후: <strong>분기 1회</strong> (1월, 4월, 7월, 10월) 나한테 와서 "리밸런싱"이라고 하면 드리프트 체크해줌. 배분이 목표에서 &plusmn;5%p 이상 벗어나면 조정.</p>
+  <p class="p">이후: <strong>분기 1회</strong> (1월, 4월, 7월, 10월) 리밸런싱 체크. 배분이 목표에서 &plusmn;5%p 이상 벗어나면 조정.</p>
 
   <hr class="hr">
 
@@ -328,11 +322,11 @@ canvas{width:100%;height:280px;display:block}
   <hr class="hr">
 
   <div class="closing">
-    <p>이건 "주식으로 대박"이 아니라 "이미 가진 것을 제대로 배치하는" 전략이다. 너의 진짜 자산은 VA disability $1.85M + 앞으로의 PMHNP 급여. 금융 투자는 그 위에 얹는 최적화일 뿐. 본업이 중력선이고 이건 궤도에도 안 들어가는 유지보수 작업이다.</p>
+    <p>이건 &ldquo;주식으로 대박&rdquo;이 아니라 &ldquo;이미 가진 것을 제대로 배치하는&rdquo; 전략이다. 너의 진짜 자산은 VA disability $1.85M + 앞으로의 PMHNP 급여. 금융 투자는 그 위에 얹는 최적화일 뿐.</p>
   </div>
 
   <div class="foot">
-    <p class="m">퀀트 포트폴리오 전략 &middot; yoojinesong &middot; 2026.08</p>
+    <p class="m">퀀트 포트폴리오 전략 &middot; yoojinesong &middot; 2026.10</p>
     <p style="margin-top:8px">이 문서는 교육 목적이며 면허 있는 재정 자문이 아닙니다. 투자에는 원금 손실 위험이 있습니다. 개인 상황에 따라 CFP&reg; 또는 fee-only financial advisor와 상담을 권합니다.</p>
   </div>
 </div>
@@ -353,139 +347,129 @@ canvas{width:100%;height:280px;display:block}
     return'$'+v.toFixed(0);
   }
 
-  const NS=5000,NY=27,INIT=6000;
-  const MC1=1333,MC2=3166,P1M=72;
-  const AR=0.10,AV=0.18;
-  const MR=Math.pow(1+AR,1/12)-1;
-  const MV=AV/Math.sqrt(12);
+  var NS=5000,NY=27,INIT=6000;
+  var MC1=1333,MC2=3166,P1M=72;
+  var AR=0.10,AV=0.18;
+  var MR=Math.pow(1+AR,1/12)-1;
+  var MV=AV/Math.sqrt(12);
 
   function run(){
-    const rng=createRNG(42);
-    const snaps=Array.from({length:NY+1},()=>[]);
-    for(let s=0;s<NS;s++){
-      let b=INIT;snaps[0].push(b);
-      for(let y=0;y<NY;y++){
-        for(let m=0;m<12;m++){
-          const mi=y*12+m;
+    var rng=createRNG(42);
+    var snaps=[];
+    var i;
+    for(i=0;i<=NY;i++)snaps.push([]);
+    var finals=[];
+    for(var s=0;s<NS;s++){
+      var b=INIT;snaps[0].push(b);
+      for(var y=0;y<NY;y++){
+        for(var m=0;m<12;m++){
+          var mi=y*12+m;
           b=Math.max(0,b*(1+MR+MV*normRand(rng))+(mi<P1M?MC1:MC2));
         }
         snaps[y+1].push(b);
       }
+      finals.push(b);
     }
-    return snaps.map(a=>{
-      const s=[...a].sort((x,y)=>x-y);const n=s.length;
-      return{p10:s[n*.1|0],p25:s[n*.25|0],p50:s[n*.5|0],p75:s[n*.75|0],p90:s[n*.9|0]};
+    var pcts=snaps.map(function(a){
+      var sorted=a.slice().sort(function(x,y){return x-y});
+      var n=sorted.length;
+      return{p10:sorted[n*.1|0],p25:sorted[n*.25|0],p50:sorted[n*.5|0],p75:sorted[n*.75|0],p90:sorted[n*.9|0]};
     });
+    return{pcts:pcts,finals:finals};
   }
 
   function isDark(){
-    const dt=document.documentElement.getAttribute('data-theme');
+    var dt=document.documentElement.getAttribute('data-theme');
     if(dt==='dark')return true;if(dt==='light')return false;
     return window.matchMedia('(prefers-color-scheme:dark)').matches;
   }
 
   function draw(canvas,pcts){
-    const ctx=canvas.getContext('2d');
-    const dpr=window.devicePixelRatio||1;
-    const rect=canvas.getBoundingClientRect();
+    var ctx=canvas.getContext('2d');
+    var dpr=window.devicePixelRatio||1;
+    var rect=canvas.getBoundingClientRect();
     canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;
     ctx.scale(dpr,dpr);
-    const w=rect.width,h=rect.height;
-    const P={t:24,r:24,b:36,l:62};
-    const pw=w-P.l-P.r,ph=h-P.t-P.b;
-    const dk=isDark();
-    const maxV=pcts[pcts.length-1].p90;
-    const yMax=Math.ceil(maxV/500000)*500000||500000;
-    const xP=i=>P.l+(i/(pcts.length-1))*pw;
-    const yP=v=>P.t+ph-(v/yMax)*ph;
-    const gc=dk?'rgba(100,110,120,0.15)':'rgba(0,0,0,0.06)';
-    const tc=dk?'#6A6C68':'#7A7E86';
-    const bo=dk?'rgba(104,170,198,0.1)':'rgba(51,90,110,0.08)';
-    const bi=dk?'rgba(104,170,198,0.22)':'rgba(51,90,110,0.16)';
-    const ml=dk?'#68AAC6':'#335A6E';
-    const mg=dk?'rgba(84,192,118,0.25)':'rgba(42,118,72,0.15)';
+    var w=rect.width,h=rect.height;
+    var P={t:24,r:24,b:36,l:62};
+    var pw=w-P.l-P.r,ph=h-P.t-P.b;
+    var dk=isDark();
+    var maxV=pcts[pcts.length-1].p90;
+    var yMax=Math.ceil(maxV/500000)*500000||500000;
+    var xP=function(i){return P.l+(i/(pcts.length-1))*pw};
+    var yP=function(v){return P.t+ph-(v/yMax)*ph};
+    var gc=dk?'rgba(100,110,120,0.15)':'rgba(0,0,0,0.06)';
+    var tc=dk?'#6A6C68':'#7A7E86';
+    var bo=dk?'rgba(104,170,198,0.1)':'rgba(51,90,110,0.08)';
+    var bi=dk?'rgba(104,170,198,0.22)':'rgba(51,90,110,0.16)';
+    var ml=dk?'#68AAC6':'#335A6E';
+    var mg=dk?'rgba(84,192,118,0.25)':'rgba(42,118,72,0.15)';
 
     ctx.clearRect(0,0,w,h);
     ctx.font='10px ui-monospace,monospace';
 
-    // grid
-    for(let v=0;v<=yMax;v+=500000){
-      const y=yP(v);
+    for(var v=0;v<=yMax;v+=500000){
+      var y=yP(v);
       ctx.strokeStyle=gc;ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(w-P.r,y);ctx.stroke();
       ctx.fillStyle=tc;ctx.textAlign='right';
       ctx.fillText(v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+(v/1e3).toFixed(0)+'K',P.l-6,y+3);
     }
-    for(let i=0;i<=NY;i+=5){
-      const x=xP(i);
+    for(var i=0;i<=NY;i+=5){
+      var x=xP(i);
       ctx.strokeStyle=gc;ctx.beginPath();ctx.moveTo(x,P.t);ctx.lineTo(x,P.t+ph);ctx.stroke();
       ctx.fillStyle=tc;ctx.textAlign='center';ctx.fillText((38+i)+'세',x,h-P.b+16);
     }
 
-    // $1M line
     if(yMax>=1e6){
       ctx.strokeStyle=mg;ctx.setLineDash([5,4]);ctx.lineWidth=1.5;
-      ctx.beginPath();const my=yP(1e6);ctx.moveTo(P.l,my);ctx.lineTo(w-P.r,my);ctx.stroke();
+      ctx.beginPath();var my=yP(1e6);ctx.moveTo(P.l,my);ctx.lineTo(w-P.r,my);ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle=dk?'rgba(84,192,118,0.5)':'rgba(42,118,72,0.4)';
       ctx.textAlign='left';ctx.fillText('$1M',w-P.r+4,my+3);
     }
 
-    // bands
     function band(key1,key2,fill){
       ctx.fillStyle=fill;ctx.beginPath();
-      for(let i=0;i<pcts.length;i++){const x=xP(i);i===0?ctx.moveTo(x,yP(pcts[i][key1])):ctx.lineTo(x,yP(pcts[i][key1]))}
-      for(let i=pcts.length-1;i>=0;i--)ctx.lineTo(xP(i),yP(pcts[i][key2]));
+      for(var i=0;i<pcts.length;i++){var x=xP(i);i===0?ctx.moveTo(x,yP(pcts[i][key1])):ctx.lineTo(x,yP(pcts[i][key1]))}
+      for(var i=pcts.length-1;i>=0;i--)ctx.lineTo(xP(i),yP(pcts[i][key2]));
       ctx.closePath();ctx.fill();
     }
     band('p90','p10',bo);
     band('p75','p25',bi);
 
-    // median
     ctx.strokeStyle=ml;ctx.lineWidth=2.5;ctx.beginPath();
-    for(let i=0;i<pcts.length;i++){const x=xP(i),y=yP(pcts[i].p50);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}
+    for(var i=0;i<pcts.length;i++){var x=xP(i),y=yP(pcts[i].p50);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}
     ctx.stroke();
 
-    // endpoint label
-    const lp=pcts[pcts.length-1];
+    var lp=pcts[pcts.length-1];
     ctx.fillStyle=ml;ctx.font='bold 11px ui-monospace,monospace';ctx.textAlign='right';
     ctx.fillText(fmt(lp.p50),xP(pcts.length-1)-4,yP(lp.p50)-8);
 
-    // legend
     ctx.font='9px ui-monospace,monospace';ctx.textAlign='left';
-    const ly=P.t+8;
+    var ly=P.t+8;
     ctx.fillStyle=bi;ctx.fillRect(P.l+4,ly,10,10);
     ctx.fillStyle=tc;ctx.fillText('25-75th %ile',P.l+18,ly+8);
     ctx.fillStyle=bo;ctx.fillRect(P.l+100,ly,10,10);
     ctx.fillStyle=tc;ctx.fillText('10-90th %ile',P.l+114,ly+8);
   }
 
-  function fillUI(pcts){
-    const last=pcts[pcts.length-1];
+  function fillUI(pcts,finals){
+    var last=pcts[pcts.length-1];
     document.getElementById('kpi-med').textContent=fmt(last.p50);
     document.getElementById('kpi-p90').textContent=fmt(last.p10);
 
-    // P($1M) — count sims where final > $1M
-    // We only have percentiles, so estimate from distribution
-    // If p50 > $1M, then P > 50%. Interpolate roughly.
-    const f=last;
-    let p1m;
-    if(f.p10>=1e6)p1m='>90%';
-    else if(f.p25>=1e6)p1m='75-90%';
-    else if(f.p50>=1e6)p1m='50-75%';
-    else if(f.p75>=1e6)p1m='25-50%';
-    else if(f.p90>=1e6)p1m='10-25%';
-    else p1m='<10%';
-    document.getElementById('kpi-1m').textContent=p1m;
+    var over1m=0;
+    for(var i=0;i<finals.length;i++){if(finals[i]>=1e6)over1m++}
+    document.getElementById('kpi-1m').textContent=((over1m/finals.length)*100).toFixed(1)+'%';
 
-    // table rows
-    const ages=[45,50,55,60,65];
-    const yearIdxs=ages.map(a=>a-38);
-    yearIdxs.forEach((yi,ai)=>{
-      const row=document.getElementById('row-'+ages[ai]);
+    var ages=[45,50,55,60,65];
+    ages.forEach(function(age){
+      var yi=age-38;
+      var row=document.getElementById('row-'+age);
       if(!row||!pcts[yi])return;
-      const p=pcts[yi];
-      const cells=row.querySelectorAll('td');
+      var p=pcts[yi];
+      var cells=row.querySelectorAll('td');
       cells[1].textContent=fmt(p.p10);
       cells[2].textContent=fmt(p.p25);
       cells[3].textContent=fmt(p.p50);
@@ -495,14 +479,17 @@ canvas{width:100%;height:280px;display:block}
   }
 
   document.addEventListener('DOMContentLoaded',function(){
-    const pcts=run();
-    const canvas=document.getElementById('mc-chart');
+    var result=run();
+    var pcts=result.pcts;
+    var finals=result.finals;
+    var canvas=document.getElementById('mc-chart');
     draw(canvas,pcts);
-    fillUI(pcts);
+    fillUI(pcts,finals);
 
-    new MutationObserver(()=>draw(canvas,pcts)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-    window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>draw(canvas,pcts));
-    let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>draw(canvas,pcts),100)});
+    new MutationObserver(function(){draw(canvas,pcts)}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(){draw(canvas,pcts)});
+    var resizeTimer;window.addEventListener('resize',function(){clearTimeout(resizeTimer);resizeTimer=setTimeout(function(){draw(canvas,pcts)},100)});
   });
 })();
 </script>
+</body></html>
