@@ -447,6 +447,152 @@ export const offerCategories = [
   },
 ];
 
+/* ── Personality Analysis System ── */
+
+export const dimensionMeta = {
+  purpose: {
+    connector: { short: "Co", label: "Connector", emoji: "🤝", desc: "Driven by human connection and empathy" },
+    builder: { short: "Bu", label: "Builder", emoji: "🔨", desc: "Driven by tangible creation and legacy" },
+    guide: { short: "Gu", label: "Guide", emoji: "⭐", desc: "Driven by mentorship and human growth" },
+    solver: { short: "So", label: "Solver", emoji: "⚙️", desc: "Driven by elegant solutions to real problems" },
+  },
+  wellbeing: {
+    social: { short: "Sc", label: "Social", emoji: "💬", desc: "Recharged through deep conversation" },
+    emotional: { short: "Em", label: "Emotional", emoji: "🌊", desc: "Grounded in self-awareness" },
+    belonging: { short: "Be", label: "Belonging", emoji: "🏘️", desc: "Rooted in community and place" },
+    drive: { short: "Dr", label: "Drive", emoji: "🔥", desc: "Fueled by purpose and progress" },
+  },
+  skills: {
+    communication: { short: "Cm", label: "Communication", emoji: "✍️", desc: "Strength in words and connection" },
+    organization: { short: "Or", label: "Organization", emoji: "📋", desc: "Strength in structure and planning" },
+    creating: { short: "Cr", label: "Creating", emoji: "🎨", desc: "Strength in imagination and design" },
+    analysis: { short: "An", label: "Analysis", emoji: "🔍", desc: "Strength in pattern recognition" },
+  },
+  values: {
+    justice: { short: "Ju", label: "Justice", emoji: "⚖️", desc: "Guided by fairness and equity" },
+    compassion: { short: "Cp", label: "Compassion", emoji: "💛", desc: "Guided by care and kindness" },
+    growth: { short: "Gr", label: "Growth", emoji: "🌱", desc: "Guided by potential and development" },
+    stewardship: { short: "St", label: "Stewardship", emoji: "🌍", desc: "Guided by preservation and legacy" },
+  },
+};
+
+export const compositeTypes = {
+  connector: {
+    communication: { name: "The Empathic Voice", desc: "You combine deep emotional intelligence with the rare ability to articulate what others feel but can't say. People don't just feel heard around you — they feel understood for the first time." },
+    organization: { name: "The Community Weaver", desc: "You don't just connect people — you build the structures that keep them connected. Potlucks, check-in schedules, neighborhood networks — you architect belonging." },
+    creating: { name: "The Heart Artist", desc: "Your empathy flows into everything you make. Whether it's a letter, a meal, or a space — what you create makes people feel less alone." },
+    analysis: { name: "The Social Scientist", desc: "You read people like data — not coldly, but with a precision that lets you understand why someone is hurting before they tell you. You see the patterns others miss." },
+  },
+  builder: {
+    communication: { name: "The Rallying Force", desc: "You don't just build things — you build movements. Your ability to articulate a vision pulls people toward something bigger than themselves." },
+    organization: { name: "The Master Planner", desc: "Nothing slips through. You turn ambitious visions into actionable plans, and your projects finish when others stall. You're the one who makes it real." },
+    creating: { name: "The Visionary Maker", desc: "You see what doesn't exist yet and build it. Not in theory — in wood, in pixels, in brick. Your creations outlast conversations." },
+    analysis: { name: "The Strategic Architect", desc: "You build with intention and evidence. Where others see an empty lot, you see load-bearing walls, traffic patterns, and a community gathering two years from now." },
+  },
+  guide: {
+    communication: { name: "The Inspiring Teacher", desc: "You make the complex feel simple and the impossible feel reachable. Your words don't just inform — they transform how people see themselves." },
+    organization: { name: "The Program Director", desc: "You don't just mentor one person — you design systems that mentor many. Curricula, mentorship programs, structured growth paths — you scale human development." },
+    creating: { name: "The Creative Mentor", desc: "You teach through making. Your instinct is to hand someone a brush, a keyboard, a tool — and watch their eyes change when they realize what they can do." },
+    analysis: { name: "The Insight Coach", desc: "You see what people can't see about themselves — the pattern in their failures, the thread in their strengths. Your observations change trajectories." },
+  },
+  solver: {
+    communication: { name: "The Translator", desc: "You make the invisible visible. Complex systems, tangled policies, broken processes — you explain them so clearly that everyone in the room can see the fix." },
+    organization: { name: "The Systems Optimizer", desc: "You don't just solve problems — you prevent them. Your gift is designing processes that make good outcomes automatic and bad ones nearly impossible." },
+    creating: { name: "The Innovation Engineer", desc: "You prototype solutions while others are still debating the problem. Your creations are functional first and beautiful because they work." },
+    analysis: { name: "The Root Cause Detective", desc: "You find what everyone else missed. Where others treat symptoms, you dig until you find the one broken thing that explains everything." },
+  },
+};
+
+export const compatibilityMap = {
+  connector: {
+    best: "builder",
+    bestDesc: "Connectors find the people. Builders create the places where those connections deepen. Together, you don't just bring people together — you give them somewhere to belong.",
+    growth: "solver",
+    growthDesc: "Solvers push you to think systemically, not just personally. They help you see that the loneliest person in the neighborhood might need a better system, not just a better friend.",
+  },
+  builder: {
+    best: "connector",
+    bestDesc: "Builders create the physical spaces. Connectors fill them with life. Your structures become gathering places because a Connector knows who needs to be there.",
+    growth: "guide",
+    growthDesc: "Guides remind you that not everything worth building is tangible. Sometimes the most lasting thing you can build is someone's confidence.",
+  },
+  guide: {
+    best: "solver",
+    bestDesc: "Guides nurture individual potential. Solvers remove the barriers blocking it. Together, you don't just believe in someone — you clear the path for them to move.",
+    growth: "connector",
+    growthDesc: "Connectors remind you that sometimes people don't need a lesson. They need a friend. Your instinct to teach can learn from their instinct to simply be present.",
+  },
+  solver: {
+    best: "guide",
+    bestDesc: "Solvers fix systems. Guides develop people. Together, you build organizations that are both efficient and human — where the process serves the person, not the other way around.",
+    growth: "builder",
+    growthDesc: "Builders teach you that not every problem needs an elegant solution. Sometimes you just need to pick up a hammer and start. Action before optimization.",
+  },
+};
+
+export function getImprintCode(quizResults) {
+  const code = [];
+  const catOrder = ["purpose", "wellbeing", "skills", "values"];
+  for (const catId of catOrder) {
+    const result = quizResults[catId];
+    if (result) {
+      const primary = getPrimaryDimension(result.scores);
+      if (primary && dimensionMeta[catId]?.[primary]) {
+        code.push({ catId, key: primary, ...dimensionMeta[catId][primary] });
+      }
+    }
+  }
+  return code;
+}
+
+export function getDimensionScores(scores, maxPerDimension) {
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  if (total === 0) return [];
+  return Object.entries(scores)
+    .map(([key, val]) => ({
+      key,
+      score: val,
+      max: maxPerDimension,
+      pct: Math.round((val / maxPerDimension) * 100),
+    }))
+    .sort((a, b) => b.score - a.score);
+}
+
+export function getPersonalityNarrative(quizResults) {
+  const parts = [];
+  const purpose = quizResults.purpose ? getPrimaryDimension(quizResults.purpose.scores) : null;
+  const wellbeing = quizResults.wellbeing ? getPrimaryDimension(quizResults.wellbeing.scores) : null;
+  const skills = quizResults.skills ? getPrimaryDimension(quizResults.skills.scores) : null;
+  const values = quizResults.values ? getPrimaryDimension(quizResults.values.scores) : null;
+
+  if (purpose && skills && compositeTypes[purpose]?.[skills]) {
+    parts.push(compositeTypes[purpose][skills].desc);
+  }
+
+  if (wellbeing && dimensionMeta.wellbeing[wellbeing]) {
+    const wb = dimensionMeta.wellbeing[wellbeing];
+    const wellbeingInsights = {
+      social: "Your energy comes from the people around you — real conversation, shared silence, the feeling of being truly known.",
+      emotional: "You process the world deeply before you act. That inner clarity is rare, and it makes your decisions count.",
+      belonging: "Place matters to you. Not just geography — the feeling of being part of something rooted and real.",
+      drive: "You're powered by forward motion. When you know where you're heading, everything else falls into alignment.",
+    };
+    parts.push(wellbeingInsights[wellbeing]);
+  }
+
+  if (values && dimensionMeta.values[values]) {
+    const valueInsights = {
+      justice: "At your core, you believe the world should be fair — and you're willing to do the uncomfortable work of making it so.",
+      compassion: "Your moral compass points toward kindness, even when it's inconvenient. You'd rather err on the side of care.",
+      growth: "You see potential everywhere — in people, in systems, in yourself. Standing still feels like falling behind.",
+      stewardship: "You carry a sense of responsibility for what comes next. Protecting what matters isn't conservative — it's courageous.",
+    };
+    parts.push(valueInsights[values]);
+  }
+
+  return parts;
+}
+
 export function getPrimaryDimension(scores) {
   let max = -1;
   let winners = [];

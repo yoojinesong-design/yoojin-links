@@ -13,6 +13,7 @@ import {
 import RadarChart from "./RadarChart";
 import OfferFlow from "./OfferFlow";
 import ArchetypeCard from "./ArchetypeCard";
+import PersonalityDNA from "./PersonalityDNA";
 import {
   isNative,
   getPlatform,
@@ -1518,7 +1519,7 @@ export default function ImprintApp() {
         {arch && (
           <div className={`reveal-content ${revealPhase === "content" ? "visible" : ""}`} aria-live="polite">
             <p className="reveal-eyebrow">Your purpose archetype</p>
-            <ArchetypeCard archetype={arch} typeKey={primaryArchetype} mode="full" />
+            <ArchetypeCard archetype={arch} typeKey={primaryArchetype} mode="full" scores={purposeResult?.scores} maxScore={5} />
             {user ? (
               <button className="btn-continue" onClick={() => switchView("dashboard")}>
                 See your profile <span className="arrow">→</span>
@@ -1617,6 +1618,11 @@ export default function ImprintApp() {
               );
             })}
           </div>
+
+          {/* Personality DNA profile */}
+          {completedCount > 0 && (
+            <PersonalityDNA quizResults={quizResults} />
+          )}
 
           {/* Quest — Purpose app lesson: turn discovery into action */}
           {purposeResult && (

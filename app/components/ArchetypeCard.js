@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { dimensionMeta, getDimensionScores, getPrimaryDimension } from "../data/content";
 
 /* ── Canvas emblem drawing functions ── */
 function drawConnector(ctx, cx, cy, size, color) {
@@ -216,7 +217,7 @@ function Emblem({ type, color, size = 120 }) {
 }
 
 /* ── Main ArchetypeCard component ── */
-function ArchetypeCard({ archetype, typeKey, mode = "full" }) {
+function ArchetypeCard({ archetype, typeKey, mode = "full", scores = null, maxScore = 5 }) {
   const [showResearch, setShowResearch] = useState(false);
   const [showGrowth, setShowGrowth] = useState(false);
 
@@ -269,6 +270,26 @@ function ArchetypeCard({ archetype, typeKey, mode = "full" }) {
           <span key={t} className="archetype-trait">{t}</span>
         ))}
       </div>
+
+      {/* Dimension scores */}
+      {scores && (
+        <div className="archetype-dimension-bars">
+          {getDimensionScores(scores, maxScore).map((s) => {
+            const meta = dimensionMeta.purpose?.[s.key];
+            return meta ? (
+              <div key={s.key} className={`arch-dim-bar ${s.key === typeKey ? "arch-dim-primary" : ""}`}>
+                <div className="arch-dim-header">
+                  <span className="arch-dim-label">{meta.label}</span>
+                  <span className="arch-dim-pct">{s.pct}%</span>
+                </div>
+                <div className="arch-dim-track">
+                  <div className="arch-dim-fill" style={{ width: `${s.pct}%`, background: s.key === typeKey ? color : undefined }} />
+                </div>
+              </div>
+            ) : null;
+          })}
+        </div>
+      )}
 
       {/* Description */}
       <p className="archetype-card-desc">{archetype.description}</p>
