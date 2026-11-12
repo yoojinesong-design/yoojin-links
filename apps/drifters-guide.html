@@ -203,6 +203,19 @@ html,body{height:100%}
 .onb-foot{display:flex;flex-direction:column;gap:8px}
 .onb-foot .btn{padding:13px 16px;font-size:15.5px;font-weight:600;text-align:center}
 .onb-foot .btn.plain{border-color:transparent;background:transparent;color:var(--ink2);font-weight:500}
+
+/* one question per screen */
+.pagerrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pager{display:flex;gap:6px;flex-wrap:wrap}
+.pager button{width:26px;height:14px;padding:0;border:none;background:none;cursor:pointer;position:relative}
+.pager button::after{content:"";position:absolute;left:0;right:0;top:5px;height:4px;border-radius:2px;background:var(--rule)}
+.pager button.past::after{background:var(--ink3)}
+.pager button.on::after{background:var(--contour)}
+.qpage>h3{font-family:var(--serif);font-size:clamp(22px,4.6vw,28px);line-height:1.3;font-weight:700;text-wrap:balance}
+.qpage>h3 .k{display:block;margin-bottom:6px}
+.qpage>.hint{font-size:14.5px;color:var(--ink2);margin-top:-2px}
+.qpage{gap:14px;min-height:38vh}
+.track .top input{flex:1}
 </style>
 
 <div id="onb" class="onb" hidden></div>
@@ -210,16 +223,13 @@ html,body{height:100%}
 <header class="cover compact">
   <div class="wrap">
     <div class="cover-id">
-      <div class="eyebrow">Field guide &middot; 6 checkpoints</div>
       <h1>The Drifter's Guide to Gravity</h1>
-      <p class="ko">떠도는 이를 위한 중력 안내서. 하는 일은 많은데 무엇이 나를 끌어당기는지 모를 때, 여섯 지점을 차례로 지난다.</p>
     </div>
-    <div class="motto" aria-label="Don't panic. Sequence.">DON'T PANIC. SEQUENCE.</div>
   </div>
 </header>
 <div class="modebar"><div class="wrap" id="modebar"></div></div>
 <div class="wrap shell">
-  <nav class="route" id="route" aria-label="체크포인트"></nav>
+  <nav class="route" id="route" aria-label="Checkpoints"></nav>
   <main class="sheet" id="sheet"></main>
 </div>
 </div>
@@ -254,15 +264,16 @@ function uid(){return Math.random().toString(36).slice(2,9)}
 function num(v){var n=parseFloat(v);return isFinite(n)?n:0}
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function plural(n,w){return n+' '+w+(n===1?'':'s')}
 
 /* ---------- model ---------- */
-var VERBS=['돌보다','만들다','지키다','가르치다','고치다','이해하다','연결하다','표현하다','정리하다','이끌다','탐구하다','팔다'];
-var RES=[['money','돈'],['time','시간'],['energy','에너지'],['focus','집중']];
-var HOURS=[['sleep','수면'],['work','일'],['care','돌봄·가사'],['commute','이동'],['basics','식사·씻기']];
-var TIERS=[['gravity','중력선'],['orbit','궤도'],['standby','대기']];
+var VERBS=['care','build','protect','teach','fix','understand','connect','express','organize','lead','explore','sell'];
+var RES=[['money','Money'],['time','Time'],['energy','Energy'],['focus','Focus']];
+var HOURS=[['sleep','Sleep'],['work','Work'],['care','Care & chores'],['commute','Travel'],['basics','Meals & hygiene']];
+var TIERS=[['gravity','Gravity'],['orbit','Orbit'],['standby','Standby']];
 
 function blank(){return{
-  v:1,currency:'$',
+  v:2,currency:'$',
   line:{items:[],sentence:''},
   limit:{levels:{money:3,time:3,energy:3,focus:3},hours:{sleep:49,work:40,care:14,commute:5,basics:14},pick:''},
   assets:{rate:3,streams:[],financial:0,unused:[]},
@@ -271,54 +282,54 @@ function blank(){return{
   proof:{name:'',events:[],log:[],action:{text:'',due:'',done:false}}
 }}
 function example(){return{
-  v:1,currency:'$',
+  v:2,currency:'$',
   line:{items:[
-    {id:'a1',what:'심리학 전공',verbs:['이해하다','돌보다']},
-    {id:'a2',what:'육군 실무 간호 (68C)',verbs:['돌보다','지키다']},
-    {id:'a3',what:'보훈병원 간호사 (LVN)',verbs:['돌보다']},
-    {id:'a4',what:'코드와 작은 서비스 만들기',verbs:['만들다']},
-    {id:'a5',what:'AI 음악 카탈로그',verbs:['만들다','표현하다']},
-    {id:'a6',what:'배우자 사업 돕기',verbs:['돌보다','만들다']},
-    {id:'a7',what:'딸 키우기',verbs:['돌보다','지키다']}
-  ],sentence:'나는 만드는 사람이자 돌보는 사람이다.'},
+    {id:'a1',what:'Psychology degree',verbs:['understand','care']},
+    {id:'a2',what:'Army practical nursing (68C)',verbs:['care','protect']},
+    {id:'a3',what:'Nurse at a VA hospital (LVN)',verbs:['care']},
+    {id:'a4',what:'Writing code, shipping small apps',verbs:['build']},
+    {id:'a5',what:'AI music catalog',verbs:['build','express']},
+    {id:'a6',what:"Helping with a spouse's business",verbs:['care','build']},
+    {id:'a7',what:'Raising a daughter',verbs:['care','protect']}
+  ],sentence:'I am someone who builds and someone who cares.'},
   limit:{levels:{money:4,time:1,energy:2,focus:2},hours:{sleep:49,work:40,care:35,commute:7,basics:14},pick:'time'},
   assets:{rate:3,streams:[
-    {id:'s1',name:'재향군인 장애 보상 (VA Disability)',amount:49898,years:42,sure:true},
-    {id:'s2',name:'전투 관련 특별 보상 (CRSC)',amount:11400,years:42,sure:true},
-    {id:'s3',name:'가족 간병인 지원금 (PCAFC)',amount:26500,years:20,sure:true}
+    {id:'s1',name:'VA disability compensation',amount:49898,years:42,sure:true},
+    {id:'s2',name:'Combat-related special compensation (CRSC)',amount:11400,years:42,sure:true},
+    {id:'s3',name:'Family caregiver stipend (PCAFC)',amount:26500,years:20,sure:true}
   ],financial:6000,unused:[
-    {id:'u1',name:'학비 지원 프로그램 (VANEEP)',using:false},
-    {id:'u2',name:'무계약금 주택 대출 (VA Loan)',using:false},
-    {id:'u3',name:'상이군인 소유 사업체 인증 (SDVOSB)',using:false},
-    {id:'u4',name:'가족 간병인 프로그램 신청',using:true}
+    {id:'u1',name:'Employer tuition program (VANEEP)',using:false},
+    {id:'u2',name:'Zero-down home loan (VA Loan)',using:false},
+    {id:'u3',name:'Veteran-owned business certification (SDVOSB)',using:false},
+    {id:'u4',name:'Family caregiver program application',using:true}
   ]},
   order:{tracks:[
     {id:'t1',name:'LVN → BSN → PMHNP',tier:'gravity',hours:12,chain:true,window:true,relight:''},
-    {id:'t2',name:'재향군인 혜택 교육 콘텐츠',tier:'orbit',hours:4,chain:true,window:false,relight:''},
-    {id:'t3',name:'AI 음악 카탈로그',tier:'orbit',hours:3,chain:false,window:false,relight:''},
-    {id:'t4',name:'예약 앱 · 메뉴 앱',tier:'standby',hours:0,chain:false,window:false,relight:'BSN 입학이 확정되면'},
-    {id:'t5',name:'카페',tier:'standby',hours:0,chain:false,window:false,relight:'PMHNP 취득 후'},
-    {id:'t6',name:'범용 AI 사업 탐색',tier:'standby',hours:0,chain:false,window:false,relight:'중력선이 끝나면 다시 본다'}
+    {id:'t2',name:'Veteran benefits education',tier:'orbit',hours:4,chain:true,window:false,relight:''},
+    {id:'t3',name:'AI music catalog',tier:'orbit',hours:3,chain:false,window:false,relight:''},
+    {id:'t4',name:'Booking app, menu app',tier:'standby',hours:0,chain:false,window:false,relight:'When BSN admission is confirmed'},
+    {id:'t5',name:'Café',tier:'standby',hours:0,chain:false,window:false,relight:'After the PMHNP license'},
+    {id:'t6',name:'General AI business',tier:'standby',hours:0,chain:false,window:false,relight:'Revisit when the gravity line is done'}
   ]},
   creed:{
-    forWhom:'나라와 가족. 특히 딸.',
-    can:'지켜야 하는 순간이 오면 "할 수 있다"고 말하는 것.',
-    gap:'늘 최고조일 필요는 없다. 지금의 나와 필요한 나 사이의 간격을 작게 유지하고, 벌어지면 스스로 닫는다.',
-    lineage:'Georges Hébert, "Être fort pour être utile." 그리고 MovNat, Mark Twight, Peter Attia.',
+    forWhom:'My country and my family. My daughter most of all.',
+    can:'When the moment comes to protect, to be able to say "I can."',
+    gap:"I don't have to live at my peak. I keep the gap small between who I am now and who I need to be, and when it widens I close it myself.",
+    lineage:'Georges Hébert: "Être fort pour être utile." Then MovNat, Mark Twight, Peter Attia.',
     lines:['Be strong to be useful.','Prove I can return.','Then stay where I returned.']
   },
-  proof:{name:'딸의 이름을 붙인 테스트',events:[
-    {id:'e1',name:'전력 질주',standard:'400m',meaning:'그녀에게 달려간다'},
-    {id:'e2',name:'파머 캐리',standard:'딸 체중 이상, 100m',meaning:'안고 나온다'},
-    {id:'e3',name:'바닥에서 일어서기',standard:'손을 쓰지 않고',meaning:'혼자 일어선다'},
-    {id:'e4',name:'럭',standard:'2마일',meaning:'부상자 운반과 같은 감각'}
+  proof:{name:"A test named after his daughter",events:[
+    {id:'e1',name:'Sprint',standard:'400 m',meaning:'Running to her'},
+    {id:'e2',name:'Farmer carry',standard:'Her weight plus more, 100 m',meaning:'Carrying her out'},
+    {id:'e3',name:'Rise from the floor',standard:'Without hands',meaning:'Getting up on my own'},
+    {id:'e4',name:'Ruck',standard:'2 miles',meaning:'The feel of a casualty carry'}
   ],log:[
     {id:'l1',date:'2026-10-04',res:{e1:true,e3:true}},
     {id:'l2',date:'2026-11-01',res:{e1:true,e2:true,e3:true}}
-  ],action:{text:'학비 지원 프로그램 신청 상태 확인 전화',due:'',done:false}}
+  ],action:{text:'Call to check the tuition program application status',due:'',done:false}}
 }}
 
-var LS='drifters-guide:v1';
+var LS='drifters-guide:v2';
 var store={mode:'example',own:null,updatedAt:0,onboarded:false,profile:{name:'',state:''}};
 try{var raw=localStorage.getItem(LS);if(raw){var p=JSON.parse(raw);if(p&&typeof p==='object'){store.mode=p.mode==='own'&&p.own?'own':'example';store.own=p.own||null;store.updatedAt=p.updatedAt||0;store.onboarded=!!p.onboarded;if(p.profile)store.profile={name:String(p.profile.name||''),state:String(p.profile.state||'')}}}}catch(e){}
 var ex=example();
@@ -333,15 +344,15 @@ function save(){
   store.updatedAt=Date.now();
   var ok=saveLocal();
   if(sync){syncDirty=true;clearTimeout(syncTimer);syncTimer=setTimeout(push,1500)}
-  else setStatus(ok?'이 기기에 저장됨':'저장할 수 없는 환경입니다');
+  else setStatus(ok?'Saved on this device':"Can't save in this browser");
 }
 function push(){
   if(!sync||syncing||!syncDirty)return;
-  syncing=true;syncDirty=false;setStatus('저장 중…');
+  syncing=true;syncDirty=false;setStatus('Saving…');
   sync.set({own:clone(store.own),mode:store.mode,updatedAt:store.updatedAt,onboarded:store.onboarded,profile:clone(store.profile)}).then(function(){
-    syncing=false;setStatus('계정에 저장됨');if(syncDirty)push();
+    syncing=false;setStatus('Saved to your account');if(syncDirty)push();
   },function(){
-    syncing=false;sync=null;setStatus('이 기기에 저장됨');
+    syncing=false;sync=null;setStatus('Saved on this device');
   });
 }
 function initSync(){
@@ -350,15 +361,15 @@ function initSync(){
     var db=r[0],user=r[1];if(!db||!user)return;
     return user.id().then(function(id){
       if(!id)return;
-      var ref=db.doc('data/users/'+id+'/guide');
+      var ref=db.doc('data/users/'+id+'/guide-en');
       return ref.get().then(function(snap){
         sync=ref;
         var d=snap.exists?snap.data():null;
         if(d&&d.own&&(d.updatedAt||0)>store.updatedAt){
           store.own=clone(d.own);store.mode=d.mode==='example'?'example':'own';store.updatedAt=d.updatedAt;store.onboarded=true;if(d.profile)store.profile={name:String(d.profile.name||''),state:String(d.profile.state||'')};saveLocal();enterApp();
-          setStatus('계정에 저장됨');
+          setStatus('Saved to your account');
         }else if(store.own&&store.updatedAt>((d&&d.updatedAt)||0)){syncDirty=true;push()}
-        else if(store.mode==='own')setStatus('계정에 저장됨');
+        else if(store.mode==='own')setStatus('Saved to your account');
       });
     });
   }).catch(function(){sync=null});
@@ -366,14 +377,10 @@ function initSync(){
 
 /* ---------- money ---------- */
 function money(v){
-  var c=S().currency,a=Math.abs(v),s=v<0?'-':'';
-  if(c==='₩'){
-    if(a>=1e8)return s+(a/1e8).toFixed(a>=1e9?1:2)+'억 원';
-    if(a>=1e4)return s+Math.round(a/1e4).toLocaleString('en-US')+'만 원';
-    return s+Math.round(a).toLocaleString('en-US')+'원';
-  }
-  if(a>=1e6)return s+'$'+(a/1e6).toFixed(2)+'M';
-  return s+'$'+Math.round(a).toLocaleString('en-US');
+  var c=S().currency,a=Math.abs(v),s=(v<0?'-':'')+c;
+  if(a>=1e9)return s+(a/1e9).toFixed(2)+'B';
+  if(a>=1e6)return s+(a/1e6).toFixed(2)+'M';
+  return s+Math.round(a).toLocaleString('en-US');
 }
 function pv(amount,years,rate){
   var r=rate/100;if(years<=0||amount<=0)return 0;
@@ -386,6 +393,7 @@ function verbTally(){
   var m={};S().line.items.forEach(function(it){(it.verbs||[]).forEach(function(v){m[v]=(m[v]||0)+1})});
   return Object.keys(m).map(function(k){return[k,m[k]]}).sort(function(a,b){return b[1]-a[1]||VERBS.indexOf(a[0])-VERBS.indexOf(b[0])});
 }
+function third(v){return /(x|ch|sh|s)$/.test(v)?v+'es':v+'s'}
 function freeHours(){var hr=S().limit.hours,t=0;HOURS.forEach(function(x){t+=num(hr[x[0]])});return 168-t}
 function lowest(){var lv=S().limit.levels,min=6,keys=[];RES.forEach(function(r){var v=lv[r[0]];if(v<min){min=v;keys=[r[0]]}else if(v===min)keys.push(r[0])});return keys}
 function resName(k){for(var i=0;i<RES.length;i++)if(RES[i][0]===k)return RES[i][1];return''}
@@ -414,30 +422,30 @@ function done(step){
 
 /* ---------- steps ---------- */
 var STEPS=[
-  {id:'line',t:'궤적',d:'흩어진 것들에서 하나의 선',rule:'흩어져 보이는 것들은 같은 동기의 다른 출력이다.',why:'지금까지 한 일을 늘어놓고, 각각에 동사를 붙인다. 가장 자주 나오는 동사가 당신의 선이다.'},
-  {id:'limit',t:'제약',d:'진짜 병목 찾기',rule:'계획은 가장 부족한 자원으로 값을 매긴다.',why:'돈이 문제라고 생각하지만 대개 시간이나 에너지가 먼저 바닥난다. 무엇이 먼저 떨어지는지 숫자로 본다.'},
-  {id:'assets',t:'자산',d:'이미 가진 것을 숫자로',rule:'보이지 않는 자산은 세어야 보인다.',why:'매년 들어오는 돈은 그 자체로 큰 채권이다. 현재가치로 바꿔 보면 내가 얼마나 위험을 질 수 있는지가 달라진다.'},
-  {id:'order',t:'순서',d:'중력선, 궤도, 대기',rule:'하나만 하라는 말이 아니다. 순서를 정하라는 말이다.',why:'중력선은 하나. 궤도는 둘까지. 나머지는 버리지 않고 대기에 넣고, 다시 켜는 조건을 적어 둔다.'},
-  {id:'creed',t:'신조',d:'왜 하는지 자기 말로',rule:'남이 확인해 줄 수 없다. 내 말로 써야 내 것이 된다.',why:'순서만 있고 이유가 없으면 힘든 날에 무너진다. 네 가지 질문에 답하고 세 줄로 줄인다.'},
-  {id:'proof',t:'증명',d:'신조를 테스트로',rule:'측정할 수 없으면 준비된 게 아니다.',why:'신조를 통과와 실패가 갈리는 종목으로 바꾼다. 한 번 도달하고, 그 뒤에는 머문다.'},
-  {id:'card',t:'안내서',d:'한 장으로 보기',rule:'여섯 지점을 지나온 결과.',why:''}
+  {id:'line',t:'Line',d:'One line through scattered things',rule:'Things that look scattered are different outputs of the same motive.',why:'List what you have done and tag each with a verb. The verbs that keep coming back are your line.'},
+  {id:'limit',t:'Constraint',d:'Find the real bottleneck',rule:'Price every plan in your scarcest resource.',why:'Most people blame money. Time or energy usually runs out first. See which one, in numbers.'},
+  {id:'assets',t:'Assets',d:'Count what you already hold',rule:'Invisible assets only show up when you count them.',why:'Money that arrives every year is a bond. Its present value changes how much risk you can carry.'},
+  {id:'order',t:'Order',d:'Gravity, orbit, standby',rule:'This is not "do one thing." It is "decide the order."',why:'One gravity line. Up to two orbits. Everything else goes on standby, with a condition for relighting it.'},
+  {id:'creed',t:'Creed',d:'Why, in your own words',rule:'No one can confirm it for you. It becomes yours when you write it.',why:'Order without a reason collapses on a hard day. Answer four questions, then cut it to three lines.'},
+  {id:'proof',t:'Proof',d:'Turn the creed into a test',rule:"If it can't be tested, it isn't readiness.",why:'Turn the creed into events you can pass or fail. Get there once, then stay.'},
+  {id:'card',t:'Guide',d:'Everything on one page',rule:'What six checkpoints add up to.',why:''}
 ];
-var cur='home';
+var cur='home',qi=0;
 function stepIndex(id){for(var i=0;i<STEPS.length;i++)if(STEPS[i].id===id)return i;return 0}
 
 function edit(fn,structural){
-  if(store.mode!=='own'){/* example edits stay in memory only */}
   fn(S());save();
   if(structural)renderSheet();else refresh();
   renderRoute();
 }
-function bindText(obj,key,after){return function(e){obj[key]=e.target.value;save();refresh();renderRoute();if(after)after()}}
+function bindText(obj,key){return function(e){obj[key]=e.target.value;save();refresh();renderRoute()}}
 function bindNum(obj,key){return function(e){obj[key]=num(e.target.value);save();refresh();renderRoute()}}
 
 function field(label,input,cls){return h('label',{class:'field '+(cls||'grow')},h('span',{text:label}),input)}
 function q(k,title,hint){return h('section',{class:'q'},h('h3',null,h('span',{class:'k',text:k}),title),hint?h('p',{class:'hint',text:hint}):null)}
 function addBtn(label,fn){return h('div',null,h('button',{class:'btn ghost',type:'button',onclick:fn,text:'+ '+label}))}
 function focusLater(id){setTimeout(function(){var el=document.getElementById(id);if(el)el.focus()},0)}
+function delBtn(fn){return h('button',{class:'x',type:'button','aria-label':'Remove',text:'×',onclick:fn})}
 
 var readoutFn=null;
 function refresh(){var box=document.getElementById('readout');if(box&&readoutFn){box.replaceChildren.apply(box,readoutFn())}}
@@ -445,35 +453,37 @@ function refresh(){var box=document.getElementById('readout');if(box&&readoutFn)
 /* --- 1 line --- */
 function viewLine(){
   var s=S(),out=[];
-  var sec=q('Q1','지금까지 한 일, 지금 하는 일을 적는다','전공, 직업, 프로젝트, 취미, 돌보는 사람. 서로 상관없어 보여도 그대로 적는다. 각각에 맞는 동사를 한두 개 고른다.');
+  var sec=q('Q1','What have you done, and what are you doing now?','Degrees, jobs, projects, hobbies, people you look after. Write them down even if they seem unrelated. Tag each with one or two verbs.');
   var rows=h('div',{class:'rows'});
   s.line.items.forEach(function(it){
     rows.appendChild(h('div',{class:'row'},
-      h('div',{class:'grow'},h('input',{type:'text',id:'li-'+it.id,value:it.what,placeholder:'예: 간호사, 밴드, 동생 돌보기','aria-label':'한 일',oninput:bindText(it,'what')}),
+      h('div',{class:'grow'},h('input',{type:'text',id:'li-'+it.id,value:it.what,placeholder:'e.g. nurse, a band, looking after my brother','aria-label':'Thing',oninput:bindText(it,'what')}),
         h('div',{class:'chips',style:'margin-top:7px'},VERBS.map(function(v){
           var on=it.verbs.indexOf(v)>=0;
           return h('button',{class:'chip',type:'button','aria-pressed':on?'true':'false',text:v,onclick:function(){edit(function(){var i=it.verbs.indexOf(v);if(i>=0)it.verbs.splice(i,1);else it.verbs.push(v)},true)}});
         }))),
-      h('button',{class:'x',type:'button','aria-label':'삭제',text:'×',onclick:function(){edit(function(st){st.line.items=st.line.items.filter(function(x){return x!==it})},true)}})
+      delBtn(function(){edit(function(st){st.line.items=st.line.items.filter(function(x){return x!==it})},true)})
     ));
   });
-  if(!s.line.items.length)rows.appendChild(h('div',{class:'empty',text:'아직 없습니다. 세 개 이상 적으면 선이 보이기 시작합니다.'}));
+  if(!s.line.items.length)rows.appendChild(h('div',{class:'empty',text:'Nothing yet. The line starts to show at three or more.'}));
   sec.appendChild(rows);
-  sec.appendChild(addBtn('항목 추가',function(){var id=uid();edit(function(st){st.line.items.push({id:id,what:'',verbs:[]})},true);focusLater('li-'+id)}));
+  sec.appendChild(addBtn('Add a thing',function(){var id=uid();edit(function(st){st.line.items.push({id:id,what:'',verbs:[]})},true);focusLater('li-'+id)}));
   out.push(sec);
-  var sec2=q('Q2','한 문장으로 쓴다','"나는 ___하는 사람이다." 아래 판독을 보고 자기 말로 고친다.');
-  sec2.appendChild(h('div',{class:'row'},h('div',{class:'grow'},h('input',{type:'text',id:'line-sentence',value:s.line.sentence,placeholder:'나는 ___하는 사람이다.','aria-label':'한 문장',oninput:bindText(s.line,'sentence')})),
-    h('button',{class:'btn sm',type:'button',text:'판독으로 채우기',onclick:function(){var t=verbTally();if(!t.length)return;var a=t[0][0].replace(/다$/,'는'),b=t[1]?t[1][0].replace(/다$/,'는'):null;edit(function(st){st.line.sentence='나는 '+(b?a+' 사람이자 '+b+' 사람이다.':a+' 사람이다.')},true)}})));
+  var sec2=q('Q2','Say it in one sentence','"I am someone who ___." Start from the tally and put it in your own words.');
+  var t0=verbTally();
+  if(t0.length)sec2.appendChild(h('p',{class:'note',text:'Your most frequent verbs: '+t0.slice(0,3).map(function(x){return x[0]+' ('+x[1]+')'}).join(', ')+'.'}));
+  sec2.appendChild(h('div',{class:'row'},h('div',{class:'grow'},h('input',{type:'text',id:'line-sentence',value:s.line.sentence,placeholder:'I am someone who ___.','aria-label':'One sentence',oninput:bindText(s.line,'sentence')})),
+    h('button',{class:'btn sm',type:'button',text:'Fill from tally',onclick:function(){var t=verbTally();if(!t.length)return;edit(function(st){st.line.sentence='I am someone who '+third(t[0][0])+(t[1]?' and '+third(t[1][0]):'')+'.'},true)}})));
   out.push(sec2);
   readoutFn=function(){
-    var t=verbTally(),n=S().line.items.length,max=t.length?t[0][1]:1,kids=[h('div',{class:'eyebrow',text:'판독 · 동사 집계'})];
-    if(!t.length){kids.push(h('p',{class:'note',text:'항목에 동사를 붙이면 여기에 집계가 나옵니다.'}));return kids}
-    var top=t.filter(function(x){return x[1]===max||x===t[1]}).slice(0,2);
-    kids.push(h('p',{class:'big'},'당신의 선은 ',h('span',{class:'num',text:top.map(function(x){return x[0]}).join(' + ')}),'.'));
+    var t=verbTally(),n=S().line.items.length,kids=[h('div',{class:'eyebrow',text:'Reading · verb tally'})];
+    if(!t.length){kids.push(h('p',{class:'note',text:'Tag your things with verbs and the tally appears here.'}));return kids}
+    kids.push(h('p',{class:'big'},'Your line is ',h('span',{class:'num',text:t.slice(0,2).map(function(x){return x[0]}).join(' + ')}),'.'));
+    if(S().line.sentence.trim())kids.push(h('p',{class:'creed',style:'font-size:19px',text:S().line.sentence.trim()}));
     var g=h('div',{class:'tally'});
     t.slice(0,6).forEach(function(x,i){g.appendChild(h('span',{text:x[0]}));g.appendChild(h('div',{class:'bar'},h('i',{class:i<2?'':'mute',style:'width:'+(x[1]/Math.max(n,1)*100)+'%'})));g.appendChild(h('span',{class:'mono',text:x[1]+' / '+n}))});
     kids.push(g);
-    kids.push(h('p',{class:'note',text:n<3?'항목이 적습니다. 세 개 이상일 때 믿을 만합니다.':'막대는 전체 '+n+'개 항목 중 그 동사가 붙은 수입니다. 위 두 개가 겹치는 곳이 당신이 계속 돌아오는 자리입니다.'}));
+    kids.push(h('p',{class:'note',text:n<3?'Too few things to trust yet. Add at least three.':'Each bar is how many of your '+n+' things carry that verb. Where the top two overlap is the place you keep returning to.'}));
     return kids;
   };
   return out;
@@ -482,7 +492,7 @@ function viewLine(){
 /* --- 2 limit --- */
 function viewLimit(){
   var s=S(),out=[];
-  var sec=q('Q1','지금 얼마나 남아 있나','1은 바닥, 5는 넉넉함. 평소 일주일을 기준으로 답한다.');
+  var sec=q('Q1','How much of each do you have left?','1 is empty, 5 is plenty. Answer for a normal week.');
   var rows=h('div',{class:'rows'});
   RES.forEach(function(r){
     var seg=h('div',{class:'seg',role:'group','aria-label':r[1]});
@@ -490,26 +500,28 @@ function viewLimit(){
     rows.appendChild(h('div',{class:'row'},h('strong',{class:'grow',text:r[1]}),seg));
   });
   sec.appendChild(rows);out.push(sec);
-  var sec2=q('Q2','일주일 168시간은 어디로 가나','주당 시간으로 적는다. 남는 것이 실제로 쓸 수 있는 시간이다.');
+  var sec2=q('Q2','Where do your 168 hours go?','Hours per week. What is left over is the time you can actually spend.');
   var row=h('div',{class:'row'});
-  HOURS.forEach(function(x){row.appendChild(field(x[1],h('input',{type:'number',id:'hr-'+x[0],min:'0',max:'168',step:'1',inputmode:'decimal',value:s.limit.hours[x[0]],oninput:bindNum(s.limit.hours,x[0])}),'w-s'))});
-  sec2.appendChild(row);out.push(sec2);
-  var sec3=q('Q3','당신의 제약을 하나 고른다','가장 낮은 것이 후보다. 같은 점수가 여럿이면 먼저 바닥나는 것을 고른다.');
-  var chips=h('div',{class:'chips'});
-  RES.forEach(function(r){var cand=lowest().indexOf(r[0])>=0;chips.appendChild(h('button',{class:'chip',type:'button','aria-pressed':s.limit.pick===r[0]?'true':'false',text:r[1]+(cand?' · 후보':''),onclick:function(){edit(function(st){st.limit.pick=st.limit.pick===r[0]?'':r[0]},true)}}))});
-  sec3.appendChild(chips);out.push(sec3);
+  HOURS.forEach(function(x){row.appendChild(field(x[1],h('input',{type:'number',id:'hr-'+x[0],min:'0',max:'168',step:'1',inputmode:'decimal',value:s.limit.hours[x[0]],oninput:function(e){s.limit.hours[x[0]]=num(e.target.value);save();var el=document.getElementById('free-live');if(el)el.textContent=freeHours()+' hours left over'}}),'w-m'))});
+  sec2.appendChild(row);
+  sec2.appendChild(h('p',{class:'note mono',id:'free-live',text:freeHours()+' hours left over'}));
+  out.push(sec2);
+  var sec3=q('Q3','Pick your one constraint','The lowest score is the candidate. If several tie, pick the one that runs out first.');
+  var pick=h('div',{class:'pick'});
+  RES.forEach(function(r){var cand=lowest().indexOf(r[0])>=0;pick.appendChild(h('button',{type:'button','aria-pressed':s.limit.pick===r[0]?'true':'false',text:r[1]+' · '+s.limit.levels[r[0]]+' of 5'+(cand?' · candidate':''),onclick:function(){edit(function(st){st.limit.pick=st.limit.pick===r[0]?'':r[0]},true)}}))});
+  sec3.appendChild(pick);out.push(sec3);
   readoutFn=function(){
-    var st=S(),free=freeHours(),kids=[h('div',{class:'eyebrow',text:'판독 · 주간 예산'})];
-    var pick=st.limit.pick;
-    kids.push(h('p',{class:'big'},pick?['제약은 ',h('span',{class:'num',text:resName(pick)}),'이다. ']:'제약을 아직 고르지 않았다. ','쓸 수 있는 시간은 주 ',h('span',{class:'num',text:Math.max(free,0)+'시간'}),'.'));
-    var stack=h('div',{class:'stack',role:'img','aria-label':'168시간 중 남는 시간 '+Math.max(free,0)+'시간'}),lg=h('div',{class:'legend'});
-    HOURS.forEach(function(x){var v=num(st.limit.hours[x[0]]);stack.appendChild(h('i',{style:'flex:'+Math.max(v,0)+' 0 0',title:x[1]+' '+v+'시간'}));lg.appendChild(h('span',null,x[1]+' ',h('b',{text:v+'h'})))});
-    if(free>0)stack.appendChild(h('i',{class:'free',style:'flex:'+free+' 0 0',title:'남는 시간 '+free+'시간'}));
-    lg.appendChild(h('span',null,'남는 시간 ',h('b',{text:free+'h'})));
+    var st=S(),free=freeHours(),kids=[h('div',{class:'eyebrow',text:'Reading · weekly budget'})];
+    var pk=st.limit.pick;
+    kids.push(h('p',{class:'big'},pk?['Your constraint is ',h('span',{class:'num',text:resName(pk).toLowerCase()}),'. ']:'No constraint picked yet. ','You have ',h('span',{class:'num',text:plural(Math.max(free,0),'hour')}),' a week to spend.'));
+    var stack=h('div',{class:'stack',role:'img','aria-label':Math.max(free,0)+' of 168 hours left over'}),lg=h('div',{class:'legend'});
+    HOURS.forEach(function(x){var v=num(st.limit.hours[x[0]]);stack.appendChild(h('i',{style:'flex:'+Math.max(v,0)+' 0 0',title:x[1]+' '+v+'h'}));lg.appendChild(h('span',null,x[1]+' ',h('b',{text:v+'h'})))});
+    if(free>0)stack.appendChild(h('i',{class:'free',style:'flex:'+free+' 0 0',title:'Left over '+free+'h'}));
+    lg.appendChild(h('span',null,'Left over ',h('b',{text:free+'h'})));
     kids.push(stack,lg);
-    if(free<0)kids.push(h('p',{class:'note crit',text:'합계가 168시간을 '+(-free)+'시간 넘습니다. 숫자를 다시 봅니다.'}));
-    else if(pick==='money')kids.push(h('p',{class:'note',text:'돈이 제약이면 다음 지점(자산)이 가장 중요합니다. 이미 가진 것을 먼저 셉니다.'}));
-    else if(pick)kids.push(h('p',{class:'note',text:'이제부터 모든 계획은 돈이 아니라 '+resName(pick)+'으로 값을 매깁니다. "얼마 드나"보다 "주 몇 시간 드나"를 먼저 묻습니다.'}));
+    if(free<0)kids.push(h('p',{class:'note crit',text:'Your hours add up to '+(-free)+' more than 168. Check the numbers.'}));
+    else if(pk==='money')kids.push(h('p',{class:'note',text:'If money is the constraint, the next checkpoint matters most. Count what you already hold first.'}));
+    else if(pk)kids.push(h('p',{class:'note',text:'From here on, price every plan in '+resName(pk).toLowerCase()+', not money. Ask "how many hours a week" before "how much does it cost."'}));
     return kids;
   };
   return out;
@@ -518,120 +530,145 @@ function viewLimit(){
 /* --- 3 assets --- */
 function viewAssets(){
   var s=S(),a=s.assets,out=[];
-  var sec=q('Q1','매년 들어오는 돈','연금, 보상금, 임대료, 급여. 금액은 연 단위. "보장"은 내가 일하지 않아도, 경기가 나빠도 들어오는 것만 켠다.');
-  var cur2=h('div',{class:'seg',role:'group','aria-label':'통화'});
-  ['$','₩'].forEach(function(c){cur2.appendChild(h('button',{type:'button','aria-pressed':s.currency===c?'true':'false',text:c,onclick:function(){edit(function(st){st.currency=c},true)}}))});
-  sec.appendChild(h('div',{class:'row'},h('span',{class:'grow',text:'통화와 할인율'}),cur2,field('할인율 %',h('input',{type:'number',id:'as-rate',min:'0',max:'15',step:'0.5',inputmode:'decimal',value:a.rate,oninput:bindNum(a,'rate')}),'w-s')));
+  var sec=q('Q1','What money arrives every year?','Pensions, benefits, rent, salary. Amounts per year. Turn on "guaranteed" only for money that arrives even if you stop working and the economy turns.');
+  var cur2=h('div',{class:'seg',role:'group','aria-label':'Currency'});
+  ['$','€','£','₩'].forEach(function(c){cur2.appendChild(h('button',{type:'button','aria-pressed':s.currency===c?'true':'false',text:c,onclick:function(){edit(function(st){st.currency=c},true)}}))});
+  sec.appendChild(h('div',{class:'row'},h('span',{class:'grow',text:'Currency and discount rate'}),cur2,field('Rate %',h('input',{type:'number',id:'as-rate',min:'0',max:'15',step:'0.5',inputmode:'decimal',value:a.rate,oninput:bindNum(a,'rate')}),'w-s')));
   var rows=h('div',{class:'rows'});
   a.streams.forEach(function(x){
     rows.appendChild(h('div',{class:'row'},
-      field('이름',h('input',{type:'text',id:'st-n-'+x.id,value:x.name,placeholder:'예: 군인연금',oninput:bindText(x,'name')})),
-      field('연 금액',h('input',{type:'number',id:'st-a-'+x.id,min:'0',inputmode:'decimal',value:x.amount||'',oninput:bindNum(x,'amount')}),'w-m'),
-      field('남은 햇수',h('input',{type:'number',id:'st-y-'+x.id,min:'0',max:'80',inputmode:'numeric',value:x.years||'',oninput:bindNum(x,'years')}),'w-s'),
-      h('button',{class:'chip',type:'button','aria-pressed':x.sure?'true':'false',text:'보장',onclick:function(){edit(function(){x.sure=!x.sure},true)}}),
-      h('button',{class:'x',type:'button','aria-label':'삭제',text:'×',onclick:function(){edit(function(st){st.assets.streams=st.assets.streams.filter(function(y){return y!==x})},true)}})));
+      field('Name',h('input',{type:'text',id:'st-n-'+x.id,value:x.name,placeholder:'e.g. military pension',oninput:bindText(x,'name')})),
+      field('Per year',h('input',{type:'number',id:'st-a-'+x.id,min:'0',inputmode:'decimal',value:x.amount||'',oninput:bindNum(x,'amount')}),'w-m'),
+      field('Years left',h('input',{type:'number',id:'st-y-'+x.id,min:'0',max:'80',inputmode:'numeric',value:x.years||'',oninput:bindNum(x,'years')}),'w-s'),
+      h('button',{class:'chip',type:'button','aria-pressed':x.sure?'true':'false',text:'guaranteed',onclick:function(){edit(function(){x.sure=!x.sure},true)}}),
+      delBtn(function(){edit(function(st){st.assets.streams=st.assets.streams.filter(function(y){return y!==x})},true)})));
   });
-  if(!a.streams.length)rows.appendChild(h('div',{class:'empty',text:'아직 없습니다. 하나만 넣어도 현재가치가 계산됩니다.'}));
+  if(!a.streams.length)rows.appendChild(h('div',{class:'empty',text:'Nothing yet. One stream is enough to compute a present value.'}));
   sec.appendChild(rows);
-  sec.appendChild(addBtn('수입원 추가',function(){var id=uid();edit(function(st){st.assets.streams.push({id:id,name:'',amount:0,years:0,sure:true})},true);focusLater('st-n-'+id)}));
+  sec.appendChild(addBtn('Add a stream',function(){var id=uid();edit(function(st){st.assets.streams.push({id:id,name:'',amount:0,years:0,sure:true})},true);focusLater('st-n-'+id)}));
   out.push(sec);
-  var sec2=q('Q2','지금 가진 금융자산','예금, 투자 계좌, 연금 계좌 잔고의 합.');
-  sec2.appendChild(h('div',{class:'row'},field('합계',h('input',{type:'number',id:'as-fin',min:'0',inputmode:'decimal',value:a.financial||'',oninput:bindNum(a,'financial')}),'w-m')));
+  var sec2=q('Q2','What financial assets do you hold today?','Savings, investment accounts and retirement accounts, added up.');
+  sec2.appendChild(h('div',{class:'row'},field('Total',h('input',{type:'number',id:'as-fin',min:'0',inputmode:'decimal',value:a.financial||'',oninput:bindNum(a,'financial')}))));
   out.push(sec2);
-  var sec3=q('Q3','자격은 있는데 아직 안 쓴 것','제도, 혜택, 면허, 할인, 인맥. 쓰는 중이면 켠다. 꺼져 있는 것이 지금 뻗을 수 있는 가지다.');
+  var sec3=q('Q3','What are you entitled to but not using?','Programs, benefits, licenses, discounts, people who would help. Turn it on if you use it. The ones left off are branches you can reach for now.');
   var rows3=h('div',{class:'rows'});
   a.unused.forEach(function(x){
-    rows3.appendChild(h('div',{class:'row'},h('div',{class:'grow'},h('input',{type:'text',id:'un-'+x.id,value:x.name,placeholder:'예: 직장 학비 지원','aria-label':'이름',oninput:bindText(x,'name')})),
-      h('button',{class:'chip',type:'button','aria-pressed':x.using?'true':'false',text:x.using?'쓰는 중':'안 쓰는 중',onclick:function(){edit(function(){x.using=!x.using},true)}}),
-      h('button',{class:'x',type:'button','aria-label':'삭제',text:'×',onclick:function(){edit(function(st){st.assets.unused=st.assets.unused.filter(function(y){return y!==x})},true)}})));
+    rows3.appendChild(h('div',{class:'row'},h('div',{class:'grow'},h('input',{type:'text',id:'un-'+x.id,value:x.name,placeholder:'e.g. employer tuition support','aria-label':'Name',oninput:bindText(x,'name')})),
+      h('button',{class:'chip',type:'button','aria-pressed':x.using?'true':'false',text:x.using?'using':'not using',onclick:function(){edit(function(){x.using=!x.using},true)}}),
+      delBtn(function(){edit(function(st){st.assets.unused=st.assets.unused.filter(function(y){return y!==x})},true)})));
   });
+  if(!a.unused.length)rows3.appendChild(h('div',{class:'empty',text:'Nothing yet.'}));
   sec3.appendChild(rows3);
-  sec3.appendChild(addBtn('항목 추가',function(){var id=uid();edit(function(st){st.assets.unused.push({id:id,name:'',using:false})},true);focusLater('un-'+id)}));
+  sec3.appendChild(addBtn('Add one',function(){var id=uid();edit(function(st){st.assets.unused.push({id:id,name:'',using:false})},true);focusLater('un-'+id)}));
   out.push(sec3);
   readoutFn=function(){
-    var st=S(),A=st.assets,sum=assetSum(),kids=[h('div',{class:'eyebrow',text:'판독 · 현재가치'})];
-    if(sum.sure+sum.vari<=0){kids.push(h('p',{class:'note',text:'수입원을 넣으면 현재가치 = 연 금액 × [1 − (1+r)^−n] / r 로 계산합니다.'}));return kids}
-    kids.push(h('p',{class:'big'},'당신은 이미 ',h('span',{class:'num',text:money(sum.sure)}),'짜리 채권을 들고 있다.'));
-    var tb=h('table',null,h('tr',null,h('th',{text:'수입원'}),h('th',{class:'r',text:'연'}),h('th',{class:'r',text:'햇수'}),h('th',{class:'r',text:'현재가치'})));
-    A.streams.forEach(function(x){tb.appendChild(h('tr',null,h('td',null,x.name||'이름 없음',x.sure?null:h('span',{class:'fine',text:' · 변동'})),h('td',{class:'r mono',text:money(num(x.amount))}),h('td',{class:'r mono',text:String(num(x.years))}),h('td',{class:'r mono',text:money(pv(num(x.amount),num(x.years),num(A.rate)))})))});
+    var st=S(),A=st.assets,sum=assetSum(),kids=[h('div',{class:'eyebrow',text:'Reading · present value'})];
+    if(sum.sure+sum.vari<=0){kids.push(h('p',{class:'note',text:'Add a stream and it is valued as: yearly amount × [1 − (1+r)^−n] / r.'}));return kids}
+    kids.push(h('p',{class:'big'},'You already hold a bond worth ',h('span',{class:'num',text:money(sum.sure)}),'.'));
+    var tb=h('table',null,h('tr',null,h('th',{text:'Stream'}),h('th',{class:'r',text:'Per year'}),h('th',{class:'r',text:'Years'}),h('th',{class:'r',text:'Present value'})));
+    A.streams.forEach(function(x){tb.appendChild(h('tr',null,h('td',null,x.name||'Unnamed',x.sure?null:h('span',{class:'fine',text:' · variable'})),h('td',{class:'r mono',text:money(num(x.amount))}),h('td',{class:'r mono',text:String(num(x.years))}),h('td',{class:'r mono',text:money(pv(num(x.amount),num(x.years),num(A.rate)))})))});
     kids.push(h('div',{class:'scroll'},tb));
     var total=sum.sure+sum.fin;
     if(total>0){
       var g=h('div',{class:'tally'});
-      g.appendChild(h('span',{text:'보장 수입'}));g.appendChild(h('div',{class:'bar'},h('i',{style:'width:'+(sum.sure/total*100)+'%'})));g.appendChild(h('span',{class:'mono',text:(sum.sure/total*100).toFixed(1)+'%'}));
-      g.appendChild(h('span',{text:'금융자산'}));g.appendChild(h('div',{class:'bar'},h('i',{class:'mute',style:'width:'+(sum.fin/total*100)+'%'})));g.appendChild(h('span',{class:'mono',text:(sum.fin/total*100).toFixed(1)+'%'}));
+      g.appendChild(h('span',{text:'Guaranteed'}));g.appendChild(h('div',{class:'bar'},h('i',{style:'width:'+(sum.sure/total*100)+'%'})));g.appendChild(h('span',{class:'mono',text:(sum.sure/total*100).toFixed(1)+'%'}));
+      g.appendChild(h('span',{text:'Financial'}));g.appendChild(h('div',{class:'bar'},h('i',{class:'mute',style:'width:'+(sum.fin/total*100)+'%'})));g.appendChild(h('span',{class:'mono',text:(sum.fin/total*100).toFixed(1)+'%'}));
       kids.push(g);
-      if(sum.sure>sum.fin*3)kids.push(h('p',{class:'note',text:'안전한 쪽이 이미 크다. 그래서 금융자산과 시간은 생각보다 더 과감하게 쓸 수 있다. 바닥이 받쳐 주기 때문이다.'}));
+      if(sum.sure>sum.fin*3)kids.push(h('p',{class:'note',text:'The safe side is already large. That means you can be bolder with your financial assets and your time than you thought. The floor holds.'}));
     }
-    if(sum.vari>0)kids.push(h('p',{class:'note',text:'변동 수입의 현재가치는 '+money(sum.vari)+'. 채권이 아니라 주식에 가깝다고 본다.'}));
+    if(sum.vari>0)kids.push(h('p',{class:'note',text:'Variable income is worth '+money(sum.vari)+' today. Treat it as closer to a stock than a bond.'}));
     var idle=A.unused.filter(function(x){return x.name&&!x.using}).length;
-    if(idle)kids.push(h('p',{class:'note warn',text:'안 쓰고 있는 것이 '+idle+'개 있다. 순서를 정할 때 이것부터 본다.'}));
-    kids.push(h('p',{class:'fine',text:'교육용 계산입니다. 재무 자문이 아니며, 실제 수령액과 기간은 제도와 개인 상황에 따라 다릅니다.'}));
+    if(idle)kids.push(h('p',{class:'note warn',text:plural(idle,'thing')+' you are entitled to and not using. Look at these first when you set the order.'}));
+    kids.push(h('p',{class:'fine',text:'An educational calculation, not financial advice. Real amounts and durations depend on the program and your situation.'}));
     return kids;
   };
   return out;
 }
 
 /* --- 4 order --- */
+function trackCard(x){
+  var seg=h('div',{class:'seg',role:'group','aria-label':'Tier'});
+  TIERS.forEach(function(U){seg.appendChild(h('button',{type:'button','aria-pressed':x.tier===U[0]?'true':'false',text:U[1],onclick:function(){edit(function(){x.tier=U[0];if(U[0]==='standby')x.hours=0},true)}}))});
+  return seg;
+}
 function viewOrder(){
   var s=S(),out=[];
-  var sec=q('Q1','지금 벌여 놓은 것을 전부 적고 자리를 정한다','중력선은 다른 모든 것을 끌고 가는 하나. 궤도는 중력선을 돕거나 숨을 쉬게 하는 것, 둘까지. 나머지는 대기.');
-  var cols=h('div',{class:'cols c3'});
-  var caps={gravity:'하나만. 끝나면 다른 것이 쉬워지는 것.',orbit:'둘까지. 주당 시간을 정해 둔다.',standby:'버린 게 아니다. 다시 켜는 조건을 적는다.'};
-  TIERS.forEach(function(T){
-    var list=s.order.tracks.filter(function(x){return x.tier===T[0]});
-    var over=(T[0]==='gravity'&&list.length>1)||(T[0]==='orbit'&&list.length>2);
-    var col=h('div',{class:'col'},h('h3',null,T[1],h('small',{text:list.length+(T[0]==='gravity'?' / 1':T[0]==='orbit'?' / 2':'')})),h('p',{class:'cap'+(over?' note crit':''),text:over?'너무 많다. 하나를 대기로 보낸다.':caps[T[0]]}));
-    list.forEach(function(x){
-      var seg=h('div',{class:'seg',role:'group','aria-label':'자리'});
-      TIERS.forEach(function(U){seg.appendChild(h('button',{type:'button','aria-pressed':x.tier===U[0]?'true':'false',text:U[1],onclick:function(){edit(function(){x.tier=U[0];if(U[0]==='standby')x.hours=0},true)}}))});
-      var cand=x.chain&&x.window&&x.tier!=='gravity';
-      col.appendChild(h('div',{class:'track'},
-        h('div',{class:'top'},h('input',{type:'text',id:'tr-'+x.id,value:x.name,placeholder:'예: 학위, 사이드 프로젝트','aria-label':'이름',oninput:bindText(x,'name')}),h('button',{class:'x',type:'button','aria-label':'삭제',text:'×',onclick:function(){edit(function(st){st.order.tracks=st.order.tracks.filter(function(y){return y!==x})},true)}})),
-        h('div',{class:'meta'},seg),
-        h('div',{class:'meta'},
-          h('button',{class:'chip',type:'button','aria-pressed':x.chain?'true':'false',text:'연쇄 효과',title:'이게 되면 다른 것이 쉬워진다',onclick:function(){edit(function(){x.chain=!x.chain},true)}}),
-          h('button',{class:'chip',type:'button','aria-pressed':x.window?'true':'false',text:'닫히는 창',title:'지금 아니면 못 한다',onclick:function(){edit(function(){x.window=!x.window},true)}}),
-          cand?h('span',{class:'tag',text:'중력선 후보'}):null),
-        x.tier==='standby'
-          ?field('다시 켜는 조건',h('input',{type:'text',id:'tr-r-'+x.id,value:x.relight,placeholder:'예: 졸업하면',oninput:bindText(x,'relight')}))
-          :field('주당 시간',h('input',{type:'number',id:'tr-h-'+x.id,min:'0',max:'100',inputmode:'decimal',value:x.hours||'',oninput:bindNum(x,'hours')}),'w-s')));
-    });
-    if(!list.length)col.appendChild(h('div',{class:'empty',text:T[0]==='gravity'?'중력선이 비어 있다.':'비어 있음'}));
-    cols.appendChild(col);
+  var sec=q('Q1','What do you have going right now?','Every track, project and ambition. Mark the ones that would make the others easier, and the ones with a window that is closing.');
+  var rows=h('div',{class:'rows'});
+  s.order.tracks.forEach(function(x){
+    rows.appendChild(h('div',{class:'track'},
+      h('div',{class:'top'},h('input',{type:'text',id:'tr-'+x.id,value:x.name,placeholder:'e.g. a degree, a side project','aria-label':'Track name',oninput:bindText(x,'name')}),delBtn(function(){edit(function(st){st.order.tracks=st.order.tracks.filter(function(y){return y!==x})},true)})),
+      h('div',{class:'meta'},
+        h('button',{class:'chip',type:'button','aria-pressed':x.chain?'true':'false',text:'unlocks others',onclick:function(){edit(function(){x.chain=!x.chain},true)}}),
+        h('button',{class:'chip',type:'button','aria-pressed':x.window?'true':'false',text:'closing window',onclick:function(){edit(function(){x.window=!x.window},true)}}))));
   });
-  sec.appendChild(cols);
-  sec.appendChild(addBtn('트랙 추가',function(){var id=uid();edit(function(st){st.order.tracks.push({id:id,name:'',tier:'standby',hours:0,chain:false,window:false,relight:''})},true);focusLater('tr-'+id)}));
+  if(!s.order.tracks.length)rows.appendChild(h('div',{class:'empty',text:'Nothing yet. List everything, even the ones you feel guilty about.'}));
+  sec.appendChild(rows);
+  sec.appendChild(addBtn('Add a track',function(){var id=uid();edit(function(st){st.order.tracks.push({id:id,name:'',tier:'standby',hours:0,chain:false,window:false,relight:''})},true);focusLater('tr-'+id)}));
   out.push(sec);
+
+  var sec2=q('Q2','Give each one a place','Gravity is the one that pulls everything else along: exactly one. Orbit supports it or lets you breathe: two at most. The rest go on standby.');
+  var g=tierCount('gravity'),o=tierCount('orbit');
+  sec2.appendChild(h('p',{class:'note mono'+(g!==1||o>2?' warn':' good'),text:'Gravity '+g+' / 1 · Orbit '+o+' / 2 · Standby '+tierCount('standby')}));
+  var rows2=h('div',{class:'rows'});
+  s.order.tracks.forEach(function(x){
+    var cand=x.chain&&x.window&&x.tier!=='gravity';
+    rows2.appendChild(h('div',{class:'row'},h('strong',{class:'grow',text:x.name||'Unnamed'}),cand?h('span',{class:'tag',text:'gravity candidate'}):null,trackCard(x)));
+  });
+  if(!s.order.tracks.length)rows2.appendChild(h('div',{class:'empty',text:'Add tracks in the previous question first.'}));
+  sec2.appendChild(rows2);out.push(sec2);
+
+  var sec3=q('Q3','How many hours a week does each active track get?','You have '+plural(Math.max(freeHours(),0),'hour')+' a week from the Constraint checkpoint.');
+  var rows3=h('div',{class:'rows'}),act=s.order.tracks.filter(function(x){return x.tier!=='standby'});
+  act.forEach(function(x){rows3.appendChild(h('div',{class:'row'},h('strong',{class:'grow',text:(x.name||'Unnamed')+' · '+(x.tier==='gravity'?'Gravity':'Orbit')}),field('Hours / week',h('input',{type:'number',id:'tr-h-'+x.id,min:'0',max:'100',inputmode:'decimal',value:x.hours||'',oninput:function(e){x.hours=num(e.target.value);save();var el=document.getElementById('alloc-live');if(el)el.textContent=allocated()+' of '+Math.max(freeHours(),0)+' hours assigned'}}),'w-m')))});
+  if(!act.length)rows3.appendChild(h('div',{class:'empty',text:'Nothing in gravity or orbit yet.'}));
+  sec3.appendChild(rows3);
+  sec3.appendChild(h('p',{class:'note mono',id:'alloc-live',text:allocated()+' of '+Math.max(freeHours(),0)+' hours assigned'}));
+  out.push(sec3);
+
+  var sec4=q('Q4','When does each standby track relight?','Standby is not quitting. Write the condition that brings it back. Without one, it is quitting.');
+  var rows4=h('div',{class:'rows'}),sb=s.order.tracks.filter(function(x){return x.tier==='standby'});
+  sb.forEach(function(x){rows4.appendChild(h('div',{class:'row'},field(x.name||'Unnamed',h('input',{type:'text',id:'tr-r-'+x.id,value:x.relight,placeholder:'e.g. when I graduate',oninput:bindText(x,'relight')}))))});
+  if(!sb.length)rows4.appendChild(h('div',{class:'empty',text:'Nothing on standby.'}));
+  sec4.appendChild(rows4);out.push(sec4);
+
   readoutFn=function(){
-    var st=S(),free=Math.max(freeHours(),0),al=allocated(),g=st.order.tracks.filter(function(x){return x.tier==='gravity'}),kids=[h('div',{class:'eyebrow',text:'판독 · 시간 배분'})];
-    kids.push(h('p',{class:'big'},g.length===1?['중력선은 ',h('span',{class:'num',text:g[0].name||'이름 없음'}),'. ']:g.length?'중력선이 둘 이상이다. ':'중력선이 아직 없다. ','주 ',h('span',{class:'num',text:free+'시간'}),' 중 ',h('span',{class:'num',text:al+'시간'}),'을 배정했다.'));
+    var st=S(),free=Math.max(freeHours(),0),al=allocated(),gg=st.order.tracks.filter(function(x){return x.tier==='gravity'}),kids=[h('div',{class:'eyebrow',text:'Reading · your system'})];
+    kids.push(h('p',{class:'big'},gg.length===1?['Your gravity line is ',h('span',{class:'num',text:gg[0].name||'unnamed'}),'. ']:gg.length?'You have more than one gravity line. ':'No gravity line yet. ','You assigned ',h('span',{class:'num',text:al+'h'}),' of ',h('span',{class:'num',text:free+'h'}),' a week.'));
     var max=Math.max(free,al,1);
-    kids.push(h('div',{class:'tally'},h('span',{text:'배정'}),h('div',{class:'bar'},h('i',{class:al>free?'over':'',style:'width:'+(al/max*100)+'%'})),h('span',{class:'mono',text:al+'h'}),h('span',{text:'쓸 수 있는 시간'}),h('div',{class:'bar'},h('i',{class:'mute',style:'width:'+(free/max*100)+'%'})),h('span',{class:'mono',text:free+'h'})));
-    if(al>free)kids.push(h('p',{class:'note crit',text:(al-free)+'시간 초과. 궤도 하나를 대기로 보내거나 시간을 줄인다. 초과한 계획은 어느 것도 끝내지 못한다.'}));
-    else if(al>0)kids.push(h('p',{class:'note good',text:(free-al)+'시간이 남는다. 남는 시간은 채우지 말고 여유로 둔다.'}));
-    var sb=st.order.tracks.filter(function(x){return x.tier==='standby'}),nocond=sb.filter(function(x){return!x.relight.trim()}).length;
-    if(nocond)kids.push(h('p',{class:'note warn',text:'대기 중인 '+sb.length+'개 가운데 '+nocond+'개에 다시 켜는 조건이 없다. 조건이 없으면 대기가 아니라 포기가 된다.'}));
+    kids.push(h('div',{class:'tally'},h('span',{text:'Assigned'}),h('div',{class:'bar'},h('i',{class:al>free?'over':'',style:'width:'+(al/max*100)+'%'})),h('span',{class:'mono',text:al+'h'}),h('span',{text:'Available'}),h('div',{class:'bar'},h('i',{class:'mute',style:'width:'+(free/max*100)+'%'})),h('span',{class:'mono',text:free+'h'})));
+    if(al>free)kids.push(h('p',{class:'note crit',text:(al-free)+' hours over. Send an orbit to standby or cut its hours. An overbooked plan finishes nothing.'}));
+    else if(al>0)kids.push(h('p',{class:'note good',text:(free-al)+' hours unassigned. Leave them as slack. Do not fill them.'}));
+    if(tierCount('orbit')>2)kids.push(h('p',{class:'note crit',text:'More than two orbits. Send one to standby.'}));
+    var sb2=st.order.tracks.filter(function(x){return x.tier==='standby'}),nocond=sb2.filter(function(x){return!x.relight.trim()}).length;
+    if(sb2.length){
+      var tb=h('table',null,h('tr',null,h('th',{text:'On standby'}),h('th',{text:'Relights'})));
+      sb2.forEach(function(x){tb.appendChild(h('tr',null,h('td',{text:x.name||'Unnamed'}),h('td',{text:x.relight.trim()||'no condition'})))});
+      kids.push(h('div',{class:'scroll'},tb));
+    }
+    if(nocond)kids.push(h('p',{class:'note warn',text:nocond+' of '+sb2.length+' standby tracks have no relight condition.'}));
     return kids;
   };
   return out;
 }
 
 /* --- 5 creed --- */
+var CREED_PH=['___ so that ___.','Prove that I can ___.','Then stay there.'];
 function viewCreed(){
   var s=S(),c=s.creed,out=[];
-  var qs=[['forWhom','Q1','누구를 위해 준비되어 있고 싶은가','사람 이름을 적어도 좋다.'],['can','Q2','그 순간이 오면 무엇을 할 수 있어야 하는가','"할 수 있다"고 말하고 싶은 내용.'],['gap','Q3','지금의 나와 필요한 나 사이의 간격은 어떻게 다룰 것인가','간격은 벌어진다. 벌어졌을 때 어떻게 할지를 적는다.'],['lineage','Q4','이걸 먼저 믿은 사람이 있는가','책, 스승, 부모, 전통. 없으면 비워 둔다.']];
-  qs.forEach(function(x){var sec=q(x[1],x[2],x[3]);sec.appendChild(h('textarea',{id:'cr-'+x[0],'aria-label':x[2],oninput:bindText(c,x[0])},c[x[0]]));out.push(sec)});
-  var sec=q('Q5','세 줄로 줄인다','왜 강해지는가. 무엇을 증명하는가. 그 뒤에 무엇을 하는가.');
-  var ph=['___하기 위해 ___한다.','___할 수 있음을 증명한다.','그리고 거기에 머문다.'],rows=h('div',{class:'rows'});
-  [0,1,2].forEach(function(i){rows.appendChild(h('input',{type:'text',id:'cr-l'+i,value:c.lines[i],placeholder:ph[i],'aria-label':(i+1)+'번째 줄',oninput:function(e){c.lines[i]=e.target.value;save();refresh();renderRoute()}}))});
+  var qs=[['forWhom','Q1','Who do you want to be ready for?','A name is fine.'],['can','Q2','When the moment comes, what must you be able to do?','What you want to be able to say "I can" to.'],['gap','Q3','How will you handle the gap between who you are and who you need to be?','Gaps widen. Write what you do when yours does.'],['lineage','Q4','Who believed this before you?','A book, a teacher, a parent, a tradition. Leave it empty if no one.']];
+  qs.forEach(function(x){var sec=q(x[1],x[2],x[3]);sec.appendChild(h('textarea',{id:'cr-'+x[0],rows:'5','aria-label':x[2],oninput:bindText(c,x[0])},c[x[0]]));out.push(sec)});
+  var sec=q('Q5','Cut it to three lines','Why you get strong. What you prove. What you do after.');
+  var rows=h('div',{class:'rows'});
+  [0,1,2].forEach(function(i){rows.appendChild(h('input',{type:'text',id:'cr-l'+i,value:c.lines[i],placeholder:CREED_PH[i],'aria-label':'Line '+(i+1),oninput:function(e){c.lines[i]=e.target.value;save();renderRoute()}}))});
   sec.appendChild(rows);out.push(sec);
   readoutFn=function(){
-    var C=S().creed,kids=[h('div',{class:'eyebrow',text:'판독 · 신조'})];
+    var C=S().creed,kids=[h('div',{class:'eyebrow',text:'Reading · your creed'})];
     var box=h('p',{class:'creed'});
-    C.lines.forEach(function(l,i){box.appendChild(h('span',{class:l.trim()?'':'ph',text:l.trim()||ph[i]}))});
+    C.lines.forEach(function(l,i){box.appendChild(h('span',{class:l.trim()?'':'ph',text:l.trim()||CREED_PH[i]}))});
     kids.push(box);
-    if(C.forWhom.trim())kids.push(h('p',{class:'note',text:'누구를 위해: '+C.forWhom.trim()}));
+    if(C.forWhom.trim())kids.push(h('p',{class:'note',text:'For: '+C.forWhom.trim()}));
+    if(C.lineage.trim())kids.push(h('p',{class:'note',text:'Before you: '+C.lineage.trim()}));
     return kids;
   };
   return out;
@@ -640,74 +677,77 @@ function viewCreed(){
 /* --- 6 proof --- */
 function viewProof(){
   var s=S(),p=s.proof,out=[];
-  var sec=q('Q1','테스트에 이름을 붙인다','지키려는 사람이나 되고 싶은 모습의 이름을 쓴다.');
-  sec.appendChild(h('input',{type:'text',id:'pf-name',value:p.name,placeholder:'예: ___ 테스트','aria-label':'테스트 이름',oninput:bindText(p,'name')}));out.push(sec);
-  var sec2=q('Q2','종목과 기준을 정한다','세 개에서 다섯 개. 거울이 아니라 실제 상황에서 필요한 것. 종목마다 그것이 무엇을 뜻하는지 적는다.');
+  var sec=q('Q1','Name the test','Name it after the person you protect, or the version of you it proves.');
+  sec.appendChild(h('input',{type:'text',id:'pf-name',value:p.name,placeholder:'e.g. The ___ Test','aria-label':'Test name',oninput:bindText(p,'name')}));out.push(sec);
+  var sec2=q('Q2','Set the events and standards','Three to five. Not what looks good in a mirror, but what would matter if it mattered. Say what each one means.');
   var rows=h('div',{class:'rows'});
   p.events.forEach(function(e){
     rows.appendChild(h('div',{class:'row'},
-      field('종목',h('input',{type:'text',id:'ev-n-'+e.id,value:e.name,placeholder:'예: 달리기',oninput:bindText(e,'name')})),
-      field('기준',h('input',{type:'text',id:'ev-s-'+e.id,value:e.standard,placeholder:'예: 400m, 90초 안에',oninput:bindText(e,'standard')})),
-      field('뜻',h('input',{type:'text',id:'ev-m-'+e.id,value:e.meaning,placeholder:'예: 달려간다',oninput:bindText(e,'meaning')})),
-      h('button',{class:'x',type:'button','aria-label':'삭제',text:'×',onclick:function(){edit(function(st){st.proof.events=st.proof.events.filter(function(y){return y!==e})},true)}})));
+      field('Event',h('input',{type:'text',id:'ev-n-'+e.id,value:e.name,placeholder:'e.g. Sprint',oninput:bindText(e,'name')})),
+      field('Standard',h('input',{type:'text',id:'ev-s-'+e.id,value:e.standard,placeholder:'e.g. 400 m under 90 s',oninput:bindText(e,'standard')})),
+      field('Means',h('input',{type:'text',id:'ev-m-'+e.id,value:e.meaning,placeholder:'e.g. running to her',oninput:bindText(e,'meaning')})),
+      delBtn(function(){edit(function(st){st.proof.events=st.proof.events.filter(function(y){return y!==e})},true)})));
   });
-  if(!p.events.length)rows.appendChild(h('div',{class:'empty',text:'아직 종목이 없습니다.'}));
+  if(!p.events.length)rows.appendChild(h('div',{class:'empty',text:'No events yet.'}));
   sec2.appendChild(rows);
-  sec2.appendChild(addBtn('종목 추가',function(){var id=uid();edit(function(st){st.proof.events.push({id:id,name:'',standard:'',meaning:''})},true);focusLater('ev-n-'+id)}));
+  sec2.appendChild(addBtn('Add an event',function(){var id=uid();edit(function(st){st.proof.events.push({id:id,name:'',standard:'',meaning:''})},true);focusLater('ev-n-'+id)}));
   out.push(sec2);
-  var sec3=q('Q3','치른 날을 기록한다','통과한 종목에 표시한다. 전 종목 통과가 한 번 나오면 복귀, 그 뒤로는 유지다.');
+  var sec3=q('Q3','Log the days you took it','Tick the events you passed. One full pass is the return. After that, it is about staying.');
   if(p.events.length){
-    var tb=h('table',null),hd=h('tr',null,h('th',{text:'날짜'}));
-    p.events.forEach(function(e){hd.appendChild(h('th',{text:e.name||'종목'}))});hd.appendChild(h('th',null));tb.appendChild(hd);
+    var tb=h('table',null),hd=h('tr',null,h('th',{text:'Date'}));
+    p.events.forEach(function(e){hd.appendChild(h('th',{text:e.name||'Event'}))});hd.appendChild(h('th',null));tb.appendChild(hd);
     sortedLog().forEach(function(a){
-      var tr=h('tr',null,h('td',null,h('input',{type:'date',id:'lg-d-'+a.id,value:a.date,'aria-label':'날짜',style:'min-width:132px',onchange:function(ev){edit(function(){a.date=ev.target.value||a.date},true)}})));
-      p.events.forEach(function(e){tr.appendChild(h('td',null,h('input',{type:'checkbox',class:'check',id:'lg-'+a.id+'-'+e.id,checked:a.res&&a.res[e.id],'aria-label':(e.name||'종목')+' 통과',onchange:function(ev){edit(function(){a.res=a.res||{};a.res[e.id]=ev.target.checked},false)}})))});
-      tr.appendChild(h('td',{class:'r'},h('button',{class:'x',type:'button','aria-label':'기록 삭제',text:'×',onclick:function(){edit(function(st){st.proof.log=st.proof.log.filter(function(y){return y!==a})},true)}})));
+      var tr=h('tr',null,h('td',null,h('input',{type:'date',id:'lg-d-'+a.id,value:a.date,'aria-label':'Date',style:'min-width:132px',onchange:function(ev){edit(function(){a.date=ev.target.value||a.date},true)}})));
+      p.events.forEach(function(e){tr.appendChild(h('td',null,h('input',{type:'checkbox',class:'check',id:'lg-'+a.id+'-'+e.id,checked:a.res&&a.res[e.id],'aria-label':(e.name||'Event')+' passed',onchange:function(ev){edit(function(){a.res=a.res||{};a.res[e.id]=ev.target.checked},false)}})))});
+      tr.appendChild(h('td',{class:'r'},delBtn(function(){edit(function(st){st.proof.log=st.proof.log.filter(function(y){return y!==a})},true)})));
       tb.appendChild(tr);
     });
     sec3.appendChild(h('div',{class:'scroll'},tb));
-    sec3.appendChild(addBtn('오늘 기록 추가',function(){edit(function(st){st.proof.log.push({id:uid(),date:today(),res:{}})},true)}));
-  }else sec3.appendChild(h('div',{class:'empty',text:'종목을 먼저 정합니다.'}));
+    sec3.appendChild(addBtn("Log today's attempt",function(){edit(function(st){st.proof.log.push({id:uid(),date:today(),res:{}})},true)}));
+  }else sec3.appendChild(h('div',{class:'empty',text:'Set the events first.'}));
   out.push(sec3);
-  var sec4=q('Q4','이번 주에 할 한 가지','전화 한 통, 서류 한 장, 훈련 한 번. 하나만.');
+  var sec4=q('Q4','What is the one thing you do this week?','One call, one form, one session. Only one.');
   sec4.appendChild(h('div',{class:'row'},
-    h('input',{type:'checkbox',class:'check',id:'ac-done',checked:p.action.done,'aria-label':'완료',onchange:function(ev){edit(function(){p.action.done=ev.target.checked},false)}}),
-    h('div',{class:'grow'},h('input',{type:'text',id:'ac-text',value:p.action.text,placeholder:'예: 입학처에 전화해서 마감일 확인','aria-label':'이번 주 행동',oninput:bindText(p.action,'text')})),
-    field('기한',h('input',{type:'date',id:'ac-due',value:p.action.due,onchange:function(ev){edit(function(){p.action.due=ev.target.value},false)}}),'w-m')));
+    h('div',{class:'grow'},h('input',{type:'text',id:'ac-text',value:p.action.text,placeholder:'e.g. call admissions and confirm the deadline','aria-label':"This week's action",oninput:bindText(p.action,'text')})),
+    field('Due',h('input',{type:'date',id:'ac-due',value:p.action.due,onchange:function(ev){edit(function(){p.action.due=ev.target.value},false)}}),'w-m')));
   out.push(sec4);
   readoutFn=function(){
-    var P=S().proof,l=sortedLog(),kids=[h('div',{class:'eyebrow',text:'판독 · '+(P.name.trim()||'테스트')})];
+    var P=S().proof,l=sortedLog(),kids=[h('div',{class:'eyebrow',text:'Reading · '+(P.name.trim()||'your test')})];
     var ev=P.events,n=ev.length;
-    if(!n){kids.push(h('p',{class:'note',text:'종목을 정하면 여기에 결과가 나옵니다.'}));return kids}
+    if(!n){kids.push(h('p',{class:'note',text:'Set the events and your results appear here.'}));return kids}
     var ever=l.some(fullPass),stay=stayCount(),last=l[l.length-1];
-    if(!l.length)kids.push(h('p',{class:'big',text:'아직 치르지 않았다. 첫 기록이 기준선이다.'}));
-    else if(stay>0)kids.push(h('p',{class:'big'},'유지 중. 전 종목 통과 ',h('span',{class:'num',text:stay+'회 연속'}),'.'));
-    else if(ever)kids.push(h('p',{class:'big',text:'한 번 돌아왔었다. 지금은 간격이 다시 벌어졌다.'}));
-    else{var pass=ev.filter(function(e){return last.res&&last.res[e.id]}).length;kids.push(h('p',{class:'big'},'복귀까지 ',h('span',{class:'num',text:(n-pass)+'종목'}),' 남았다.'))}
+    if(!l.length)kids.push(h('p',{class:'big',text:'Not taken yet. The first attempt is your baseline.'}));
+    else if(stay>0)kids.push(h('p',{class:'big'},'Staying. ',h('span',{class:'num',text:plural(stay,'full pass')+(stay>1?'es':'')}),' in a row.'));
+    else if(ever)kids.push(h('p',{class:'big',text:'You returned once. The gap has opened again.'}));
+    else{var pass=ev.filter(function(e){return last.res&&last.res[e.id]}).length;kids.push(h('p',{class:'big'},h('span',{class:'num',text:plural(n-pass,'event')}),' from your return.'))}
     if(last){
       var g=h('div',{class:'tally'});
       l.slice(-4).forEach(function(a){var pass=ev.filter(function(e){return a.res&&a.res[e.id]}).length;g.appendChild(h('span',{class:'mono',text:a.date}));g.appendChild(h('div',{class:'bar'},h('i',{class:pass===n?'':'mute',style:'width:'+(pass/n*100)+'%'})));g.appendChild(h('span',{class:'mono',text:pass+' / '+n}))});
       kids.push(g);
     }
-    kids.push(h('p',{class:'note',text:'도달은 한 번 일어난다. 머무는 것은 매일 일어난다.'}));
+    var tb=h('table',null,h('tr',null,h('th',{text:'Event'}),h('th',{text:'Standard'}),h('th',{text:'Means'})));
+    ev.forEach(function(e){tb.appendChild(h('tr',null,h('td',{text:e.name||'Unnamed'}),h('td',{text:e.standard}),h('td',{text:e.meaning})))});
+    kids.push(h('div',{class:'scroll'},tb));
+    if(P.action.text.trim())kids.push(h('p',{class:'note',text:'This week: '+P.action.text.trim()}));
+    kids.push(h('p',{class:'note',text:'Getting there happens once. Staying there happens every day.'}));
     return kids;
   };
   return out;
 }
 
-/* --- 7 card --- */
+/* --- card --- */
 function cardText(){
   var s=S(),t=verbTally(),sum=assetSum(),L=[];
   L.push("THE DRIFTER'S GUIDE TO GRAVITY","");
-  L.push('1 궤적: '+(s.line.sentence.trim()||'(미정)')+(t.length?'  ['+t.slice(0,2).map(function(x){return x[0]}).join(' + ')+']':''));
-  L.push('2 제약: '+(s.limit.pick?resName(s.limit.pick):'(미정)')+', 쓸 수 있는 시간 주 '+Math.max(freeHours(),0)+'시간');
-  L.push('3 자산: 보장 수입의 현재가치 '+money(sum.sure)+', 금융자산 '+money(sum.fin));
-  var tr=s.order.tracks,by=function(k){return tr.filter(function(x){return x.tier===k&&x.name}).map(function(x){return x.name+(k==='standby'?(x.relight?' ('+x.relight+')':''):' '+num(x.hours)+'h')}).join(', ')||'(없음)'};
-  L.push('4 순서: 중력선 '+by('gravity'),'   궤도 '+by('orbit'),'   대기 '+by('standby'));
-  L.push('5 신조:');s.creed.lines.forEach(function(l){if(l.trim())L.push('   '+l.trim())});
-  L.push('6 증명: '+(s.proof.name.trim()||'(이름 없음)'));
+  L.push('1 Line: '+(s.line.sentence.trim()||'(not set)')+(t.length?'  ['+t.slice(0,2).map(function(x){return x[0]}).join(' + ')+']':''));
+  L.push('2 Constraint: '+(s.limit.pick?resName(s.limit.pick):'(not set)')+', '+Math.max(freeHours(),0)+' hours a week to spend');
+  L.push('3 Assets: guaranteed income worth '+money(sum.sure)+' today, financial assets '+money(sum.fin));
+  var tr=s.order.tracks,by=function(k){return tr.filter(function(x){return x.tier===k&&x.name}).map(function(x){return x.name+(k==='standby'?(x.relight?' ('+x.relight+')':''):' '+num(x.hours)+'h')}).join(', ')||'(none)'};
+  L.push('4 Order: gravity '+by('gravity'),'   orbit '+by('orbit'),'   standby '+by('standby'));
+  L.push('5 Creed:');s.creed.lines.forEach(function(l){if(l.trim())L.push('   '+l.trim())});
+  L.push('6 Proof: '+(s.proof.name.trim()||'(unnamed)'));
   s.proof.events.forEach(function(e){if(e.name)L.push('   - '+e.name+' / '+e.standard+(e.meaning?' / '+e.meaning:''))});
-  L.push('이번 주: '+(s.proof.action.text.trim()||'(미정)')+(s.proof.action.done?' [완료]':''));
+  L.push('This week: '+(s.proof.action.text.trim()||'(not set)')+(s.proof.action.done?' [done]':''));
   return L.join('\n');
 }
 function viewCard(){
@@ -715,25 +755,25 @@ function viewCard(){
   var dl=h('dl',{class:'card-grid',style:'margin:0'});
   function rowc(k,nodes){dl.appendChild(h('div',null,h('dt',{text:k}),h('dd',null,nodes)))}
   var miss=function(txt){return h('span',{class:'fine',text:txt})};
-  rowc('1 궤적',s.line.sentence.trim()?[h('strong',{text:s.line.sentence.trim()}),t.length?h('div',{class:'fine',text:t.slice(0,3).map(function(x){return x[0]+' '+x[1]}).join(' · ')}):null]:miss('아직 한 문장이 없다.'));
-  rowc('2 제약',s.limit.pick?[h('strong',{text:resName(s.limit.pick)}),' · 쓸 수 있는 시간 주 '+Math.max(freeHours(),0)+'시간']:miss('제약을 고르지 않았다.'));
-  rowc('3 자산',sum.sure+sum.fin>0?[h('strong',{class:'mono',text:money(sum.sure)}),' 보장 수입의 현재가치 · 금융자산 ',h('span',{class:'mono',text:money(sum.fin)})]:miss('수입원을 넣지 않았다.'));
+  rowc('1 Line',s.line.sentence.trim()?[h('strong',{text:s.line.sentence.trim()}),t.length?h('div',{class:'fine',text:t.slice(0,3).map(function(x){return x[0]+' '+x[1]}).join(' · ')}):null]:miss('No sentence yet.'));
+  rowc('2 Constraint',s.limit.pick?[h('strong',{text:resName(s.limit.pick)}),' · '+Math.max(freeHours(),0)+' hours a week to spend']:miss('Not picked yet.'));
+  rowc('3 Assets',sum.sure+sum.fin>0?[h('strong',{class:'mono',text:money(sum.sure)}),' guaranteed income, present value · financial assets ',h('span',{class:'mono',text:money(sum.fin)})]:miss('No streams yet.'));
   var names=function(k){return s.order.tracks.filter(function(x){return x.tier===k&&x.name})};
   var g=names('gravity'),o=names('orbit'),sb=names('standby');
-  rowc('4 순서',s.order.tracks.length?[h('div',null,h('strong',{text:'중력선 '}),g.map(function(x){return x.name+' '+num(x.hours)+'h'}).join(', ')||'없음'),h('div',null,h('strong',{text:'궤도 '}),o.map(function(x){return x.name+' '+num(x.hours)+'h'}).join(', ')||'없음'),h('div',{style:'color:var(--ink2)'},h('strong',{text:'대기 '}),sb.map(function(x){return x.name+(x.relight?' ('+x.relight+')':'')}).join(', ')||'없음')]:miss('트랙을 적지 않았다.'));
+  rowc('4 Order',s.order.tracks.length?[h('div',null,h('strong',{text:'Gravity '}),g.map(function(x){return x.name+' '+num(x.hours)+'h'}).join(', ')||'none'),h('div',null,h('strong',{text:'Orbit '}),o.map(function(x){return x.name+' '+num(x.hours)+'h'}).join(', ')||'none'),h('div',{style:'color:var(--ink2)'},h('strong',{text:'Standby '}),sb.map(function(x){return x.name+(x.relight?' ('+x.relight+')':'')}).join(', ')||'none')]:miss('No tracks yet.'));
   var cl=s.creed.lines.filter(function(l){return l.trim()});
-  rowc('5 신조',cl.length?h('div',{class:'creed',style:'font-size:18px'},cl.map(function(l){return h('span',{text:l})})):miss('세 줄이 비어 있다.'));
+  rowc('5 Creed',cl.length?h('div',{class:'creed',style:'font-size:18px'},cl.map(function(l){return h('span',{text:l})})):miss('Three lines still empty.'));
   var ev=s.proof.events.filter(function(e){return e.name});
-  rowc('6 증명',ev.length?[h('strong',{text:s.proof.name.trim()||'테스트'}),h('div',null,ev.map(function(e){return e.name+' '+e.standard}).join(' · ')),h('div',{class:'fine',text:sortedLog().length?('기록 '+sortedLog().length+'회, 연속 통과 '+stayCount()+'회'):'기록 없음'})]:miss('종목을 정하지 않았다.'));
-  rowc('이번 주',s.proof.action.text.trim()?[h('strong',{text:s.proof.action.text.trim()}),s.proof.action.done?h('span',{class:'note good',text:' · 완료'}):null]:miss('행동을 정하지 않았다.'));
+  rowc('6 Proof',ev.length?[h('strong',{text:s.proof.name.trim()||'Your test'}),h('div',null,ev.map(function(e){return e.name+' '+e.standard}).join(' · ')),h('div',{class:'fine',text:sortedLog().length?(plural(sortedLog().length,'attempt')+', '+stayCount()+' full in a row'):'No attempts logged'})]:miss('No events yet.'));
+  rowc('This week',s.proof.action.text.trim()?[h('strong',{text:s.proof.action.text.trim()}),s.proof.action.done?h('span',{class:'note good',text:' · done'}):null]:miss('No action set.'));
   var n=STEPS.slice(0,6).filter(function(x){return done(x.id)}).length;
   var copied=h('span',{class:'status',role:'status'});
-  var ta=h('textarea',{id:'card-text',readonly:true,rows:'12',class:'mono',style:'font-size:12.5px','aria-label':'복사용 텍스트',hidden:true});
-  out.push(h('div',{class:'readout'},h('div',{class:'eyebrow',text:'여섯 지점 중 '+n+'곳 통과'}),dl));
-  out.push(h('div',{style:'display:flex;flex-wrap:wrap;gap:10px;align-items:center'},h('button',{class:'btn pri',type:'button',text:'텍스트로 복사',onclick:function(){
+  var ta=h('textarea',{id:'card-text',readonly:true,rows:'12',class:'mono',style:'font-size:12.5px','aria-label':'Text to copy',hidden:true});
+  out.push(h('div',{class:'readout'},h('div',{class:'eyebrow',text:n+' of 6 checkpoints passed'}),dl));
+  out.push(h('div',{style:'display:flex;flex-wrap:wrap;gap:10px;align-items:center'},h('button',{class:'btn pri',type:'button',text:'Copy as text',onclick:function(){
     var txt=cardText();ta.value=txt;
-    var fail=function(){ta.hidden=false;ta.focus();ta.select();copied.textContent='아래 텍스트를 직접 복사하세요'};
-    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){copied.textContent='복사됨'},fail);else fail();
+    var fail=function(){ta.hidden=false;ta.focus();ta.select();copied.textContent='Copy the text below by hand'};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){copied.textContent='Copied'},fail);else fail();
   }}),copied));
   out.push(ta);
   readoutFn=null;
@@ -747,11 +787,11 @@ function svg(tag,attrs){
   for(i=2;i<arguments.length;i++){c=arguments[i];if(c!=null)el.appendChild(typeof c==='string'?document.createTextNode(c):c)}
   return el;
 }
-function cut(s,n){s=(s||'').trim()||'이름 없음';return s.length>n?s.slice(0,n-1)+'…':s}
+function cut(s,n){s=(s||'').trim()||'Unnamed';return s.length>n?s.slice(0,n-1)+'…':s}
 function orbitMap(){
   var tr=S().order.tracks,g=tr.filter(function(x){return x.tier==='gravity'}),o=tr.filter(function(x){return x.tier==='orbit'}),sb=tr.filter(function(x){return x.tier==='standby'});
   var cx=200,cy=150,rad=Math.PI/180;
-  var label=g.length?'중력선 '+cut(g[0].name,30)+', 궤도 '+o.length+'개, 대기 '+sb.length+'개':'중력선이 아직 없다';
+  var label=g.length?'Gravity line '+cut(g[0].name,30)+', '+plural(o.length,'orbit')+', '+sb.length+' on standby':'No gravity line yet';
   var root=svg('svg',{viewBox:'0 0 400 310',class:'sky',role:'img','aria-label':label});
   root.appendChild(svg('defs',null,svg('radialGradient',{id:'glow'},svg('stop',{offset:'0','stop-color':'#F5D9A0','stop-opacity':'.6'}),svg('stop',{offset:'1','stop-color':'#F5D9A0','stop-opacity':'0'}))));
   var seed=7;function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
@@ -761,55 +801,55 @@ function orbitMap(){
   if(g.length){
     root.appendChild(svg('circle',{cx:cx,cy:cy,r:40,fill:'url(#glow)'}));
     root.appendChild(svg('circle',{cx:cx,cy:cy,r:13,style:'fill:var(--star)'}));
-    root.appendChild(svg('text',{x:cx,y:cy-24,class:'core'},cut(g[0].name,18)));
+    root.appendChild(svg('text',{x:cx,y:cy-24,class:'core'},cut(g[0].name,20)));
   }else{
     root.appendChild(svg('circle',{cx:cx,cy:cy,r:13,fill:'none',style:'stroke:var(--space-dim)','stroke-width':'1.5','stroke-dasharray':'3 4'}));
-    root.appendChild(svg('text',{x:cx,y:cy+32,class:'dim'},'중력선 미정'));
+    root.appendChild(svg('text',{x:cx,y:cy+32,class:'dim'},'no gravity yet'));
   }
   o.forEach(function(x,i){
     var a=(-28+i*360/o.length)*rad,px=cx+104*Math.cos(a),py=cy+72*Math.sin(a),r=Math.max(5,Math.min(11,4+num(x.hours)*.5)),up=py<cy;
     root.appendChild(svg('circle',{cx:px.toFixed(1),cy:py.toFixed(1),r:r,style:'fill:var(--planet)'}));
-    root.appendChild(svg('text',{x:px.toFixed(1),y:(up?py-r-6:py+r+15).toFixed(1)},cut(x.name,12)+' '+num(x.hours)+'h'));
+    root.appendChild(svg('text',{x:px.toFixed(1),y:(up?py-r-6:py+r+15).toFixed(1)},cut(x.name,16)+' '+num(x.hours)+'h'));
   });
   sb.forEach(function(x,i){
     var a=(62+i*360/sb.length)*rad,px=cx+150*Math.cos(a),py=cy+114*Math.sin(a);
     root.appendChild(svg('circle',{cx:px.toFixed(1),cy:py.toFixed(1),r:3,style:'fill:var(--space-dim)'}));
-    root.appendChild(svg('text',{x:px.toFixed(1),y:(py+15).toFixed(1),class:'dim'},cut(x.name,10)));
+    root.appendChild(svg('text',{x:px.toFixed(1),y:(py+15).toFixed(1),class:'dim'},cut(x.name,14)));
   });
   if(!tr.length){
     root.appendChild(svg('circle',{cx:92,cy:86,r:4,style:'fill:var(--space-ink)'}));
-    root.appendChild(svg('text',{x:92,y:104,class:'dim'},(store.mode==='own'&&store.profile.name.trim())||'당신'));
+    root.appendChild(svg('text',{x:92,y:104,class:'dim'},(store.mode==='own'&&store.profile.name.trim())||'you'));
   }
   return root;
 }
 function viewHome(){
   var s=S(),tr=s.order.tracks,g=tr.filter(function(x){return x.tier==='gravity'}),sum=assetSum(),free=Math.max(freeHours(),0),out=[];
   var name=store.mode==='own'?store.profile.name.trim():'';
-  var head=g.length===1?'〈'+cut(g[0].name,28)+'〉이 당신을 끌어당기고 있다.':g.length>1?'별이 둘이면 궤도가 찢어진다. 하나를 고른다.':tr.length?'돌고 있는 것은 있는데 중심이 없다.':'아직 중력이 없다. 떠도는 중이다.';
+  var head=g.length===1?cut(g[0].name,28)+' is pulling you in.':g.length>1?'Two stars tear an orbit apart. Pick one.':tr.length?'Things are circling, but there is no center.':'No gravity yet. You are drifting.';
   out.push(h('section',{class:'space'},
-    h('div',{class:'eyebrow',text:name?name+'의 계':'지금 나의 계'}),
-    h('button',{class:'skybtn',type:'button',title:'순서 지점 열기',onclick:function(){go('order',true)}},orbitMap()),
+    h('div',{class:'eyebrow',text:name?name+"'s system":'Your system'}),
+    h('button',{class:'skybtn',type:'button',title:'Open the Order checkpoint',onclick:function(){go('order',true,'auto')}},orbitMap()),
     h('p',{class:'space-h',text:head}),
-    h('p',{class:'space-sub',text:'궤도 '+tierCount('orbit')+' · 대기 '+tierCount('standby')+' · 주 '+allocated()+' / '+free+'시간'})));
+    h('p',{class:'space-sub',text:plural(tierCount('orbit'),'orbit')+' · '+tierCount('standby')+' on standby · '+allocated()+' / '+free+' hours a week'})));
   var six=STEPS.slice(0,6),nx=null;six.forEach(function(st){if(!nx&&!done(st.id))nx=st});
   var n=six.filter(function(st){return done(st.id)}).length;
   out.push(h('div',{class:'nextcard'},
-    h('p',null,h('span',{class:'eyebrow',text:'여섯 지점 중 '+n+'곳 통과'}),h('br'),nx?h('strong',{text:'다음 지점은 '+nx.t+'. '+nx.d+'.'}):h('strong',{text:'여섯 지점을 모두 지났다.'})),
-    h('button',{class:'btn pri',type:'button',text:nx?nx.t+' 열기 →':'안내서 보기 →',onclick:function(){go(nx?nx.id:'card',true)}})));
+    h('p',null,h('span',{class:'eyebrow',text:n+' of 6 checkpoints passed'}),h('br'),nx?h('strong',{text:'Next: '+nx.t+'. '+nx.d+'.'}):h('strong',{text:'You have passed all six.'})),
+    h('button',{class:'btn pri',type:'button',text:nx?'Open '+nx.t+' →':'See the guide →',onclick:function(){go(nx?nx.id:'card',true)}})));
   var vals={
     line:s.line.sentence.trim(),
-    limit:s.limit.pick?resName(s.limit.pick)+' · 쓸 수 있는 시간 주 '+free+'시간':'',
-    assets:sum.sure>0?'보장 수입의 현재가치 '+money(sum.sure):sum.fin>0?'금융자산 '+money(sum.fin):'',
-    order:g.length===1?(g[0].name||'이름 없음'):'',
+    limit:s.limit.pick?resName(s.limit.pick)+' · '+free+' hours a week':'',
+    assets:sum.sure>0?'Guaranteed income worth '+money(sum.sure):sum.fin>0?'Financial assets '+money(sum.fin):'',
+    order:g.length===1?(g[0].name||'Unnamed'):'',
     creed:s.creed.lines[0].trim(),
-    proof:s.proof.events.length?(s.proof.name.trim()||'테스트')+' · '+(sortedLog().length?'연속 통과 '+stayCount()+'회':'기록 없음'):''
+    proof:s.proof.events.length?(s.proof.name.trim()||'Your test')+' · '+(sortedLog().length?stayCount()+' full in a row':'no attempts yet'):''
   };
   var list=h('div',{class:'cplist'});
-  six.forEach(function(st,i){list.appendChild(h('button',{type:'button',class:'cprow'+(done(st.id)?' done':''),onclick:function(){go(st.id,true)}},h('span',{class:'n',text:String(i+1)}),h('b',{text:st.t}),h('span',{class:'v',text:vals[st.id]||st.d})))});
+  six.forEach(function(st,i){list.appendChild(h('button',{type:'button',class:'cprow'+(done(st.id)?' done':''),onclick:function(){go(st.id,true,'auto')}},h('span',{class:'n',text:String(i+1)}),h('b',{text:st.t}),h('span',{class:'v',text:vals[st.id]||st.d})))});
   out.push(list);
-  var a=s.proof.action,sec=q('이번 주','할 한 가지');
-  if(a.text.trim())sec.appendChild(h('div',{class:'row'},h('input',{type:'checkbox',class:'check',id:'home-done',checked:a.done,'aria-label':'완료',onchange:function(ev){a.done=ev.target.checked;save()}}),h('label',{class:'grow',for:'home-done',text:a.text.trim()+(a.due?' · '+a.due+'까지':'')})));
-  else sec.appendChild(h('button',{class:'empty',type:'button',style:'cursor:pointer;width:100%',text:'아직 정하지 않았다. 증명 지점에서 하나를 고른다.',onclick:function(){go('proof',true)}}));
+  var a=s.proof.action,sec=q('This week','One thing');
+  if(a.text.trim())sec.appendChild(h('div',{class:'row'},h('input',{type:'checkbox',class:'check',id:'home-done',checked:a.done,'aria-label':'Done',onchange:function(ev){a.done=ev.target.checked;save()}}),h('label',{class:'grow',for:'home-done',text:a.text.trim()+(a.due?' · by '+a.due:'')})));
+  else sec.appendChild(h('button',{class:'empty',type:'button',style:'cursor:pointer;width:100%',text:'Not set yet. Pick one at the Proof checkpoint.',onclick:function(){go('proof',true)}}));
   out.push(sec);
   readoutFn=null;
   return out;
@@ -820,53 +860,69 @@ var VIEWS={home:viewHome,line:viewLine,limit:viewLimit,assets:viewAssets,order:v
 /* ---------- chrome ---------- */
 function renderRoute(){
   var nav=document.getElementById('route'),kids=[];
-  kids.push(h('button',{type:'button',class:'cp','aria-current':cur==='home'?'true':'false',onclick:function(){go('home')}},h('span',{class:'n',text:'✦'}),h('span',null,h('span',{class:'t',text:'홈'}),h('span',{class:'d',text:'지금 나의 계'}))));
+  kids.push(h('button',{type:'button',class:'cp','aria-current':cur==='home'?'true':'false',onclick:function(){go('home')}},h('span',{class:'n',text:'✦'}),h('span',null,h('span',{class:'t',text:'Home'}),h('span',{class:'d',text:'Your system'}))));
   STEPS.forEach(function(st,i){
     var isCard=st.id==='card';
-    kids.push(h('button',{type:'button',class:'cp'+(!isCard&&done(st.id)?' done':''),'aria-current':cur===st.id?'true':'false',onclick:function(){go(st.id)}},
+    kids.push(h('button',{type:'button',class:'cp'+(!isCard&&done(st.id)?' done':''),'aria-current':cur===st.id?'true':'false',onclick:function(){go(st.id,false,'auto')}},
       h('span',{class:'n',text:isCard?'◎':String(i+1)}),h('span',null,h('span',{class:'t',text:st.t}),h('span',{class:'d',text:st.d}))));
   });
   nav.replaceChildren.apply(nav,kids);
 }
+function turn(n){qi=n;renderSheet();var el=document.getElementById('sheet');if(el&&el.scrollIntoView)el.scrollIntoView({block:'start'})}
 function renderSheet(){
   var sheet=document.getElementById('sheet');
   if(cur==='home'){sheet.replaceChildren.apply(sheet,viewHome());return}
-  var st=STEPS[stepIndex(cur)],i=stepIndex(cur);
-  var kids=[h('header',{class:'sheet-head'},h('div',{class:'eyebrow'},st.id==='card'?'Summary':'Checkpoint '+(i+1)+' / 6',focusStep()===st.id?h('span',{class:'tag',style:'margin-left:10px',text:'당신에게 중요한 지점'}):null),h('h2',{text:st.t}),h('p',{class:'rule',text:st.rule}),st.why?h('p',{class:'why',text:st.why}):null)];
-  var body=VIEWS[cur]();
-  if(cur==='card')kids=kids.concat(body);
-  else{kids=kids.concat(body);kids.push(h('section',{class:'readout',id:'readout','aria-live':'polite'},readoutFn()))}
+  var i=stepIndex(cur),st=STEPS[i],body=VIEWS[cur](),kids=[];
+  var prevStep=function(){if(i>0)go(STEPS[i-1].id,true,'end');else go('home',true)};
+  if(cur==='card'){
+    kids.push(h('header',{class:'sheet-head'},h('div',{class:'eyebrow',text:'Summary'}),h('h2',{text:st.t}),h('p',{class:'rule',text:st.rule})));
+    kids=kids.concat(body);
+    kids.push(h('div',{class:'navrow'},h('button',{class:'btn',type:'button',text:'← '+STEPS[i-1].t,onclick:prevStep}),h('button',{class:'btn pri',type:'button',text:'Home',onclick:function(){go('home',true)}})));
+    sheet.replaceChildren.apply(sheet,kids);return;
+  }
+  var pages=body.length+1;qi=Math.max(0,Math.min(pages-1,qi));
+  var isRead=qi===body.length;
+  kids.push(h('header',{class:'sheet-head'},
+    h('div',{class:'eyebrow'},'Checkpoint '+(i+1)+' / 6 · '+st.t,focusStep()===st.id?h('span',{class:'tag',style:'margin-left:10px',text:'your key checkpoint'}):null),
+    qi===0?h('h2',{text:st.t}):null,qi===0?h('p',{class:'rule',text:st.rule}):null,qi===0?h('p',{class:'why',text:st.why}):null));
+  var dots=h('div',{class:'pager',role:'group','aria-label':'Questions'});
+  for(var k=0;k<pages;k++)(function(k){dots.appendChild(h('button',{type:'button',class:k===qi?'on':k<qi?'past':'','aria-label':k<body.length?'Question '+(k+1):'Reading','aria-current':k===qi?'true':'false',onclick:function(){turn(k)}}))})(k);
+  kids.push(h('div',{class:'pagerrow'},dots,h('span',{class:'mono status',text:isRead?'Reading':'Question '+(qi+1)+' of '+body.length})));
+  if(isRead)kids.push(h('section',{class:'readout',id:'readout','aria-live':'polite'},readoutFn()));
+  else{body[qi].classList.add('qpage');kids.push(body[qi])}
   kids.push(h('div',{class:'navrow'},
-    i>0?h('button',{class:'btn',type:'button',text:'← '+STEPS[i-1].t,onclick:function(){go(STEPS[i-1].id,true)}}):h('button',{class:'btn',type:'button',text:'← 홈',onclick:function(){go('home',true)}}),
-    i<STEPS.length-1?h('button',{class:'btn pri',type:'button',text:STEPS[i+1].t+' →',onclick:function(){go(STEPS[i+1].id,true)}}):h('span')));
+    h('button',{class:'btn',type:'button',text:qi>0?'← Back':i>0?'← '+STEPS[i-1].t:'← Home',onclick:function(){if(qi>0)turn(qi-1);else prevStep()}}),
+    isRead?h('button',{class:'btn pri',type:'button',text:STEPS[i+1].t+' →',onclick:function(){go(STEPS[i+1].id,true)}})
+          :h('button',{class:'btn pri',type:'button',text:qi===body.length-1?'See the reading →':'Next →',onclick:function(){turn(qi+1)}})));
   sheet.replaceChildren.apply(sheet,kids);
 }
 var confirmReset=false;
 function renderMode(){
   var bar=document.getElementById('modebar'),kids=[];
   if(store.mode==='own'){
-    kids.push(h('p',null,h('span',{class:'tag',text:store.profile.name.trim()?store.profile.name.trim()+'의 안내서':'내 안내서'}),'여기 적는 내용은 당신에게만 보입니다.'));
-    var acts=h('div',{class:'acts'},h('button',{class:'btn sm ghost',type:'button',text:'소개',onclick:showOnb}),h('span',{class:'status',id:'status',role:'status',text:statusText||'이 기기에 저장됨'}),h('button',{class:'btn sm',type:'button',text:'예시 보기',onclick:function(){store.mode='example';ex=example();confirmReset=false;saveLocal();if(sync){syncDirty=true;push()}renderAll()}}));
-    if(confirmReset)acts.appendChild(h('button',{class:'btn sm',type:'button',style:'border-color:var(--crit);color:var(--crit)',text:'정말 전부 지우기',onclick:function(){store.own=blank();confirmReset=false;save();renderAll()}}));
-    else acts.appendChild(h('button',{class:'btn sm ghost',type:'button',text:'처음부터',onclick:function(){confirmReset=true;renderMode()}}));
+    kids.push(h('p',null,h('span',{class:'tag',text:store.profile.name.trim()?store.profile.name.trim()+"'s guide":'My guide'}),'Only you can see what you write here.'));
+    var acts=h('div',{class:'acts'},h('button',{class:'btn sm ghost',type:'button',text:'Intro',onclick:showOnb}),h('span',{class:'status',id:'status',role:'status',text:statusText||'Saved on this device'}),h('button',{class:'btn sm',type:'button',text:'See the example',onclick:function(){store.mode='example';ex=example();confirmReset=false;saveLocal();if(sync){syncDirty=true;push()}renderAll()}}));
+    if(confirmReset)acts.appendChild(h('button',{class:'btn sm',type:'button',style:'border-color:var(--crit);color:var(--crit)',text:'Yes, erase everything',onclick:function(){store.own=blank();confirmReset=false;save();go('home')}}));
+    else acts.appendChild(h('button',{class:'btn sm ghost',type:'button',text:'Start over',onclick:function(){confirmReset=true;renderMode()}}));
     kids.push(acts);
   }else{
-    kids.push(h('p',null,h('span',{class:'tag',text:'예시'}),'38세 재향군인 간호사의 실제 과정을 단순화한 숫자입니다. 눌러 보고 고쳐 봐도 저장되지 않습니다.'));
-    kids.push(h('div',{class:'acts'},h('button',{class:'btn pri',type:'button',text:store.own?'내 안내서로 돌아가기':'내 것으로 시작하기',onclick:function(){if(!store.own)store.own=blank();store.mode='own';save();go('home')}})));
+    kids.push(h('p',null,h('span',{class:'tag',text:'Example'}),"A 38-year-old veteran and nurse's real process, with simplified numbers. Tap and edit freely. Nothing here is saved."));
+    kids.push(h('div',{class:'acts'},h('button',{class:'btn pri',type:'button',text:store.own?'Back to my guide':'Start my own',onclick:function(){if(!store.own)store.own=blank();store.mode='own';save();go('home')}})));
   }
   bar.replaceChildren.apply(bar,kids);
 }
 function renderAll(){renderMode();renderRoute();renderSheet()}
-function go(id,scroll){
+function go(id,scroll,page){
   cur=VIEWS[id]?id:'home';
+  qi=page==='end'?99:page==='auto'&&done(cur)?99:0;
   try{if(location.hash!=='#'+cur)history.replaceState(null,'','#'+cur)}catch(e){try{location.hash=cur}catch(e2){}}
   renderAll();
   if(scroll){var el=document.getElementById('route');if(el&&el.scrollIntoView)el.scrollIntoView({block:'start'})}
 }
-window.addEventListener('hashchange',function(){var id=location.hash.slice(1);if(VIEWS[id]&&id!==cur){cur=id;renderAll()}});
+window.addEventListener('hashchange',function(){var id=location.hash.slice(1);if(VIEWS[id]&&id!==cur){cur=id;qi=0;renderAll()}});
 
 /* ---------- onboarding ---------- */
-var STATES=[['many','하는 일이 너무 많다','order'],['lost','무엇을 해야 할지 모르겠다','line'],['stuck','방향은 아는데 움직이지 못한다','proof']];
+var STATES=[['many','I am doing too many things','order'],['lost',"I don't know what to do",'line'],['stuck',"I know the direction but can't move",'proof']];
 function focusStep(){for(var i=0;i<STATES.length;i++)if(STATES[i][0]===store.profile.state)return STATES[i][2];return''}
 var onbI=0,ONB_N=5;
 function enterApp(){document.getElementById('onb').hidden=true;document.getElementById('app').hidden=false;renderAll()}
@@ -874,38 +930,37 @@ function showOnb(){onbI=0;document.getElementById('app').hidden=true;document.ge
 function finishOnb(mode){
   store.onboarded=true;
   if(mode==='own'){if(!store.own)store.own=blank();store.mode='own'}else{store.mode='example';ex=example()}
-  cur='home';
   store.updatedAt=Date.now();saveLocal();if(sync){syncDirty=true;push()}
-  document.getElementById('onb').hidden=true;document.getElementById('app').hidden=false;go(cur);window.scrollTo(0,0);
+  document.getElementById('onb').hidden=true;document.getElementById('app').hidden=false;go('home');window.scrollTo(0,0);
 }
 function onbGo(i){onbI=Math.max(0,Math.min(ONB_N-1,i));renderOnb();window.scrollTo(0,0)}
 function renderOnb(){
   var o=document.getElementById('onb'),body,foot=[];
-  var next=function(label){return h('button',{class:'btn pri',type:'button',text:label||'다음',onclick:function(){onbGo(onbI+1)}})};
+  var next=function(label){return h('button',{class:'btn pri',type:'button',text:label||'Next',onclick:function(){onbGo(onbI+1)}})};
   if(onbI===0){
-    body=[h('div',{class:'eyebrow',text:'Field guide'}),h('h1',{text:"The Drifter's Guide to Gravity"}),h('p',{text:'떠도는 이를 위한 중력 안내서'}),h('div',{class:'motto','aria-label':"Don't panic. Sequence.",text:"DON'T PANIC. SEQUENCE."})];
-    foot=[next('펼치기')];
+    body=[h('div',{class:'eyebrow',text:'Field guide'}),h('h1',{text:"The Drifter's Guide to Gravity"}),h('p',{text:'For anyone doing many things and heading nowhere in particular.'}),h('div',{class:'motto','aria-label':"Don't panic. Sequence.",text:"DON'T PANIC. SEQUENCE."})];
+    foot=[next('Open')];
   }else if(onbI===1){
-    body=[h('h2',{text:'길을 잃은 게 아니다. 떠도는 중이다.'}),h('p',{text:'하는 일이 많고 전부 진심인데 어디로 가는지 보이지 않는다면, 의지가 부족한 게 아니다. 무엇이 당신을 끌어당기는지 아직 세어 보지 않았을 뿐이다.'}),h('p',{text:'이 안내서는 조언하지 않는다. 묻고, 당신의 답을 세어서 돌려준다.'})];
+    body=[h('h2',{text:"You are not lost. You are drifting."}),h('p',{text:"If you do a lot, mean all of it, and still can't see where it is going, you are not short on willpower. You just haven't counted what pulls on you."}),h('p',{text:'This guide gives no advice. It asks, counts your answers, and hands them back.'})];
     foot=[next()];
   }else if(onbI===2){
-    body=[h('h2',{text:'여섯 지점을 지난다'}),h('ol',{class:'onb-list'},STEPS.slice(0,6).map(function(s,i){return h('li',null,h('span',{class:'n',text:'0'+(i+1)}),h('span',null,h('b',{text:s.t}),h('span',{class:'d',text:s.d})))})),h('p',{text:'지점마다 질문 몇 개에 답하면 판독이 나온다. 한 번에 끝내지 않아도 되고, 나중에 고쳐도 된다.'})];
+    body=[h('h2',{text:'Six checkpoints'}),h('ol',{class:'onb-list'},STEPS.slice(0,6).map(function(s,i){return h('li',null,h('span',{class:'n',text:'0'+(i+1)}),h('span',null,h('b',{text:s.t}),h('span',{class:'d',text:s.d})))})),h('p',{text:'Each checkpoint asks one question at a time and ends in a reading. You can stop anywhere and change any answer later.'})];
     foot=[next()];
   }else if(onbI===3){
-    body=[h('h2',{text:'먼저 두 가지만'}),
-      h('label',{class:'field'},h('span',{text:'뭐라고 부를까 (선택)'}),h('input',{type:'text',id:'onb-name',value:store.profile.name,maxlength:'24',placeholder:'이름이나 별명',autocomplete:'off',oninput:function(e){store.profile.name=e.target.value;saveLocal()}})),
-      h('div',{class:'field'},h('span',{text:'지금 가장 가까운 상태'}),h('div',{class:'pick'},STATES.map(function(s){return h('button',{type:'button','aria-pressed':store.profile.state===s[0]?'true':'false',text:s[1],onclick:function(){store.profile.state=store.profile.state===s[0]?'':s[0];saveLocal();renderOnb()}})}))),
-      store.profile.state?h('p',{text:'그렇다면 당신에게 가장 중요한 지점은 '+STEPS[stepIndex(focusStep())].t+'이다. 그래도 처음부터 차례로 간다. 앞 지점의 답이 뒤 지점의 재료가 된다.'}):null];
+    body=[h('h2',{text:'Two things first'}),
+      h('label',{class:'field'},h('span',{text:'What should we call you? (optional)'}),h('input',{type:'text',id:'onb-name',value:store.profile.name,maxlength:'24',placeholder:'Name or nickname',autocomplete:'off',oninput:function(e){store.profile.name=e.target.value;saveLocal()}})),
+      h('div',{class:'field'},h('span',{text:'Which is closest to you right now?'}),h('div',{class:'pick'},STATES.map(function(s){return h('button',{type:'button','aria-pressed':store.profile.state===s[0]?'true':'false',text:s[1],onclick:function(){store.profile.state=store.profile.state===s[0]?'':s[0];saveLocal();renderOnb()}})}))),
+      store.profile.state?h('p',{text:'Then your key checkpoint is '+STEPS[stepIndex(focusStep())].t+'. You still go in order. Each checkpoint feeds the next.'}):null];
     foot=[next()];
   }else{
-    body=[h('h2',{text:'당신의 답은 당신 것이다'}),h('p',{text:'적는 내용은 이 기기에 저장된다. Claude 계정으로 열었다면 계정에도 저장되어 다른 기기에서 이어 쓸 수 있다. 다른 사람은 볼 수 없다.'}),h('p',{text:'어떻게 쓰는지 먼저 보고 싶다면, 실제로 이 과정을 지나간 한 사람의 예시가 채워져 있다.'})];
-    foot=[h('button',{class:'btn pri',type:'button',text:store.own?'내 안내서로 돌아가기':'내 안내서 시작하기',onclick:function(){finishOnb('own')}}),h('button',{class:'btn',type:'button',text:'예시 먼저 보기',onclick:function(){finishOnb('example')}})];
+    body=[h('h2',{text:'Your answers are yours'}),h('p',{text:'What you write is saved on this device. If you opened this with a Claude account, it is also saved to your account so you can continue elsewhere. No one else can see it.'}),h('p',{text:'To see how it works first, there is a filled-in example from one person who went through it.'})];
+    foot=[h('button',{class:'btn pri',type:'button',text:store.own?'Back to my guide':'Start my guide',onclick:function(){finishOnb('own')}}),h('button',{class:'btn',type:'button',text:'See the example first',onclick:function(){finishOnb('example')}})];
   }
   var dots=h('div',{class:'dots',role:'img','aria-label':(onbI+1)+' / '+ONB_N});
   for(var i=0;i<ONB_N;i++)dots.appendChild(h('i',{class:i<=onbI?'on':''}));
-  if(onbI>0&&onbI<ONB_N-1)foot.push(h('button',{class:'btn plain',type:'button',text:'건너뛰기',onclick:function(){onbGo(ONB_N-1)}}));
+  if(onbI>0&&onbI<ONB_N-1)foot.push(h('button',{class:'btn plain',type:'button',text:'Skip',onclick:function(){onbGo(ONB_N-1)}}));
   o.replaceChildren(h('div',{class:'onb-in'},
-    h('div',{class:'onb-top'},onbI>0?h('button',{class:'btn sm ghost',type:'button',text:'← 뒤로',onclick:function(){onbGo(onbI-1)}}):h('span'),dots),
+    h('div',{class:'onb-top'},onbI>0?h('button',{class:'btn sm ghost',type:'button',text:'← Back',onclick:function(){onbGo(onbI-1)}}):h('span'),dots),
     h('div',{class:'onb-body'},body),h('div',{class:'onb-foot'},foot)));
 }
 
