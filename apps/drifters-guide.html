@@ -216,6 +216,42 @@ html,body{height:100%}
 .qpage>.hint{font-size:14.5px;color:var(--ink2);margin-top:-2px}
 .qpage{gap:14px;min-height:38vh}
 .track .top input{flex:1}
+
+/* controls as celestial bodies: primary = ringed planet, secondary = dark moon, selected = lit */
+:root{
+  --orb-pri:radial-gradient(120% 150% at 28% 15%,#D3ECF8 0%,#86BEDD 40%,#3B7AA2 100%);
+  --orb-moon:radial-gradient(120% 150% at 28% 15%,#2D3868 0%,#171E40 55%,#0B1027 100%);
+  --orb-star:radial-gradient(circle at 35% 30%,#FFF4DA 0%,#F5D9A0 55%,#C4913C 100%);
+  --orb-good:radial-gradient(circle at 35% 30%,#CBF5DC 0%,#6FD39A 55%,#2C8A59 100%);
+  --moon-edge:rgba(134,190,221,.24);
+}
+.btn{border-radius:999px;border:1px solid var(--moon-edge);background:var(--orb-moon);padding:9px 18px;box-shadow:inset -6px -8px 14px rgba(0,0,0,.45),inset 3px 4px 8px rgba(255,255,255,.06)}
+.btn:hover{border-color:var(--accent);box-shadow:inset -6px -8px 14px rgba(0,0,0,.45),inset 3px 4px 8px rgba(255,255,255,.06),0 0 14px rgba(134,190,221,.35)}
+.btn.sm{padding:4px 12px}
+.btn.pri{position:relative;isolation:isolate;background:var(--orb-pri);border-color:transparent;color:var(--accent-ink);box-shadow:inset -8px -10px 16px rgba(10,40,70,.45),inset 4px 5px 10px rgba(255,255,255,.35),0 0 18px rgba(134,190,221,.45)}
+.btn.pri::before{content:"";position:absolute;inset:-4px -12px;border:1.5px solid rgba(245,217,160,.75);border-radius:50%;transform:rotate(-5deg);z-index:-1;pointer-events:none}
+.btn.pri:hover{box-shadow:inset -8px -10px 16px rgba(10,40,70,.45),inset 4px 5px 10px rgba(255,255,255,.35),0 0 26px rgba(134,190,221,.7)}
+.btn.ghost{background:transparent;border:1px dashed var(--ink3);box-shadow:none}
+.onb-foot .btn.plain{box-shadow:none}
+.chip{background:var(--orb-moon);border-color:var(--moon-edge);box-shadow:inset -3px -4px 6px rgba(0,0,0,.4);padding:3px 12px}
+.chip[aria-pressed="true"]{background:var(--orb-pri);border-color:transparent;color:var(--accent-ink);box-shadow:inset -3px -4px 6px rgba(10,40,70,.4),0 0 10px rgba(134,190,221,.55)}
+.seg{border:none;overflow:visible;border-radius:0;gap:6px;flex-wrap:wrap}
+.seg button,.seg button:first-child{border:1px solid var(--moon-edge);border-radius:999px;background:var(--orb-moon);box-shadow:inset -3px -4px 6px rgba(0,0,0,.4);min-width:34px;height:34px;padding:0 12px}
+.seg button[aria-pressed="true"]{background:var(--orb-pri);color:var(--accent-ink);border-color:transparent;box-shadow:inset -3px -4px 6px rgba(10,40,70,.4),0 0 10px rgba(134,190,221,.55)}
+.cp{border-radius:999px}
+.cp .n,.cprow .n{border:none;width:22px;height:22px;background:var(--orb-moon);color:var(--ink2);box-shadow:inset -3px -3px 5px rgba(0,0,0,.5),0 0 0 1px var(--moon-edge)}
+.cp.done .n,.cprow.done .n{background:var(--orb-good);color:#06210F;box-shadow:inset -3px -3px 5px rgba(0,60,30,.35)}
+.cp[aria-current="true"] .n,.cp.done[aria-current="true"] .n{background:var(--orb-star);color:#3A2A08;box-shadow:0 0 12px rgba(245,217,160,.75)}
+.pick button{border-radius:999px;display:flex;align-items:center;gap:12px;background:var(--orb-moon);border-color:var(--moon-edge);padding:12px 18px;box-shadow:inset -6px -8px 14px rgba(0,0,0,.4)}
+.pick button::before{content:"";width:14px;height:14px;border-radius:50%;flex:none;background:var(--orb-moon);box-shadow:0 0 0 1px var(--ink3)}
+.pick button[aria-pressed="true"]{border-color:var(--contour);background:var(--orb-moon)}
+.pick button[aria-pressed="true"]::before{background:var(--orb-star);box-shadow:0 0 10px rgba(245,217,160,.85)}
+.pager button{width:16px;height:16px}
+.pager button::after{left:3px;right:3px;top:3px;height:10px;border-radius:50%;background:var(--orb-moon);box-shadow:0 0 0 1px var(--rule)}
+.pager button.past::after{background:var(--ink3);box-shadow:none}
+.pager button.on::after{background:var(--orb-star);box-shadow:0 0 8px rgba(245,217,160,.8)}
+.check{appearance:none;-webkit-appearance:none;margin:0;width:22px;height:22px;border-radius:50%;flex:none;background:var(--orb-moon);box-shadow:0 0 0 1px var(--ink3)}
+.check:checked{background:var(--orb-good);box-shadow:0 0 10px rgba(111,211,154,.65)}
 </style>
 
 <div id="onb" class="onb" hidden></div>
