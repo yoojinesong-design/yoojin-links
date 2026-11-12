@@ -361,18 +361,18 @@ export default function FreeWillUtilizer() {
       </div>
 
       <style jsx>{`
-        keyframes shake { 0%,100%{transform:translateX(0) rotate(0)} 15%{transform:translateX(-8px) rotate(-1.5deg)} 30%{transform:translateX(8px) rotate(1.5deg)} 45%{transform:translateX(-4px) rotate(-0.5deg)} 60%{transform:translateX(4px) rotate(0.5deg)} }
-        keyframes card-reveal { from{opacity:0;transform:translateY(14px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-        keyframes pulse-glow { from{box-shadow:0 0 20px rgba(129,140,248,0.03),0 8px 32px rgba(0,0,0,0.3)} to{box-shadow:0 0 60px rgba(129,140,248,0.1),0 8px 32px rgba(0,0,0,0.3)} }
-        keyframes dot-bounce { from{transform:translateY(0);opacity:0.3} to{transform:translateY(-6px);opacity:1} }
-        keyframes spin-wobble { 0%{transform:rotate(0) scale(1)} 25%{transform:rotate(8deg) scale(1.06)} 50%{transform:rotate(-8deg) scale(0.94)} 75%{transform:rotate(4deg) scale(1.02)} 100%{transform:rotate(0) scale(1)} }
-        keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-        property --border-angle { syntax:'<angle>'; initial-value:0deg; inherits:false }
-        keyframes border-rotate { to{--border-angle:360deg} }
-        keyframes gradient-shift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-        keyframes star-pulse { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
-        keyframes ambient-drift { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(30px,-20px) scale(1.1)} }
-        keyframes particle-float { 0%{transform:translateY(0) translateX(0);opacity:0.1} 50%{opacity:0.25} 100%{transform:translateY(-30px) translateX(15px);opacity:0.05} }
+        @keyframes shake { 0%,100%{transform:translateX(0) rotate(0)} 15%{transform:translateX(-8px) rotate(-1.5deg)} 30%{transform:translateX(8px) rotate(1.5deg)} 45%{transform:translateX(-4px) rotate(-0.5deg)} 60%{transform:translateX(4px) rotate(0.5deg)} }
+        @keyframes card-reveal { from{opacity:0;transform:translateY(14px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes pulse-glow { from{box-shadow:0 0 20px rgba(129,140,248,0.03),0 8px 32px rgba(0,0,0,0.3)} to{box-shadow:0 0 60px rgba(129,140,248,0.1),0 8px 32px rgba(0,0,0,0.3)} }
+        @keyframes dot-bounce { from{transform:translateY(0);opacity:0.3} to{transform:translateY(-6px);opacity:1} }
+        @keyframes spin-wobble { 0%{transform:rotate(0) scale(1)} 25%{transform:rotate(8deg) scale(1.06)} 50%{transform:rotate(-8deg) scale(0.94)} 75%{transform:rotate(4deg) scale(1.02)} 100%{transform:rotate(0) scale(1)} }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        @property --border-angle { syntax:'<angle>'; initial-value:0deg; inherits:false }
+        @keyframes border-rotate { to{--border-angle:360deg} }
+        @keyframes gradient-shift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+        @keyframes star-pulse { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
+        @keyframes ambient-drift { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(30px,-20px) scale(1.1)} }
+        @keyframes particle-float { 0%{transform:translateY(0) translateX(0);opacity:0.1} 50%{opacity:0.25} 100%{transform:translateY(-30px) translateX(15px);opacity:0.05} }
       `}</style>
     </div>
   )
