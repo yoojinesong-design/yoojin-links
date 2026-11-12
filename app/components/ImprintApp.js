@@ -1286,7 +1286,7 @@ export default function ImprintApp() {
 
       <main id="main-content" aria-label="imprint app content">
       {/* ── Landing ── */}
-      <section className={`view ${activeView === "landing" ? "active" : ""}`} {...(activeView !== "landing" ? { inert: true } : {})}>
+      <section className={`view landing-view ${activeView === "landing" ? "active" : ""}`} {...(activeView !== "landing" ? { inert: true } : {})}>
         <canvas ref={canvasRef} className="landing-canvas" />
         <div className="landing-content">
           <h1 className="landing-question">

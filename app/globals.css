@@ -173,12 +173,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .view {
   position: fixed; inset: 0;
   display: flex; align-items: center; justify-content: center; flex-direction: column;
+  /* Plain center pushes the top of over-tall content above the scroll range. */
+  justify-content: safe center;
   opacity: 0; pointer-events: none;
   transition: opacity 0.6s var(--ease);
   overflow-y: auto; background: var(--bg);
   padding-bottom: var(--sab);
 }
 .view.active { opacity: 1; pointer-events: auto; }
+.landing-view { justify-content: flex-start; }
 
 /* ── Header ── */
 .app-header {
@@ -244,7 +247,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .arrow { transition: transform 0.4s var(--ease); display: inline-block; }
 
 /* ── Quiz ── */
-.quiz-view { padding: calc(80px + var(--sat, 0px)) 24px 40px; justify-content: center; }
+.quiz-view { padding: calc(80px + var(--sat, 0px)) 24px 40px; }
 .quiz-top-bar {
   display: flex; align-items: center; gap: 12px;
   margin-bottom: 36px; max-width: 540px; width: 100%; margin-left: auto; margin-right: auto;
@@ -319,7 +322,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .quiz-option:disabled { opacity: 0.55; cursor: default; pointer-events: none; }
 
 /* ── Reveal ── */
-.reveal-view { justify-content: center; text-align: center; padding: 40px 24px; }
+.reveal-view { text-align: center; padding: calc(96px + var(--sat, 0px)) 24px 40px; }
 .reveal-loading {
   display: flex; flex-direction: column; align-items: center; gap: 24px;
   transition: opacity 0.5s var(--ease);
