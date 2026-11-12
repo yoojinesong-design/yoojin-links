@@ -1,6 +1,6 @@
 <title>The Drifter's Guide to Gravity</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nunito:wght@400;600;700;800&display=swap">
 <style>
 /* Layout: a field guide read in deep space, one night-sky look in every theme. Cover band, a route of six checkpoints (rail on desktop, strip on phone), one working sheet at a time, each ending in a readout. */
 :root{
@@ -252,8 +252,57 @@ html,body{height:100%}
 .pager button.on::after{background:var(--orb-star);box-shadow:0 0 8px rgba(245,217,160,.8)}
 .check{appearance:none;-webkit-appearance:none;margin:0;width:22px;height:22px;border-radius:50%;flex:none;background:var(--orb-moon);box-shadow:0 0 0 1px var(--ink3)}
 .check:checked{background:var(--orb-good);box-shadow:0 0 10px rgba(111,211,154,.65)}
+
+/* softer cosmos: painted sky, glass surfaces, rounded forms, one friendly typeface, gentle motion */
+:root{--sans:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo',sans-serif;--mono:var(--sans);--glass:rgba(20,26,58,.55);--edge:rgba(170,190,255,.16)}
+body{background:var(--bg);font-size:15.5px}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:-1;display:block}
+.twinkles{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.twinkles i{position:absolute;width:3px;height:3px;border-radius:50%;background:#FFFFFF;box-shadow:0 0 6px 1px rgba(255,255,255,.8);opacity:.35}
+.cover{border-bottom:none}
+.modebar{background:rgba(12,16,40,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--edge)}
+.row,.track{background:var(--glass);border:1px solid var(--edge);border-radius:16px;padding:12px 14px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.readout,.nextcard{background:var(--glass);border:1px solid rgba(245,217,160,.35);border-radius:20px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.space{border-radius:24px;border:1px solid var(--edge);background:radial-gradient(120% 90% at 50% 45%,rgba(72,54,130,.5) 0%,rgba(9,13,28,.62) 72%)}
+input[type=text],input[type=number],input[type=date],textarea{background:rgba(6,9,24,.6);border:1px solid var(--edge);border-radius:12px;padding:9px 12px}
+.empty{border-radius:16px;border-color:var(--edge)}
+.eyebrow{letter-spacing:.1em;font-size:11.5px;font-weight:700}
+.field>span{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:600;color:var(--ink2)}
+th{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:700;border-bottom-color:var(--edge)}
+td{border-bottom-color:var(--edge)}
+.q>h3 .k{letter-spacing:.04em;font-weight:800;font-size:12px}
+.tag{border-radius:999px;text-transform:none;letter-spacing:0;font-size:12px;font-weight:700;padding:2px 10px;background:rgba(245,217,160,.12)}
+.motto{font-family:var(--serif);font-weight:700;letter-spacing:.04em;border-radius:999px;border-width:1.5px;padding:10px 20px}
+.navrow{border-top:none;background:none}
+.cplist{border-top:none;gap:4px}
+.cprow{border-radius:14px;border-bottom:none;padding:11px 10px}
+.cprow:hover{background:var(--glass)}
+.bar{border-radius:999px}.bar>i{border-radius:999px}
+.stack>i{border-radius:6px}
+.card-grid>div{border-bottom-color:var(--edge)}
+.onb-list li{border-bottom-color:var(--edge)}
+.route .cp.done:nth-child(2) .n,.cplist .cprow.done:nth-child(1) .n{background:radial-gradient(circle at 35% 30%,#FFDDD6 0%,#E88A7A 55%,#9C4338 100%);color:#3A0E08}
+.route .cp.done:nth-child(3) .n,.cplist .cprow.done:nth-child(2) .n{background:radial-gradient(circle at 35% 30%,#FFEBBD 0%,#E5B95C 55%,#9A6B1E 100%);color:#3A2A08}
+.route .cp.done:nth-child(4) .n,.cplist .cprow.done:nth-child(3) .n{background:radial-gradient(circle at 35% 30%,#CDF7F2 0%,#5CC9BD 55%,#22786F 100%);color:#04231F}
+.route .cp.done:nth-child(5) .n,.cplist .cprow.done:nth-child(4) .n{background:radial-gradient(circle at 35% 30%,#D3ECF8 0%,#86BEDD 55%,#3B7AA2 100%);color:#06101A}
+.route .cp.done:nth-child(6) .n,.cplist .cprow.done:nth-child(5) .n{background:radial-gradient(circle at 35% 30%,#E9DEFF 0%,#A98BE8 55%,#5A3FA0 100%);color:#1A0C3A}
+@media (prefers-reduced-motion:no-preference){
+  .twinkles i{animation:tw 4s ease-in-out infinite}
+  @keyframes tw{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:1;transform:scale(1.25)}}
+  .btn,.chip,.seg button,.pick button,.cprow{transition:transform .15s ease,box-shadow .2s ease,background-color .2s ease}
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active,.chip:active,.seg button:active,.pick button:active{transform:scale(.96)}
+  .qpage,.readout,.space{animation:rise .4s ease}
+  @keyframes rise{from{opacity:.4;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .btn.pri::before{animation:ring 7s ease-in-out infinite}
+  @keyframes ring{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(-1.5deg)}}
+  .sky .pulse{animation:glow 5s ease-in-out infinite;transform-origin:200px 150px}
+  @keyframes glow{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.18);opacity:1}}
+}
 </style>
 
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="twinkles" id="twinkles" aria-hidden="true"></div>
 <div id="onb" class="onb" hidden></div>
 <div id="app" hidden>
 <header class="cover compact">
@@ -835,7 +884,7 @@ function orbitMap(){
   root.appendChild(svg('ellipse',{cx:cx,cy:cy,rx:104,ry:72,fill:'none',style:'stroke:var(--space-dim)','stroke-width':'1',opacity:'.55'}));
   root.appendChild(svg('ellipse',{cx:cx,cy:cy,rx:150,ry:114,fill:'none',style:'stroke:var(--space-dim)','stroke-width':'1','stroke-dasharray':'2 5',opacity:'.4'}));
   if(g.length){
-    root.appendChild(svg('circle',{cx:cx,cy:cy,r:40,fill:'url(#glow)'}));
+    root.appendChild(svg('circle',{cx:cx,cy:cy,r:40,fill:'url(#glow)',class:'pulse'}));
     root.appendChild(svg('circle',{cx:cx,cy:cy,r:13,style:'fill:var(--star)'}));
     root.appendChild(svg('text',{x:cx,y:cy-24,class:'core'},cut(g[0].name,20)));
   }else{
@@ -999,6 +1048,34 @@ function renderOnb(){
     h('div',{class:'onb-top'},onbI>0?h('button',{class:'btn sm ghost',type:'button',text:'← Back',onclick:function(){onbGo(onbI-1)}}):h('span'),dots),
     h('div',{class:'onb-body'},body),h('div',{class:'onb-foot'},foot)));
 }
+
+/* ---------- sky ---------- */
+function paintSky(){
+  var c=document.getElementById('sky');if(!c||!c.getContext)return;
+  var w=window.innerWidth,hh=window.innerHeight,d=Math.min(window.devicePixelRatio||1,2);
+  c.width=Math.round(w*d);c.height=Math.round(hh*d);
+  var x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);
+  x.fillStyle='#060816';x.fillRect(0,0,w,hh);
+  var seed=11;function r(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
+  var hues=['104,66,178','46,134,158','176,70,134','58,92,186','132,78,196'];
+  var neb=[[.16,.18,.6,0,.34],[.88,.1,.5,1,.26],[.72,.66,.62,2,.2],[.08,.88,.5,3,.26],[.5,.42,.36,4,.13]];
+  x.globalCompositeOperation='screen';
+  var M=Math.max(w,hh),i,g;
+  neb.forEach(function(n){var R=M*n[2];g=x.createRadialGradient(w*n[0],hh*n[1],0,w*n[0],hh*n[1],R);g.addColorStop(0,'rgba('+hues[n[3]]+','+n[4]+')');g.addColorStop(.5,'rgba('+hues[n[3]]+','+(n[4]*.35).toFixed(3)+')');g.addColorStop(1,'rgba('+hues[n[3]]+',0)');x.fillStyle=g;x.fillRect(0,0,w,hh)});
+  for(i=0;i<46;i++){var bx=r()*w,by=r()*hh,br=40+r()*M*.16,hc=hues[(r()*hues.length)|0],ba=.03+r()*.05;g=x.createRadialGradient(bx,by,0,bx,by,br);g.addColorStop(0,'rgba('+hc+','+ba.toFixed(3)+')');g.addColorStop(1,'rgba('+hc+',0)');x.fillStyle=g;x.fillRect(bx-br,by-br,br*2,br*2)}
+  x.globalCompositeOperation='source-over';
+  var cols=['255,255,255','255,236,200','190,220,255'],N=Math.round(w*hh/380);
+  for(i=0;i<N;i++){var sx=r()*w,sy=r()*hh,big=r()>.965,sr=big?1+r()*.8:.35+r()*.6,col=cols[(r()*3)|0];
+    if(big){g=x.createRadialGradient(sx,sy,0,sx,sy,sr*5);g.addColorStop(0,'rgba('+col+',.35)');g.addColorStop(1,'rgba('+col+',0)');x.fillStyle=g;x.fillRect(sx-sr*5,sy-sr*5,sr*10,sr*10)}
+    x.fillStyle='rgba('+col+','+(.4+r()*.6).toFixed(2)+')';x.beginPath();x.arc(sx,sy,sr,0,6.2832);x.fill()}
+}
+function seedTwinkles(){
+  var box=document.getElementById('twinkles');if(!box)return;
+  var seed=29;function r(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
+  for(var i=0;i<18;i++)box.appendChild(h('i',{style:'left:'+(r()*100).toFixed(1)+'%;top:'+(r()*100).toFixed(1)+'%;animation-delay:'+(-r()*4).toFixed(2)+'s;animation-duration:'+(3+r()*4).toFixed(2)+'s'}));
+}
+paintSky();seedTwinkles();
+var skyTimer;window.addEventListener('resize',function(){clearTimeout(skyTimer);skyTimer=setTimeout(paintSky,150)});
 
 var start=location.hash.slice(1);if(VIEWS[start])cur=start;
 if(store.onboarded)enterApp();else showOnb();
