@@ -504,6 +504,23 @@ export default function ImprintApp() {
     quizTimersRef.current.push(t1);
   };
 
+  const handleQuizBack = () => {
+    if (quizAnsweringRef.current || quizState.currentQ === 0) return;
+    quizAnsweringRef.current = true;
+    setQuizFading(true);
+    const prevAnswer = quizState.answers[quizState.answers.length - 1];
+    const t = setTimeout(() => {
+      setQuizState(prev => {
+        const newScores = { ...prev.scores };
+        if (prevAnswer) newScores[prevAnswer.type] = Math.max(0, (newScores[prevAnswer.type] || 0) - 1);
+        return { ...prev, currentQ: prev.currentQ - 1, scores: newScores, answers: prev.answers.slice(0, -1) };
+      });
+      setQuizFading(false);
+      quizAnsweringRef.current = false;
+    }, 300);
+    quizTimersRef.current.push(t);
+  };
+
   /* ── Answer review ── */
   const openReview = (quizId) => {
     setReviewQuizId(quizId);
@@ -1474,22 +1491,34 @@ export default function ImprintApp() {
       <section className={`view quiz-view ${activeView === "quiz" ? "active" : ""}`} {...(activeView !== "quiz" ? { inert: true } : {})}>
         {activeQuiz && (
           <>
-            <div className="quiz-progress" role="group" aria-label={`Question ${quizState.currentQ + 1} of ${activeQuiz.questions.length}`}>
-              {activeQuiz.questions.map((_, i) => (
-                <div
-                  key={i}
-                  className={`quiz-dot ${i === quizState.currentQ ? "active" : ""} ${
-                    i < quizState.currentQ ? "done" : ""
-                  }`}
-                  aria-hidden="true"
-                />
-              ))}
+            <div className="quiz-top-bar">
+              <button
+                className="quiz-back-btn"
+                onClick={quizState.currentQ === 0 ? () => switchView(quizResults.purpose ? "dashboard" : "landing") : handleQuizBack}
+                aria-label={quizState.currentQ === 0 ? "Exit quiz" : "Previous question"}
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <div className="quiz-progress" role="group" aria-label={`Question ${quizState.currentQ + 1} of ${activeQuiz.questions.length}`}>
+                {activeQuiz.questions.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`quiz-dot ${i === quizState.currentQ ? "active" : ""} ${
+                      i < quizState.currentQ ? "done" : ""
+                    }`}
+                    aria-hidden="true"
+                  />
+                ))}
+              </div>
+              <div className="quiz-back-spacer" />
             </div>
             <div className={`quiz-inner ${quizFading ? "fading" : ""}`} aria-live="polite">
               <p className="quiz-label">
-                {activeQuiz.name} · Question {quizState.currentQ + 1} of{" "}
-                {activeQuiz.questions.length}
+                {activeQuiz.name} · {quizState.currentQ + 1} / {activeQuiz.questions.length}
               </p>
+              {activeQuiz.questions[quizState.currentQ].icon && (
+                <div className="quiz-question-icon">{activeQuiz.questions[quizState.currentQ].icon}</div>
+              )}
               <h2 className="quiz-question">
                 {activeQuiz.questions[quizState.currentQ].text}
               </h2>
@@ -1501,7 +1530,8 @@ export default function ImprintApp() {
                     disabled={isQuizAnswering}
                     onClick={() => handleAnswer(opt)}
                   >
-                    {opt.text}
+                    {opt.icon && <span className="quiz-option-icon">{opt.icon}</span>}
+                    <span className="quiz-option-text">{opt.text}</span>
                   </button>
                 ))}
               </div>
