@@ -171,6 +171,29 @@ html,body{height:100%}
 .cover.compact .eyebrow,.cover.compact .ko,.cover.compact .motto{display:none}
 .navrow{position:sticky;bottom:0;background:var(--bg);padding-bottom:12px;z-index:5}
 
+/* home: one fixed night-sky panel, same in both themes */
+:root{--space:#090D1C;--space2:#17203F;--space-ink:#E8EAF4;--space-dim:#8A93B8;--star:#F5D9A0;--planet:#86BEDD}
+.space{background:radial-gradient(120% 90% at 50% 45%,var(--space2) 0%,var(--space) 70%);color:var(--space-ink);border-radius:6px;padding:18px 16px 20px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.space .eyebrow{color:var(--space-dim)}
+.skybtn{border:none;background:none;padding:0;cursor:pointer;display:block;width:100%;max-width:560px;margin:0 auto;border-radius:4px}
+.skybtn:focus-visible{outline-color:var(--star)}
+.sky{display:block;width:100%;height:auto}
+.sky text{font-family:var(--sans);font-size:12px;fill:var(--space-ink);text-anchor:middle}
+.sky text.dim{fill:var(--space-dim);font-size:11px}
+.sky text.core{font-weight:600;font-size:13px}
+.space-h{font-family:var(--serif);font-weight:700;font-size:clamp(21px,4.4vw,28px);line-height:1.3;text-wrap:balance}
+.space-sub{font-family:var(--mono);font-size:12px;color:var(--space-dim)}
+.nextcard{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;border:1.5px solid var(--ink);background:var(--surface);border-radius:2px;padding:14px 16px}
+.nextcard p{min-width:0;flex:1 1 200px}
+.nextcard .btn{padding:10px 16px;font-weight:600}
+.cplist{display:flex;flex-direction:column;border-top:1px solid var(--rule)}
+.cprow{display:grid;grid-template-columns:24px 52px minmax(0,1fr);gap:10px;align-items:center;border:none;border-bottom:1px solid var(--rule);background:none;padding:11px 2px;text-align:left;cursor:pointer}
+.cprow:hover{background:var(--surface)}
+.cprow .n{font-family:var(--mono);font-size:11px;width:20px;height:20px;border:1.5px solid var(--ink3);border-radius:50%;display:grid;place-items:center;color:var(--ink3)}
+.cprow.done .n{border-color:var(--good);background:var(--good);color:var(--surface)}
+.cprow b{font-weight:600}
+.cprow .v{color:var(--ink2);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+
 /* onboarding */
 .onb[hidden]{display:none}
 .onb{min-height:100%;display:flex;flex-direction:column;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px}
@@ -415,7 +438,7 @@ var STEPS=[
   {id:'proof',t:'증명',d:'신조를 테스트로',rule:'측정할 수 없으면 준비된 게 아니다.',why:'신조를 통과와 실패가 갈리는 종목으로 바꾼다. 한 번 도달하고, 그 뒤에는 머문다.'},
   {id:'card',t:'안내서',d:'한 장으로 보기',rule:'여섯 지점을 지나온 결과.',why:''}
 ];
-var cur='line';
+var cur='home';
 function stepIndex(id){for(var i=0;i<STEPS.length;i++)if(STEPS[i].id===id)return i;return 0}
 
 function edit(fn,structural){
@@ -733,11 +756,87 @@ function viewCard(){
   return out;
 }
 
-var VIEWS={line:viewLine,limit:viewLimit,assets:viewAssets,order:viewOrder,creed:viewCreed,proof:viewProof,card:viewCard};
+/* --- home --- */
+function svg(tag,attrs){
+  var el=document.createElementNS('http://www.w3.org/2000/svg',tag),k,i,c;
+  for(k in attrs)if(attrs[k]!=null)el.setAttribute(k,attrs[k]);
+  for(i=2;i<arguments.length;i++){c=arguments[i];if(c!=null)el.appendChild(typeof c==='string'?document.createTextNode(c):c)}
+  return el;
+}
+function cut(s,n){s=(s||'').trim()||'이름 없음';return s.length>n?s.slice(0,n-1)+'…':s}
+function orbitMap(){
+  var tr=S().order.tracks,g=tr.filter(function(x){return x.tier==='gravity'}),o=tr.filter(function(x){return x.tier==='orbit'}),sb=tr.filter(function(x){return x.tier==='standby'});
+  var cx=200,cy=150,rad=Math.PI/180;
+  var label=g.length?'중력선 '+cut(g[0].name,30)+', 궤도 '+o.length+'개, 대기 '+sb.length+'개':'중력선이 아직 없다';
+  var root=svg('svg',{viewBox:'0 0 400 310',class:'sky',role:'img','aria-label':label});
+  root.appendChild(svg('defs',null,svg('radialGradient',{id:'glow'},svg('stop',{offset:'0','stop-color':'#F5D9A0','stop-opacity':'.6'}),svg('stop',{offset:'1','stop-color':'#F5D9A0','stop-opacity':'0'}))));
+  var seed=7;function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
+  for(var i=0;i<90;i++)root.appendChild(svg('circle',{cx:(rnd()*400).toFixed(1),cy:(rnd()*310).toFixed(1),r:(.35+rnd()*.85).toFixed(2),style:'fill:var(--space-ink)',opacity:(.15+rnd()*.55).toFixed(2)}));
+  root.appendChild(svg('ellipse',{cx:cx,cy:cy,rx:104,ry:72,fill:'none',style:'stroke:var(--space-dim)','stroke-width':'1',opacity:'.55'}));
+  root.appendChild(svg('ellipse',{cx:cx,cy:cy,rx:150,ry:114,fill:'none',style:'stroke:var(--space-dim)','stroke-width':'1','stroke-dasharray':'2 5',opacity:'.4'}));
+  if(g.length){
+    root.appendChild(svg('circle',{cx:cx,cy:cy,r:40,fill:'url(#glow)'}));
+    root.appendChild(svg('circle',{cx:cx,cy:cy,r:13,style:'fill:var(--star)'}));
+    root.appendChild(svg('text',{x:cx,y:cy-24,class:'core'},cut(g[0].name,18)));
+  }else{
+    root.appendChild(svg('circle',{cx:cx,cy:cy,r:13,fill:'none',style:'stroke:var(--space-dim)','stroke-width':'1.5','stroke-dasharray':'3 4'}));
+    root.appendChild(svg('text',{x:cx,y:cy+32,class:'dim'},'중력선 미정'));
+  }
+  o.forEach(function(x,i){
+    var a=(-28+i*360/o.length)*rad,px=cx+104*Math.cos(a),py=cy+72*Math.sin(a),r=Math.max(5,Math.min(11,4+num(x.hours)*.5)),up=py<cy;
+    root.appendChild(svg('circle',{cx:px.toFixed(1),cy:py.toFixed(1),r:r,style:'fill:var(--planet)'}));
+    root.appendChild(svg('text',{x:px.toFixed(1),y:(up?py-r-6:py+r+15).toFixed(1)},cut(x.name,12)+' '+num(x.hours)+'h'));
+  });
+  sb.forEach(function(x,i){
+    var a=(62+i*360/sb.length)*rad,px=cx+150*Math.cos(a),py=cy+114*Math.sin(a);
+    root.appendChild(svg('circle',{cx:px.toFixed(1),cy:py.toFixed(1),r:3,style:'fill:var(--space-dim)'}));
+    root.appendChild(svg('text',{x:px.toFixed(1),y:(py+15).toFixed(1),class:'dim'},cut(x.name,10)));
+  });
+  if(!tr.length){
+    root.appendChild(svg('circle',{cx:92,cy:86,r:4,style:'fill:var(--space-ink)'}));
+    root.appendChild(svg('text',{x:92,y:104,class:'dim'},(store.mode==='own'&&store.profile.name.trim())||'당신'));
+  }
+  return root;
+}
+function viewHome(){
+  var s=S(),tr=s.order.tracks,g=tr.filter(function(x){return x.tier==='gravity'}),sum=assetSum(),free=Math.max(freeHours(),0),out=[];
+  var name=store.mode==='own'?store.profile.name.trim():'';
+  var head=g.length===1?'〈'+cut(g[0].name,28)+'〉이 당신을 끌어당기고 있다.':g.length>1?'별이 둘이면 궤도가 찢어진다. 하나를 고른다.':tr.length?'돌고 있는 것은 있는데 중심이 없다.':'아직 중력이 없다. 떠도는 중이다.';
+  out.push(h('section',{class:'space'},
+    h('div',{class:'eyebrow',text:name?name+'의 계':'지금 나의 계'}),
+    h('button',{class:'skybtn',type:'button',title:'순서 지점 열기',onclick:function(){go('order',true)}},orbitMap()),
+    h('p',{class:'space-h',text:head}),
+    h('p',{class:'space-sub',text:'궤도 '+tierCount('orbit')+' · 대기 '+tierCount('standby')+' · 주 '+allocated()+' / '+free+'시간'})));
+  var six=STEPS.slice(0,6),nx=null;six.forEach(function(st){if(!nx&&!done(st.id))nx=st});
+  var n=six.filter(function(st){return done(st.id)}).length;
+  out.push(h('div',{class:'nextcard'},
+    h('p',null,h('span',{class:'eyebrow',text:'여섯 지점 중 '+n+'곳 통과'}),h('br'),nx?h('strong',{text:'다음 지점은 '+nx.t+'. '+nx.d+'.'}):h('strong',{text:'여섯 지점을 모두 지났다.'})),
+    h('button',{class:'btn pri',type:'button',text:nx?nx.t+' 열기 →':'안내서 보기 →',onclick:function(){go(nx?nx.id:'card',true)}})));
+  var vals={
+    line:s.line.sentence.trim(),
+    limit:s.limit.pick?resName(s.limit.pick)+' · 쓸 수 있는 시간 주 '+free+'시간':'',
+    assets:sum.sure>0?'보장 수입의 현재가치 '+money(sum.sure):sum.fin>0?'금융자산 '+money(sum.fin):'',
+    order:g.length===1?(g[0].name||'이름 없음'):'',
+    creed:s.creed.lines[0].trim(),
+    proof:s.proof.events.length?(s.proof.name.trim()||'테스트')+' · '+(sortedLog().length?'연속 통과 '+stayCount()+'회':'기록 없음'):''
+  };
+  var list=h('div',{class:'cplist'});
+  six.forEach(function(st,i){list.appendChild(h('button',{type:'button',class:'cprow'+(done(st.id)?' done':''),onclick:function(){go(st.id,true)}},h('span',{class:'n',text:String(i+1)}),h('b',{text:st.t}),h('span',{class:'v',text:vals[st.id]||st.d})))});
+  out.push(list);
+  var a=s.proof.action,sec=q('이번 주','할 한 가지');
+  if(a.text.trim())sec.appendChild(h('div',{class:'row'},h('input',{type:'checkbox',class:'check',id:'home-done',checked:a.done,'aria-label':'완료',onchange:function(ev){a.done=ev.target.checked;save()}}),h('label',{class:'grow',for:'home-done',text:a.text.trim()+(a.due?' · '+a.due+'까지':'')})));
+  else sec.appendChild(h('button',{class:'empty',type:'button',style:'cursor:pointer;width:100%',text:'아직 정하지 않았다. 증명 지점에서 하나를 고른다.',onclick:function(){go('proof',true)}}));
+  out.push(sec);
+  readoutFn=null;
+  return out;
+}
+
+var VIEWS={home:viewHome,line:viewLine,limit:viewLimit,assets:viewAssets,order:viewOrder,creed:viewCreed,proof:viewProof,card:viewCard};
 
 /* ---------- chrome ---------- */
 function renderRoute(){
   var nav=document.getElementById('route'),kids=[];
+  kids.push(h('button',{type:'button',class:'cp','aria-current':cur==='home'?'true':'false',onclick:function(){go('home')}},h('span',{class:'n',text:'✦'}),h('span',null,h('span',{class:'t',text:'홈'}),h('span',{class:'d',text:'지금 나의 계'}))));
   STEPS.forEach(function(st,i){
     var isCard=st.id==='card';
     kids.push(h('button',{type:'button',class:'cp'+(!isCard&&done(st.id)?' done':''),'aria-current':cur===st.id?'true':'false',onclick:function(){go(st.id)}},
@@ -746,13 +845,15 @@ function renderRoute(){
   nav.replaceChildren.apply(nav,kids);
 }
 function renderSheet(){
-  var st=STEPS[stepIndex(cur)],i=stepIndex(cur),sheet=document.getElementById('sheet');
+  var sheet=document.getElementById('sheet');
+  if(cur==='home'){sheet.replaceChildren.apply(sheet,viewHome());return}
+  var st=STEPS[stepIndex(cur)],i=stepIndex(cur);
   var kids=[h('header',{class:'sheet-head'},h('div',{class:'eyebrow'},st.id==='card'?'Summary':'Checkpoint '+(i+1)+' / 6',focusStep()===st.id?h('span',{class:'tag',style:'margin-left:10px',text:'당신에게 중요한 지점'}):null),h('h2',{text:st.t}),h('p',{class:'rule',text:st.rule}),st.why?h('p',{class:'why',text:st.why}):null)];
   var body=VIEWS[cur]();
   if(cur==='card')kids=kids.concat(body);
   else{kids=kids.concat(body);kids.push(h('section',{class:'readout',id:'readout','aria-live':'polite'},readoutFn()))}
   kids.push(h('div',{class:'navrow'},
-    i>0?h('button',{class:'btn',type:'button',text:'← '+STEPS[i-1].t,onclick:function(){go(STEPS[i-1].id,true)}}):h('span'),
+    i>0?h('button',{class:'btn',type:'button',text:'← '+STEPS[i-1].t,onclick:function(){go(STEPS[i-1].id,true)}}):h('button',{class:'btn',type:'button',text:'← 홈',onclick:function(){go('home',true)}}),
     i<STEPS.length-1?h('button',{class:'btn pri',type:'button',text:STEPS[i+1].t+' →',onclick:function(){go(STEPS[i+1].id,true)}}):h('span')));
   sheet.replaceChildren.apply(sheet,kids);
 }
@@ -767,13 +868,13 @@ function renderMode(){
     kids.push(acts);
   }else{
     kids.push(h('p',null,h('span',{class:'tag',text:'예시'}),'38세 재향군인 간호사의 실제 과정을 단순화한 숫자입니다. 눌러 보고 고쳐 봐도 저장되지 않습니다.'));
-    kids.push(h('div',{class:'acts'},h('button',{class:'btn pri',type:'button',text:store.own?'내 안내서로 돌아가기':'내 것으로 시작하기',onclick:function(){if(!store.own)store.own=blank();store.mode='own';save();go('line')}})));
+    kids.push(h('div',{class:'acts'},h('button',{class:'btn pri',type:'button',text:store.own?'내 안내서로 돌아가기':'내 것으로 시작하기',onclick:function(){if(!store.own)store.own=blank();store.mode='own';save();go('home')}})));
   }
   bar.replaceChildren.apply(bar,kids);
 }
 function renderAll(){renderMode();renderRoute();renderSheet()}
 function go(id,scroll){
-  cur=VIEWS[id]?id:'line';
+  cur=VIEWS[id]?id:'home';
   try{if(location.hash!=='#'+cur)history.replaceState(null,'','#'+cur)}catch(e){try{location.hash=cur}catch(e2){}}
   renderAll();
   if(scroll){var el=document.getElementById('route');if(el&&el.scrollIntoView)el.scrollIntoView({block:'start'})}
@@ -788,7 +889,8 @@ function enterApp(){document.getElementById('onb').hidden=true;document.getEleme
 function showOnb(){onbI=0;document.getElementById('app').hidden=true;document.getElementById('onb').hidden=false;renderOnb();window.scrollTo(0,0)}
 function finishOnb(mode){
   store.onboarded=true;
-  if(mode==='own'){if(!store.own)store.own=blank();store.mode='own';cur=focusStep()&&done('line')?cur:'line'}else{store.mode='example';ex=example()}
+  if(mode==='own'){if(!store.own)store.own=blank();store.mode='own'}else{store.mode='example';ex=example()}
+  cur='home';
   store.updatedAt=Date.now();saveLocal();if(sync){syncDirty=true;push()}
   document.getElementById('onb').hidden=true;document.getElementById('app').hidden=false;go(cur);window.scrollTo(0,0);
 }
