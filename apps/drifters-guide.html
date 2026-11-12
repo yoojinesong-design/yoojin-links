@@ -1,0 +1,751 @@
+<title>The Drifter's Guide to Gravity</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a field guide. Cover band on a map grid, a route of six checkpoints (rail on desktop, strip on phone), one working sheet at a time, each ending in a readout. */
+:root{
+  --bg:#E9E8E2;--surface:#F7F6F2;--sunk:#DEDCD4;
+  --ink:#171B1F;--ink2:#4B5158;--ink3:#767B82;
+  --rule:#CBC9C0;--grid:rgba(23,27,31,.07);
+  --accent:#2F5B70;--accent-ink:#FFFFFF;--accent-bg:#DAE7EC;
+  --contour:#96653A;
+  --good:#2A7648;--warn:#8A6218;--crit:#9A3A34;
+  --sans:'IBM Plex Sans KR',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Consolas,monospace;
+  --serif:'Gowun Batang','Noto Serif KR',Georgia,serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#101315;--surface:#181C20;--sunk:#0B0D0F;
+  --ink:#DAD8D2;--ink2:#A0A29E;--ink3:#73767A;
+  --rule:#2B3035;--grid:rgba(218,216,210,.06);
+  --accent:#72B2CE;--accent-ink:#0B1418;--accent-bg:#152630;
+  --contour:#C4935F;
+  --good:#5CC27E;--warn:#D2A644;--crit:#DC6A62;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#101315;--surface:#181C20;--sunk:#0B0D0F;
+  --ink:#DAD8D2;--ink2:#A0A29E;--ink3:#73767A;
+  --rule:#2B3035;--grid:rgba(218,216,210,.06);
+  --accent:#72B2CE;--accent-ink:#0B1418;--accent-bg:#152630;
+  --contour:#C4935F;
+  --good:#5CC27E;--warn:#D2A644;--crit:#DC6A62;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* cover */
+.cover{border-bottom:1px solid var(--rule);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px}
+.cover .wrap{padding-block:28px 22px;display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between}
+.cover-id{min-width:0;flex:1 1 320px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.cover h1{font-family:var(--serif);font-weight:700;font-size:clamp(24px,4.6vw,38px);line-height:1.15;letter-spacing:-.01em;text-wrap:balance;margin-top:8px}
+.cover .ko{color:var(--ink2);margin-top:6px}
+.motto{font-family:var(--mono);font-weight:600;font-size:clamp(15px,2.6vw,20px);letter-spacing:.06em;color:var(--contour);border:2px solid var(--contour);padding:8px 14px;border-radius:2px;white-space:nowrap;transform:rotate(-2deg)}
+
+/* mode bar */
+.modebar{border-bottom:1px solid var(--rule);background:var(--surface)}
+.modebar .wrap{padding-block:10px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+.modebar p{font-size:13px;color:var(--ink2);min-width:0;flex:1 1 260px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--contour);color:var(--contour);border-radius:2px;margin-right:8px}
+.modebar .acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.status{font-family:var(--mono);font-size:11px;color:var(--ink3)}
+
+/* buttons */
+.btn{border:1px solid var(--rule);background:var(--surface);padding:7px 13px;border-radius:3px;cursor:pointer;font-size:13.5px;font-weight:500}
+.btn:hover{border-color:var(--ink3)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;border-style:dashed;color:var(--ink2)}
+.btn.sm{padding:3px 9px;font-size:12.5px}
+.x{border:none;background:none;color:var(--ink3);cursor:pointer;padding:4px 8px;font-size:16px;line-height:1;border-radius:3px}
+.x:hover{color:var(--crit)}
+
+/* shell */
+.shell{display:grid;grid-template-columns:1fr;gap:20px;padding-block:20px 56px}
+@media (min-width:860px){.shell{grid-template-columns:212px minmax(0,1fr);gap:40px;padding-block:32px 72px}}
+
+/* route */
+.route{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.cp{flex:0 0 auto;display:flex;align-items:center;gap:8px;border:1px solid var(--rule);background:var(--surface);border-radius:3px;padding:6px 10px;cursor:pointer;text-align:left}
+.cp .n{font-family:var(--mono);font-size:11px;width:20px;height:20px;border:1.5px solid var(--ink3);border-radius:50%;display:grid;place-items:center;color:var(--ink3);flex:none}
+.cp .t{font-size:13.5px;font-weight:600;white-space:nowrap}
+.cp .d{display:none}
+.cp.done .n{border-color:var(--good);background:var(--good);color:var(--surface)}
+.cp[aria-current="true"]{border-color:var(--accent);background:var(--accent-bg)}
+.cp[aria-current="true"] .n{border-color:var(--accent);color:var(--accent)}
+.cp.done[aria-current="true"] .n{color:var(--surface);border-color:var(--good)}
+@media (min-width:860px){
+  .route{flex-direction:column;gap:0;overflow:visible;position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;padding:0}
+  .cp{border:none;background:none;padding:9px 8px;align-items:flex-start;position:relative;border-radius:3px}
+  .cp:not(:last-child)::after{content:"";position:absolute;left:17.5px;top:32px;bottom:-8px;border-left:1.5px dashed var(--contour);opacity:.6}
+  .cp .n{margin-top:2px;background:var(--bg);position:relative;z-index:1}
+  .cp .d{display:block;font-size:12px;color:var(--ink3);line-height:1.4;font-weight:400}
+  .cp[aria-current="true"]{background:var(--accent-bg)}
+  .cp[aria-current="true"] .n{background:var(--accent-bg)}
+  .cp.done .n{background:var(--good)}
+}
+
+/* sheet */
+.sheet{min-width:0;display:flex;flex-direction:column;gap:26px}
+.sheet-head h2{font-family:var(--serif);font-size:clamp(26px,5vw,34px);font-weight:700;line-height:1.2;margin-top:4px}
+.sheet-head .rule{font-size:16px;color:var(--ink);margin-top:8px;max-width:38em;text-wrap:pretty}
+.sheet-head .why{font-size:13.5px;color:var(--ink2);margin-top:6px;max-width:44em}
+.q{display:flex;flex-direction:column;gap:10px}
+.q>h3{font-size:14.5px;font-weight:600}
+.q>h3 .k{font-family:var(--mono);font-size:11px;color:var(--contour);letter-spacing:.08em;margin-right:8px}
+.q>.hint{font-size:13px;color:var(--ink3);margin-top:-6px;max-width:46em}
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:8px 10px}
+.row>.grow{flex:1 1 180px;min-width:0}
+input[type=text],input[type=number],input[type=date],textarea{width:100%;background:var(--bg);border:1px solid var(--rule);border-radius:3px;padding:7px 9px;min-width:0}
+input[type=number]{font-family:var(--mono);font-variant-numeric:tabular-nums}
+textarea{resize:vertical;min-height:64px;line-height:1.55}
+input::placeholder,textarea::placeholder{color:var(--ink3)}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field>span{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.w-s{flex:0 0 84px}.w-m{flex:0 0 120px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{border:1px solid var(--rule);background:transparent;border-radius:999px;padding:2px 10px;font-size:12.5px;cursor:pointer;color:var(--ink2)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.seg button{border:none;background:var(--surface);padding:5px 11px;cursor:pointer;font-size:12.5px;border-left:1px solid var(--rule)}
+.seg button:first-child{border-left:none}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+/* readout */
+.readout{border:1.5px solid var(--ink);background:var(--surface);border-radius:2px;padding:18px 18px 20px;display:flex;flex-direction:column;gap:14px}
+.readout>.eyebrow{color:var(--contour)}
+.big{font-family:var(--serif);font-size:clamp(20px,3.6vw,26px);line-height:1.35;font-weight:700;text-wrap:balance}
+.big .num{font-family:var(--mono);font-weight:600;color:var(--accent)}
+.note{font-size:13px;color:var(--ink2);max-width:46em}
+.note.warn{color:var(--warn)}.note.crit{color:var(--crit)}.note.good{color:var(--good)}
+.tally{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;font-size:13.5px}
+.bar{height:10px;background:var(--sunk);border-radius:2px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:0 2px 2px 0}
+.bar>i.mute{background:var(--ink3)}
+.bar>i.over{background:var(--crit)}
+.stack{display:flex;gap:2px;height:22px}
+.stack>i{display:block;background:var(--ink3);opacity:.55;min-width:2px;border-radius:1px}
+.stack>i.free{background:var(--accent);opacity:1}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink2)}
+.legend b{font-family:var(--mono);font-weight:500;color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:500;padding:6px 8px;border-bottom:1.5px solid var(--rule)}
+td{padding:7px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+td.r,th.r{text-align:right}
+.scroll{overflow-x:auto}
+.cols{display:grid;grid-template-columns:1fr;gap:14px}
+@media (min-width:720px){.cols.c3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.col>h3{font-size:14px;font-weight:700;display:flex;justify-content:space-between;gap:8px;align-items:baseline;border-bottom:1.5px solid var(--ink);padding-bottom:5px}
+.col>h3 small{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--ink3)}
+.col>.cap{font-size:12.5px;color:var(--ink3)}
+.track{background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.track .top{display:flex;gap:6px;align-items:center}
+.track .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.empty{border:1px dashed var(--rule);border-radius:3px;padding:14px;font-size:13px;color:var(--ink3);text-align:center}
+.creed{font-family:var(--serif);font-size:clamp(18px,3.2vw,23px);line-height:1.7}
+.creed span{display:block}
+.creed .ph{color:var(--ink3)}
+.check{width:20px;height:20px;accent-color:var(--good);cursor:pointer}
+.navrow{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--rule);padding-top:16px}
+.card-grid{display:grid;grid-template-columns:1fr;gap:0}
+.card-grid>div{padding:12px 0;border-bottom:1px solid var(--rule);display:grid;grid-template-columns:1fr;gap:2px}
+@media (min-width:620px){.card-grid>div{grid-template-columns:110px minmax(0,1fr);gap:16px}}
+.card-grid>div:last-child{border-bottom:none}
+.card-grid dt{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--contour);padding-top:3px}
+.card-grid dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.fine{font-size:12px;color:var(--ink3);max-width:60em}
+@media (prefers-reduced-motion:no-preference){.bar>i{transition:width .25s ease}}
+</style>
+
+<header class="cover">
+  <div class="wrap">
+    <div class="cover-id">
+      <div class="eyebrow">Field guide &middot; 6 checkpoints</div>
+      <h1>The Drifter's Guide to Gravity</h1>
+      <p class="ko">떠도는 이를 위한 중력 안내서. 하는 일은 많은데 무엇이 나를 끌어당기는지 모를 때, 여섯 지점을 차례로 지난다.</p>
+    </div>
+    <div class="motto" aria-label="Don't panic. Sequence.">DON'T PANIC. SEQUENCE.</div>
+  </div>
+</header>
+<div class="modebar"><div class="wrap" id="modebar"></div></div>
+<div class="wrap shell">
+  <nav class="route" id="route" aria-label="체크포인트"></nav>
+  <main class="sheet" id="sheet"></main>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+function h(tag,attrs){
+  var el=document.createElement(tag),i,k,c;
+  if(attrs)for(k in attrs){
+    var v=attrs[k];
+    if(v==null||v===false)continue;
+    if(k==='class')el.className=v;
+    else if(k==='text')el.textContent=v;
+    else if(k.slice(0,2)==='on')el.addEventListener(k.slice(2),v);
+    else if(k==='value')el.value=v;
+    else if(k==='checked')el.checked=!!v;
+    else if(k==='style')el.style.cssText=v;
+    else el.setAttribute(k,v===true?'':v);
+  }
+  for(i=2;i<arguments.length;i++){
+    c=arguments[i];
+    if(c==null||c===false)continue;
+    if(Array.isArray(c))c.forEach(function(x){if(x!=null&&x!==false)el.appendChild(typeof x==='string'?document.createTextNode(x):x)});
+    else el.appendChild(typeof c==='string'?document.createTextNode(c):c);
+  }
+  return el;
+}
+function uid(){return Math.random().toString(36).slice(2,9)}
+function num(v){var n=parseFloat(v);return isFinite(n)?n:0}
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+
+/* ---------- model ---------- */
+var VERBS=['돌보다','만들다','지키다','가르치다','고치다','이해하다','연결하다','표현하다','정리하다','이끌다','탐구하다','팔다'];
+var RES=[['money','돈'],['time','시간'],['energy','에너지'],['focus','집중']];
+var HOURS=[['sleep','수면'],['work','일'],['care','돌봄·가사'],['commute','이동'],['basics','식사·씻기']];
+var TIERS=[['gravity','중력선'],['orbit','궤도'],['standby','대기']];
+
+function blank(){return{
+  v:1,currency:'$',
+  line:{items:[],sentence:''},
+  limit:{levels:{money:3,time:3,energy:3,focus:3},hours:{sleep:49,work:40,care:14,commute:5,basics:14},pick:''},
+  assets:{rate:3,streams:[],financial:0,unused:[]},
+  order:{tracks:[]},
+  creed:{forWhom:'',can:'',gap:'',lineage:'',lines:['','','']},
+  proof:{name:'',events:[],log:[],action:{text:'',due:'',done:false}}
+}}
+function example(){return{
+  v:1,currency:'$',
+  line:{items:[
+    {id:'a1',what:'심리학 전공',verbs:['이해하다','돌보다']},
+    {id:'a2',what:'육군 실무 간호 (68C)',verbs:['돌보다','지키다']},
+    {id:'a3',what:'보훈병원 간호사 (LVN)',verbs:['돌보다']},
+    {id:'a4',what:'코드와 작은 서비스 만들기',verbs:['만들다']},
+    {id:'a5',what:'AI 음악 카탈로그',verbs:['만들다','표현하다']},
+    {id:'a6',what:'배우자 사업 돕기',verbs:['돌보다','만들다']},
+    {id:'a7',what:'딸 키우기',verbs:['돌보다','지키다']}
+  ],sentence:'나는 만드는 사람이자 돌보는 사람이다.'},
+  limit:{levels:{money:4,time:1,energy:2,focus:2},hours:{sleep:49,work:40,care:35,commute:7,basics:14},pick:'time'},
+  assets:{rate:3,streams:[
+    {id:'s1',name:'재향군인 장애 보상 (VA Disability)',amount:49898,years:42,sure:true},
+    {id:'s2',name:'전투 관련 특별 보상 (CRSC)',amount:11400,years:42,sure:true},
+    {id:'s3',name:'가족 간병인 지원금 (PCAFC)',amount:26500,years:20,sure:true}
+  ],financial:6000,unused:[
+    {id:'u1',name:'학비 지원 프로그램 (VANEEP)',using:false},
+    {id:'u2',name:'무계약금 주택 대출 (VA Loan)',using:false},
+    {id:'u3',name:'상이군인 소유 사업체 인증 (SDVOSB)',using:false},
+    {id:'u4',name:'가족 간병인 프로그램 신청',using:true}
+  ]},
+  order:{tracks:[
+    {id:'t1',name:'LVN → BSN → PMHNP',tier:'gravity',hours:12,chain:true,window:true,relight:''},
+    {id:'t2',name:'재향군인 혜택 교육 콘텐츠',tier:'orbit',hours:4,chain:true,window:false,relight:''},
+    {id:'t3',name:'AI 음악 카탈로그',tier:'orbit',hours:3,chain:false,window:false,relight:''},
+    {id:'t4',name:'예약 앱 · 메뉴 앱',tier:'standby',hours:0,chain:false,window:false,relight:'BSN 입학이 확정되면'},
+    {id:'t5',name:'카페',tier:'standby',hours:0,chain:false,window:false,relight:'PMHNP 취득 후'},
+    {id:'t6',name:'범용 AI 사업 탐색',tier:'standby',hours:0,chain:false,window:false,relight:'중력선이 끝나면 다시 본다'}
+  ]},
+  creed:{
+    forWhom:'나라와 가족. 특히 딸.',
+    can:'지켜야 하는 순간이 오면 "할 수 있다"고 말하는 것.',
+    gap:'늘 최고조일 필요는 없다. 지금의 나와 필요한 나 사이의 간격을 작게 유지하고, 벌어지면 스스로 닫는다.',
+    lineage:'Georges Hébert, "Être fort pour être utile." 그리고 MovNat, Mark Twight, Peter Attia.',
+    lines:['Be strong to be useful.','Prove I can return.','Then stay where I returned.']
+  },
+  proof:{name:'딸의 이름을 붙인 테스트',events:[
+    {id:'e1',name:'전력 질주',standard:'400m',meaning:'그녀에게 달려간다'},
+    {id:'e2',name:'파머 캐리',standard:'딸 체중 이상, 100m',meaning:'안고 나온다'},
+    {id:'e3',name:'바닥에서 일어서기',standard:'손을 쓰지 않고',meaning:'혼자 일어선다'},
+    {id:'e4',name:'럭',standard:'2마일',meaning:'부상자 운반과 같은 감각'}
+  ],log:[
+    {id:'l1',date:'2026-10-04',res:{e1:true,e3:true}},
+    {id:'l2',date:'2026-11-01',res:{e1:true,e2:true,e3:true}}
+  ],action:{text:'학비 지원 프로그램 신청 상태 확인 전화',due:'',done:false}}
+}}
+
+var LS='drifters-guide:v1';
+var store={mode:'example',own:null,updatedAt:0};
+try{var raw=localStorage.getItem(LS);if(raw){var p=JSON.parse(raw);if(p&&typeof p==='object'){store.mode=p.mode==='own'&&p.own?'own':'example';store.own=p.own||null;store.updatedAt=p.updatedAt||0}}}catch(e){}
+var ex=example();
+function S(){return store.mode==='own'&&store.own?store.own:ex}
+
+/* ---------- persistence ---------- */
+var sync=null,syncTimer=null,syncing=false,syncDirty=false,statusText='';
+function setStatus(t){statusText=t;var el=document.getElementById('status');if(el)el.textContent=t}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(store));return true}catch(e){return false}}
+function save(){
+  if(store.mode!=='own')return;
+  store.updatedAt=Date.now();
+  var ok=saveLocal();
+  if(sync){syncDirty=true;clearTimeout(syncTimer);syncTimer=setTimeout(push,1500)}
+  else setStatus(ok?'이 기기에 저장됨':'저장할 수 없는 환경입니다');
+}
+function push(){
+  if(!sync||syncing||!syncDirty)return;
+  syncing=true;syncDirty=false;setStatus('저장 중…');
+  sync.set({own:clone(store.own),mode:store.mode,updatedAt:store.updatedAt}).then(function(){
+    syncing=false;setStatus('계정에 저장됨');if(syncDirty)push();
+  },function(){
+    syncing=false;sync=null;setStatus('이 기기에 저장됨');
+  });
+}
+function initSync(){
+  if(!window.claude||typeof window.claude.use!=='function')return;
+  Promise.all([window.claude.use('db'),window.claude.use('user')]).then(function(r){
+    var db=r[0],user=r[1];if(!db||!user)return;
+    return user.id().then(function(id){
+      if(!id)return;
+      var ref=db.doc('data/users/'+id+'/guide');
+      return ref.get().then(function(snap){
+        sync=ref;
+        var d=snap.exists?snap.data():null;
+        if(d&&d.own&&(d.updatedAt||0)>store.updatedAt){
+          store.own=clone(d.own);store.mode=d.mode==='example'?'example':'own';store.updatedAt=d.updatedAt;saveLocal();renderAll();
+          setStatus('계정에 저장됨');
+        }else if(store.own&&store.updatedAt>((d&&d.updatedAt)||0)){syncDirty=true;push()}
+        else if(store.mode==='own')setStatus('계정에 저장됨');
+      });
+    });
+  }).catch(function(){sync=null});
+}
+
+/* ---------- money ---------- */
+function money(v){
+  var c=S().currency,a=Math.abs(v),s=v<0?'-':'';
+  if(c==='₩'){
+    if(a>=1e8)return s+(a/1e8).toFixed(a>=1e9?1:2)+'억 원';
+    if(a>=1e4)return s+Math.round(a/1e4).toLocaleString('en-US')+'만 원';
+    return s+Math.round(a).toLocaleString('en-US')+'원';
+  }
+  if(a>=1e6)return s+'$'+(a/1e6).toFixed(2)+'M';
+  return s+'$'+Math.round(a).toLocaleString('en-US');
+}
+function pv(amount,years,rate){
+  var r=rate/100;if(years<=0||amount<=0)return 0;
+  if(r<=0)return amount*years;
+  return amount*(1-Math.pow(1+r,-years))/r;
+}
+
+/* ---------- derived ---------- */
+function verbTally(){
+  var m={};S().line.items.forEach(function(it){(it.verbs||[]).forEach(function(v){m[v]=(m[v]||0)+1})});
+  return Object.keys(m).map(function(k){return[k,m[k]]}).sort(function(a,b){return b[1]-a[1]||VERBS.indexOf(a[0])-VERBS.indexOf(b[0])});
+}
+function freeHours(){var hr=S().limit.hours,t=0;HOURS.forEach(function(x){t+=num(hr[x[0]])});return 168-t}
+function lowest(){var lv=S().limit.levels,min=6,keys=[];RES.forEach(function(r){var v=lv[r[0]];if(v<min){min=v;keys=[r[0]]}else if(v===min)keys.push(r[0])});return keys}
+function resName(k){for(var i=0;i<RES.length;i++)if(RES[i][0]===k)return RES[i][1];return''}
+function assetSum(){
+  var a=S().assets,sure=0,vari=0;
+  a.streams.forEach(function(s){var x=pv(num(s.amount),num(s.years),num(a.rate));if(s.sure)sure+=x;else vari+=x});
+  return{sure:sure,vari:vari,fin:num(a.financial)};
+}
+function allocated(){var t=0;S().order.tracks.forEach(function(x){if(x.tier!=='standby')t+=num(x.hours)});return t}
+function tierCount(k){return S().order.tracks.filter(function(x){return x.tier===k}).length}
+function fullPass(a){var ev=S().proof.events;return ev.length>0&&ev.every(function(e){return a.res&&a.res[e.id]})}
+function sortedLog(){return S().proof.log.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0})}
+function stayCount(){var l=sortedLog(),n=0;for(var i=l.length-1;i>=0;i--){if(fullPass(l[i]))n++;else break}return n}
+function done(step){
+  var s=S();
+  switch(step){
+    case'line':return s.line.items.filter(function(i){return i.what&&i.verbs&&i.verbs.length}).length>=3&&!!s.line.sentence.trim();
+    case'limit':return!!s.limit.pick;
+    case'assets':return s.assets.streams.some(function(x){return num(x.amount)>0&&num(x.years)>0})||num(s.assets.financial)>0;
+    case'order':return tierCount('gravity')===1&&tierCount('orbit')<=2;
+    case'creed':return s.creed.lines.every(function(l){return l.trim()});
+    case'proof':return s.proof.events.filter(function(e){return e.name&&e.standard}).length>=3&&!!s.proof.action.text.trim();
+  }
+  return false;
+}
+
+/* ---------- steps ---------- */
+var STEPS=[
+  {id:'line',t:'궤적',d:'흩어진 것들에서 하나의 선',rule:'흩어져 보이는 것들은 같은 동기의 다른 출력이다.',why:'지금까지 한 일을 늘어놓고, 각각에 동사를 붙인다. 가장 자주 나오는 동사가 당신의 선이다.'},
+  {id:'limit',t:'제약',d:'진짜 병목 찾기',rule:'계획은 가장 부족한 자원으로 값을 매긴다.',why:'돈이 문제라고 생각하지만 대개 시간이나 에너지가 먼저 바닥난다. 무엇이 먼저 떨어지는지 숫자로 본다.'},
+  {id:'assets',t:'자산',d:'이미 가진 것을 숫자로',rule:'보이지 않는 자산은 세어야 보인다.',why:'매년 들어오는 돈은 그 자체로 큰 채권이다. 현재가치로 바꿔 보면 내가 얼마나 위험을 질 수 있는지가 달라진다.'},
+  {id:'order',t:'순서',d:'중력선, 궤도, 대기',rule:'하나만 하라는 말이 아니다. 순서를 정하라는 말이다.',why:'중력선은 하나. 궤도는 둘까지. 나머지는 버리지 않고 대기에 넣고, 다시 켜는 조건을 적어 둔다.'},
+  {id:'creed',t:'신조',d:'왜 하는지 자기 말로',rule:'남이 확인해 줄 수 없다. 내 말로 써야 내 것이 된다.',why:'순서만 있고 이유가 없으면 힘든 날에 무너진다. 네 가지 질문에 답하고 세 줄로 줄인다.'},
+  {id:'proof',t:'증명',d:'신조를 테스트로',rule:'측정할 수 없으면 준비된 게 아니다.',why:'신조를 통과와 실패가 갈리는 종목으로 바꾼다. 한 번 도달하고, 그 뒤에는 머문다.'},
+  {id:'card',t:'안내서',d:'한 장으로 보기',rule:'여섯 지점을 지나온 결과.',why:''}
+];
+var cur='line';
+function stepIndex(id){for(var i=0;i<STEPS.length;i++)if(STEPS[i].id===id)return i;return 0}
+
+function edit(fn,structural){
+  if(store.mode!=='own'){/* example edits stay in memory only */}
+  fn(S());save();
+  if(structural)renderSheet();else refresh();
+  renderRoute();
+}
+function bindText(obj,key,after){return function(e){obj[key]=e.target.value;save();refresh();renderRoute();if(after)after()}}
+function bindNum(obj,key){return function(e){obj[key]=num(e.target.value);save();refresh();renderRoute()}}
+
+function field(label,input,cls){return h('label',{class:'field '+(cls||'grow')},h('span',{text:label}),input)}
+function q(k,title,hint){return h('section',{class:'q'},h('h3',null,h('span',{class:'k',text:k}),title),hint?h('p',{class:'hint',text:hint}):null)}
+function addBtn(label,fn){return h('div',null,h('button',{class:'btn ghost',type:'button',onclick:fn,text:'+ '+label}))}
+function focusLater(id){setTimeout(function(){var el=document.getElementById(id);if(el)el.focus()},0)}
+
+var readoutFn=null;
+function refresh(){var box=document.getElementById('readout');if(box&&readoutFn){box.replaceChildren.apply(box,readoutFn())}}
+
+/* --- 1 line --- */
+function viewLine(){
+  var s=S(),out=[];
+  var sec=q('Q1','지금까지 한 일, 지금 하는 일을 적는다','전공, 직업, 프로젝트, 취미, 돌보는 사람. 서로 상관없어 보여도 그대로 적는다. 각각에 맞는 동사를 한두 개 고른다.');
+  var rows=h('div',{class:'rows'});
+  s.line.items.forEach(function(it){
+    rows.appendChild(h('div',{class:'row'},
+      h('div',{class:'grow'},h('input',{type:'text',id:'li-'+it.id,value:it.what,placeholder:'예: 간호사, 밴드, 동생 돌보기','aria-label':'한 일',oninput:bindText(it,'what')}),
+        h('div',{class:'chips',style:'margin-top:7px'},VERBS.map(function(v){
+          var on=it.verbs.indexOf(v)>=0;
+          return h('button',{class:'chip',type:'button','aria-pressed':on?'true':'false',text:v,onclick:function(){edit(function(){var i=it.verbs.indexOf(v);if(i>=0)it.verbs.splice(i,1);else it.verbs.push(v)},true)}});
+        }))),
+      h('button',{class:'x',type:'button','aria-label':'삭제',text:'×',onclick:function(){edit(function(st){st.line.items=st.line.items.filter(function(x){return x!==it})},true)}})
+    ));
+  });
+  if(!s.line.items.length)rows.appendChild(h('div',{class:'empty',text:'아직 없습니다. 세 개 이상 적으면 선이 보이기 시작합니다.'}));
+  sec.appendChild(rows);
+  sec.appendChild(addBtn('항목 추가',function(){var id=uid();edit(function(st){st.line.items.push({id:id,what:'',verbs:[]})},true);focusLater('li-'+id)}));
+  out.push(sec);
+  var sec2=q('Q2','한 문장으로 쓴다','"나는 ___하는 사람이다." 아래 판독을 보고 자기 말로 고친다.');
+  sec2.appendChild(h('div',{class:'row'},h('div',{class:'grow'},h('input',{type:'text',id:'line-sentence',value:s.line.sentence,placeholder:'나는 ___하는 사람이다.','aria-label':'한 문장',oninput:bindText(s.line,'sentence')})),
+    h('button',{class:'btn sm',type:'button',text:'판독으로 채우기',onclick:function(){var t=verbTally();if(!t.length)return;var a=t[0][0].replace(/다$/,'는'),b=t[1]?t[1][0].replace(/다$/,'는'):null;edit(function(st){st.line.sentence='나는 '+(b?a+' 사람이자 '+b+' 사람이다.':a+' 사람이다.')},true)}})));
+  out.push(sec2);
+  readoutFn=function(){
+    var t=verbTally(),n=S().line.items.length,max=t.length?t[0][1]:1,kids=[h('div',{class:'eyebrow',text:'판독 · 동사 집계'})];
+    if(!t.length){kids.push(h('p',{class:'note',text:'항목에 동사를 붙이면 여기에 집계가 나옵니다.'}));return kids}
+    var top=t.filter(function(x){return x[1]===max||x===t[1]}).slice(0,2);
+    kids.push(h('p',{class:'big'},'당신의 선은 ',h('span',{class:'num',text:top.map(function(x){return x[0]}).join(' + ')}),'.'));
+    var g=h('div',{class:'tally'});
+    t.slice(0,6).forEach(function(x,i){g.appendChild(h('span',{text:x[0]}));g.appendChild(h('div',{class:'bar'},h('i',{class:i<2?'':'mute',style:'width:'+(x[1]/Math.max(n,1)*100)+'%'})));g.appendChild(h('span',{class:'mono',text:x[1]+' / '+n}))});
+    kids.push(g);
+    kids.push(h('p',{class:'note',text:n<3?'항목이 적습니다. 세 개 이상일 때 믿을 만합니다.':'막대는 전체 '+n+'개 항목 중 그 동사가 붙은 수입니다. 위 두 개가 겹치는 곳이 당신이 계속 돌아오는 자리입니다.'}));
+    return kids;
+  };
+  return out;
+}
+
+/* --- 2 limit --- */
+function viewLimit(){
+  var s=S(),out=[];
+  var sec=q('Q1','지금 얼마나 남아 있나','1은 바닥, 5는 넉넉함. 평소 일주일을 기준으로 답한다.');
+  var rows=h('div',{class:'rows'});
+  RES.forEach(function(r){
+    var seg=h('div',{class:'seg',role:'group','aria-label':r[1]});
+    [1,2,3,4,5].forEach(function(v){seg.appendChild(h('button',{type:'button',class:'mono','aria-pressed':s.limit.levels[r[0]]===v?'true':'false',text:String(v),onclick:function(){edit(function(st){st.limit.levels[r[0]]=v;if(lowest().indexOf(st.limit.pick)<0)st.limit.pick=''},true)}}))});
+    rows.appendChild(h('div',{class:'row'},h('strong',{class:'grow',text:r[1]}),seg));
+  });
+  sec.appendChild(rows);out.push(sec);
+  var sec2=q('Q2','일주일 168시간은 어디로 가나','주당 시간으로 적는다. 남는 것이 실제로 쓸 수 있는 시간이다.');
+  var row=h('div',{class:'row'});
+  HOURS.forEach(function(x){row.appendChild(field(x[1],h('input',{type:'number',id:'hr-'+x[0],min:'0',max:'168',step:'1',inputmode:'decimal',value:s.limit.hours[x[0]],oninput:bindNum(s.limit.hours,x[0])}),'w-s'))});
+  sec2.appendChild(row);out.push(sec2);
+  var sec3=q('Q3','당신의 제약을 하나 고른다','가장 낮은 것이 후보다. 같은 점수가 여럿이면 먼저 바닥나는 것을 고른다.');
+  var chips=h('div',{class:'chips'});
+  RES.forEach(function(r){var cand=lowest().indexOf(r[0])>=0;chips.appendChild(h('button',{class:'chip',type:'button','aria-pressed':s.limit.pick===r[0]?'true':'false',text:r[1]+(cand?' · 후보':''),onclick:function(){edit(function(st){st.limit.pick=st.limit.pick===r[0]?'':r[0]},true)}}))});
+  sec3.appendChild(chips);out.push(sec3);
+  readoutFn=function(){
+    var st=S(),free=freeHours(),kids=[h('div',{class:'eyebrow',text:'판독 · 주간 예산'})];
+    var pick=st.limit.pick;
+    kids.push(h('p',{class:'big'},pick?['제약은 ',h('span',{class:'num',text:resName(pick)}),'이다. ']:'제약을 아직 고르지 않았다. ','쓸 수 있는 시간은 주 ',h('span',{class:'num',text:Math.max(free,0)+'시간'}),'.'));
+    var stack=h('div',{class:'stack',role:'img','aria-label':'168시간 중 남는 시간 '+Math.max(free,0)+'시간'}),lg=h('div',{class:'legend'});
+    HOURS.forEach(function(x){var v=num(st.limit.hours[x[0]]);stack.appendChild(h('i',{style:'flex:'+Math.max(v,0)+' 0 0',title:x[1]+' '+v+'시간'}));lg.appendChild(h('span',null,x[1]+' ',h('b',{text:v+'h'})))});
+    if(free>0)stack.appendChild(h('i',{class:'free',style:'flex:'+free+' 0 0',title:'남는 시간 '+free+'시간'}));
+    lg.appendChild(h('span',null,'남는 시간 ',h('b',{text:free+'h'})));
+    kids.push(stack,lg);
+    if(free<0)kids.push(h('p',{class:'note crit',text:'합계가 168시간을 '+(-free)+'시간 넘습니다. 숫자를 다시 봅니다.'}));
+    else if(pick==='money')kids.push(h('p',{class:'note',text:'돈이 제약이면 다음 지점(자산)이 가장 중요합니다. 이미 가진 것을 먼저 셉니다.'}));
+    else if(pick)kids.push(h('p',{class:'note',text:'이제부터 모든 계획은 돈이 아니라 '+resName(pick)+'으로 값을 매깁니다. "얼마 드나"보다 "주 몇 시간 드나"를 먼저 묻습니다.'}));
+    return kids;
+  };
+  return out;
+}
+
+/* --- 3 assets --- */
+function viewAssets(){
+  var s=S(),a=s.assets,out=[];
+  var sec=q('Q1','매년 들어오는 돈','연금, 보상금, 임대료, 급여. 금액은 연 단위. "보장"은 내가 일하지 않아도, 경기가 나빠도 들어오는 것만 켠다.');
+  var cur2=h('div',{class:'seg',role:'group','aria-label':'통화'});
+  ['$','₩'].forEach(function(c){cur2.appendChild(h('button',{type:'button','aria-pressed':s.currency===c?'true':'false',text:c,onclick:function(){edit(function(st){st.currency=c},true)}}))});
+  sec.appendChild(h('div',{class:'row'},h('span',{class:'grow',text:'통화와 할인율'}),cur2,field('할인율 %',h('input',{type:'number',id:'as-rate',min:'0',max:'15',step:'0.5',inputmode:'decimal',value:a.rate,oninput:bindNum(a,'rate')}),'w-s')));
+  var rows=h('div',{class:'rows'});
+  a.streams.forEach(function(x){
+    rows.appendChild(h('div',{class:'row'},
+      field('이름',h('input',{type:'text',id:'st-n-'+x.id,value:x.name,placeholder:'예: 군인연금',oninput:bindText(x,'name')})),
+      field('연 금액',h('input',{type:'number',id:'st-a-'+x.id,min:'0',inputmode:'decimal',value:x.amount||'',oninput:bindNum(x,'amount')}),'w-m'),
+      field('남은 햇수',h('input',{type:'number',id:'st-y-'+x.id,min:'0',max:'80',inputmode:'numeric',value:x.years||'',oninput:bindNum(x,'years')}),'w-s'),
+      h('button',{class:'chip',type:'button','aria-pressed':x.sure?'true':'false',text:'보장',onclick:function(){edit(function(){x.sure=!x.sure},true)}}),
+      h('button',{class:'x',type:'button','aria-label':'삭제',text:'×',onclick:function(){edit(function(st){st.assets.streams=st.assets.streams.filter(function(y){return y!==x})},true)}})));
+  });
+  if(!a.streams.length)rows.appendChild(h('div',{class:'empty',text:'아직 없습니다. 하나만 넣어도 현재가치가 계산됩니다.'}));
+  sec.appendChild(rows);
+  sec.appendChild(addBtn('수입원 추가',function(){var id=uid();edit(function(st){st.assets.streams.push({id:id,name:'',amount:0,years:0,sure:true})},true);focusLater('st-n-'+id)}));
+  out.push(sec);
+  var sec2=q('Q2','지금 가진 금융자산','예금, 투자 계좌, 연금 계좌 잔고의 합.');
+  sec2.appendChild(h('div',{class:'row'},field('합계',h('input',{type:'number',id:'as-fin',min:'0',inputmode:'decimal',value:a.financial||'',oninput:bindNum(a,'financial')}),'w-m')));
+  out.push(sec2);
+  var sec3=q('Q3','자격은 있는데 아직 안 쓴 것','제도, 혜택, 면허, 할인, 인맥. 쓰는 중이면 켠다. 꺼져 있는 것이 지금 뻗을 수 있는 가지다.');
+  var rows3=h('div',{class:'rows'});
+  a.unused.forEach(function(x){
+    rows3.appendChild(h('div',{class:'row'},h('div',{class:'grow'},h('input',{type:'text',id:'un-'+x.id,value:x.name,placeholder:'예: 직장 학비 지원','aria-label':'이름',oninput:bindText(x,'name')})),
+      h('button',{class:'chip',type:'button','aria-pressed':x.using?'true':'false',text:x.using?'쓰는 중':'안 쓰는 중',onclick:function(){edit(function(){x.using=!x.using},true)}}),
+      h('button',{class:'x',type:'button','aria-label':'삭제',text:'×',onclick:function(){edit(function(st){st.assets.unused=st.assets.unused.filter(function(y){return y!==x})},true)}})));
+  });
+  sec3.appendChild(rows3);
+  sec3.appendChild(addBtn('항목 추가',function(){var id=uid();edit(function(st){st.assets.unused.push({id:id,name:'',using:false})},true);focusLater('un-'+id)}));
+  out.push(sec3);
+  readoutFn=function(){
+    var st=S(),A=st.assets,sum=assetSum(),kids=[h('div',{class:'eyebrow',text:'판독 · 현재가치'})];
+    if(sum.sure+sum.vari<=0){kids.push(h('p',{class:'note',text:'수입원을 넣으면 현재가치 = 연 금액 × [1 − (1+r)^−n] / r 로 계산합니다.'}));return kids}
+    kids.push(h('p',{class:'big'},'당신은 이미 ',h('span',{class:'num',text:money(sum.sure)}),'짜리 채권을 들고 있다.'));
+    var tb=h('table',null,h('tr',null,h('th',{text:'수입원'}),h('th',{class:'r',text:'연'}),h('th',{class:'r',text:'햇수'}),h('th',{class:'r',text:'현재가치'})));
+    A.streams.forEach(function(x){tb.appendChild(h('tr',null,h('td',null,x.name||'이름 없음',x.sure?null:h('span',{class:'fine',text:' · 변동'})),h('td',{class:'r mono',text:money(num(x.amount))}),h('td',{class:'r mono',text:String(num(x.years))}),h('td',{class:'r mono',text:money(pv(num(x.amount),num(x.years),num(A.rate)))})))});
+    kids.push(h('div',{class:'scroll'},tb));
+    var total=sum.sure+sum.fin;
+    if(total>0){
+      var g=h('div',{class:'tally'});
+      g.appendChild(h('span',{text:'보장 수입'}));g.appendChild(h('div',{class:'bar'},h('i',{style:'width:'+(sum.sure/total*100)+'%'})));g.appendChild(h('span',{class:'mono',text:(sum.sure/total*100).toFixed(1)+'%'}));
+      g.appendChild(h('span',{text:'금융자산'}));g.appendChild(h('div',{class:'bar'},h('i',{class:'mute',style:'width:'+(sum.fin/total*100)+'%'})));g.appendChild(h('span',{class:'mono',text:(sum.fin/total*100).toFixed(1)+'%'}));
+      kids.push(g);
+      if(sum.sure>sum.fin*3)kids.push(h('p',{class:'note',text:'안전한 쪽이 이미 크다. 그래서 금융자산과 시간은 생각보다 더 과감하게 쓸 수 있다. 바닥이 받쳐 주기 때문이다.'}));
+    }
+    if(sum.vari>0)kids.push(h('p',{class:'note',text:'변동 수입의 현재가치는 '+money(sum.vari)+'. 채권이 아니라 주식에 가깝다고 본다.'}));
+    var idle=A.unused.filter(function(x){return x.name&&!x.using}).length;
+    if(idle)kids.push(h('p',{class:'note warn',text:'안 쓰고 있는 것이 '+idle+'개 있다. 순서를 정할 때 이것부터 본다.'}));
+    kids.push(h('p',{class:'fine',text:'교육용 계산입니다. 재무 자문이 아니며, 실제 수령액과 기간은 제도와 개인 상황에 따라 다릅니다.'}));
+    return kids;
+  };
+  return out;
+}
+
+/* --- 4 order --- */
+function viewOrder(){
+  var s=S(),out=[];
+  var sec=q('Q1','지금 벌여 놓은 것을 전부 적고 자리를 정한다','중력선은 다른 모든 것을 끌고 가는 하나. 궤도는 중력선을 돕거나 숨을 쉬게 하는 것, 둘까지. 나머지는 대기.');
+  var cols=h('div',{class:'cols c3'});
+  var caps={gravity:'하나만. 끝나면 다른 것이 쉬워지는 것.',orbit:'둘까지. 주당 시간을 정해 둔다.',standby:'버린 게 아니다. 다시 켜는 조건을 적는다.'};
+  TIERS.forEach(function(T){
+    var list=s.order.tracks.filter(function(x){return x.tier===T[0]});
+    var over=(T[0]==='gravity'&&list.length>1)||(T[0]==='orbit'&&list.length>2);
+    var col=h('div',{class:'col'},h('h3',null,T[1],h('small',{text:list.length+(T[0]==='gravity'?' / 1':T[0]==='orbit'?' / 2':'')})),h('p',{class:'cap'+(over?' note crit':''),text:over?'너무 많다. 하나를 대기로 보낸다.':caps[T[0]]}));
+    list.forEach(function(x){
+      var seg=h('div',{class:'seg',role:'group','aria-label':'자리'});
+      TIERS.forEach(function(U){seg.appendChild(h('button',{type:'button','aria-pressed':x.tier===U[0]?'true':'false',text:U[1],onclick:function(){edit(function(){x.tier=U[0];if(U[0]==='standby')x.hours=0},true)}}))});
+      var cand=x.chain&&x.window&&x.tier!=='gravity';
+      col.appendChild(h('div',{class:'track'},
+        h('div',{class:'top'},h('input',{type:'text',id:'tr-'+x.id,value:x.name,placeholder:'예: 학위, 사이드 프로젝트','aria-label':'이름',oninput:bindText(x,'name')}),h('button',{class:'x',type:'button','aria-label':'삭제',text:'×',onclick:function(){edit(function(st){st.order.tracks=st.order.tracks.filter(function(y){return y!==x})},true)}})),
+        h('div',{class:'meta'},seg),
+        h('div',{class:'meta'},
+          h('button',{class:'chip',type:'button','aria-pressed':x.chain?'true':'false',text:'연쇄 효과',title:'이게 되면 다른 것이 쉬워진다',onclick:function(){edit(function(){x.chain=!x.chain},true)}}),
+          h('button',{class:'chip',type:'button','aria-pressed':x.window?'true':'false',text:'닫히는 창',title:'지금 아니면 못 한다',onclick:function(){edit(function(){x.window=!x.window},true)}}),
+          cand?h('span',{class:'tag',text:'중력선 후보'}):null),
+        x.tier==='standby'
+          ?field('다시 켜는 조건',h('input',{type:'text',id:'tr-r-'+x.id,value:x.relight,placeholder:'예: 졸업하면',oninput:bindText(x,'relight')}))
+          :field('주당 시간',h('input',{type:'number',id:'tr-h-'+x.id,min:'0',max:'100',inputmode:'decimal',value:x.hours||'',oninput:bindNum(x,'hours')}),'w-s')));
+    });
+    if(!list.length)col.appendChild(h('div',{class:'empty',text:T[0]==='gravity'?'중력선이 비어 있다.':'비어 있음'}));
+    cols.appendChild(col);
+  });
+  sec.appendChild(cols);
+  sec.appendChild(addBtn('트랙 추가',function(){var id=uid();edit(function(st){st.order.tracks.push({id:id,name:'',tier:'standby',hours:0,chain:false,window:false,relight:''})},true);focusLater('tr-'+id)}));
+  out.push(sec);
+  readoutFn=function(){
+    var st=S(),free=Math.max(freeHours(),0),al=allocated(),g=st.order.tracks.filter(function(x){return x.tier==='gravity'}),kids=[h('div',{class:'eyebrow',text:'판독 · 시간 배분'})];
+    kids.push(h('p',{class:'big'},g.length===1?['중력선은 ',h('span',{class:'num',text:g[0].name||'이름 없음'}),'. ']:g.length?'중력선이 둘 이상이다. ':'중력선이 아직 없다. ','주 ',h('span',{class:'num',text:free+'시간'}),' 중 ',h('span',{class:'num',text:al+'시간'}),'을 배정했다.'));
+    var max=Math.max(free,al,1);
+    kids.push(h('div',{class:'tally'},h('span',{text:'배정'}),h('div',{class:'bar'},h('i',{class:al>free?'over':'',style:'width:'+(al/max*100)+'%'})),h('span',{class:'mono',text:al+'h'}),h('span',{text:'쓸 수 있는 시간'}),h('div',{class:'bar'},h('i',{class:'mute',style:'width:'+(free/max*100)+'%'})),h('span',{class:'mono',text:free+'h'})));
+    if(al>free)kids.push(h('p',{class:'note crit',text:(al-free)+'시간 초과. 궤도 하나를 대기로 보내거나 시간을 줄인다. 초과한 계획은 어느 것도 끝내지 못한다.'}));
+    else if(al>0)kids.push(h('p',{class:'note good',text:(free-al)+'시간이 남는다. 남는 시간은 채우지 말고 여유로 둔다.'}));
+    var sb=st.order.tracks.filter(function(x){return x.tier==='standby'}),nocond=sb.filter(function(x){return!x.relight.trim()}).length;
+    if(nocond)kids.push(h('p',{class:'note warn',text:'대기 중인 '+sb.length+'개 가운데 '+nocond+'개에 다시 켜는 조건이 없다. 조건이 없으면 대기가 아니라 포기가 된다.'}));
+    return kids;
+  };
+  return out;
+}
+
+/* --- 5 creed --- */
+function viewCreed(){
+  var s=S(),c=s.creed,out=[];
+  var qs=[['forWhom','Q1','누구를 위해 준비되어 있고 싶은가','사람 이름을 적어도 좋다.'],['can','Q2','그 순간이 오면 무엇을 할 수 있어야 하는가','"할 수 있다"고 말하고 싶은 내용.'],['gap','Q3','지금의 나와 필요한 나 사이의 간격은 어떻게 다룰 것인가','간격은 벌어진다. 벌어졌을 때 어떻게 할지를 적는다.'],['lineage','Q4','이걸 먼저 믿은 사람이 있는가','책, 스승, 부모, 전통. 없으면 비워 둔다.']];
+  qs.forEach(function(x){var sec=q(x[1],x[2],x[3]);sec.appendChild(h('textarea',{id:'cr-'+x[0],'aria-label':x[2],oninput:bindText(c,x[0])},c[x[0]]));out.push(sec)});
+  var sec=q('Q5','세 줄로 줄인다','왜 강해지는가. 무엇을 증명하는가. 그 뒤에 무엇을 하는가.');
+  var ph=['___하기 위해 ___한다.','___할 수 있음을 증명한다.','그리고 거기에 머문다.'],rows=h('div',{class:'rows'});
+  [0,1,2].forEach(function(i){rows.appendChild(h('input',{type:'text',id:'cr-l'+i,value:c.lines[i],placeholder:ph[i],'aria-label':(i+1)+'번째 줄',oninput:function(e){c.lines[i]=e.target.value;save();refresh();renderRoute()}}))});
+  sec.appendChild(rows);out.push(sec);
+  readoutFn=function(){
+    var C=S().creed,kids=[h('div',{class:'eyebrow',text:'판독 · 신조'})];
+    var box=h('p',{class:'creed'});
+    C.lines.forEach(function(l,i){box.appendChild(h('span',{class:l.trim()?'':'ph',text:l.trim()||ph[i]}))});
+    kids.push(box);
+    if(C.forWhom.trim())kids.push(h('p',{class:'note',text:'누구를 위해: '+C.forWhom.trim()}));
+    return kids;
+  };
+  return out;
+}
+
+/* --- 6 proof --- */
+function viewProof(){
+  var s=S(),p=s.proof,out=[];
+  var sec=q('Q1','테스트에 이름을 붙인다','지키려는 사람이나 되고 싶은 모습의 이름을 쓴다.');
+  sec.appendChild(h('input',{type:'text',id:'pf-name',value:p.name,placeholder:'예: ___ 테스트','aria-label':'테스트 이름',oninput:bindText(p,'name')}));out.push(sec);
+  var sec2=q('Q2','종목과 기준을 정한다','세 개에서 다섯 개. 거울이 아니라 실제 상황에서 필요한 것. 종목마다 그것이 무엇을 뜻하는지 적는다.');
+  var rows=h('div',{class:'rows'});
+  p.events.forEach(function(e){
+    rows.appendChild(h('div',{class:'row'},
+      field('종목',h('input',{type:'text',id:'ev-n-'+e.id,value:e.name,placeholder:'예: 달리기',oninput:bindText(e,'name')})),
+      field('기준',h('input',{type:'text',id:'ev-s-'+e.id,value:e.standard,placeholder:'예: 400m, 90초 안에',oninput:bindText(e,'standard')})),
+      field('뜻',h('input',{type:'text',id:'ev-m-'+e.id,value:e.meaning,placeholder:'예: 달려간다',oninput:bindText(e,'meaning')})),
+      h('button',{class:'x',type:'button','aria-label':'삭제',text:'×',onclick:function(){edit(function(st){st.proof.events=st.proof.events.filter(function(y){return y!==e})},true)}})));
+  });
+  if(!p.events.length)rows.appendChild(h('div',{class:'empty',text:'아직 종목이 없습니다.'}));
+  sec2.appendChild(rows);
+  sec2.appendChild(addBtn('종목 추가',function(){var id=uid();edit(function(st){st.proof.events.push({id:id,name:'',standard:'',meaning:''})},true);focusLater('ev-n-'+id)}));
+  out.push(sec2);
+  var sec3=q('Q3','치른 날을 기록한다','통과한 종목에 표시한다. 전 종목 통과가 한 번 나오면 복귀, 그 뒤로는 유지다.');
+  if(p.events.length){
+    var tb=h('table',null),hd=h('tr',null,h('th',{text:'날짜'}));
+    p.events.forEach(function(e){hd.appendChild(h('th',{text:e.name||'종목'}))});hd.appendChild(h('th',null));tb.appendChild(hd);
+    sortedLog().forEach(function(a){
+      var tr=h('tr',null,h('td',null,h('input',{type:'date',id:'lg-d-'+a.id,value:a.date,'aria-label':'날짜',style:'min-width:132px',onchange:function(ev){edit(function(){a.date=ev.target.value||a.date},true)}})));
+      p.events.forEach(function(e){tr.appendChild(h('td',null,h('input',{type:'checkbox',class:'check',id:'lg-'+a.id+'-'+e.id,checked:a.res&&a.res[e.id],'aria-label':(e.name||'종목')+' 통과',onchange:function(ev){edit(function(){a.res=a.res||{};a.res[e.id]=ev.target.checked},false)}})))});
+      tr.appendChild(h('td',{class:'r'},h('button',{class:'x',type:'button','aria-label':'기록 삭제',text:'×',onclick:function(){edit(function(st){st.proof.log=st.proof.log.filter(function(y){return y!==a})},true)}})));
+      tb.appendChild(tr);
+    });
+    sec3.appendChild(h('div',{class:'scroll'},tb));
+    sec3.appendChild(addBtn('오늘 기록 추가',function(){edit(function(st){st.proof.log.push({id:uid(),date:today(),res:{}})},true)}));
+  }else sec3.appendChild(h('div',{class:'empty',text:'종목을 먼저 정합니다.'}));
+  out.push(sec3);
+  var sec4=q('Q4','이번 주에 할 한 가지','전화 한 통, 서류 한 장, 훈련 한 번. 하나만.');
+  sec4.appendChild(h('div',{class:'row'},
+    h('input',{type:'checkbox',class:'check',id:'ac-done',checked:p.action.done,'aria-label':'완료',onchange:function(ev){edit(function(){p.action.done=ev.target.checked},false)}}),
+    h('div',{class:'grow'},h('input',{type:'text',id:'ac-text',value:p.action.text,placeholder:'예: 입학처에 전화해서 마감일 확인','aria-label':'이번 주 행동',oninput:bindText(p.action,'text')})),
+    field('기한',h('input',{type:'date',id:'ac-due',value:p.action.due,onchange:function(ev){edit(function(){p.action.due=ev.target.value},false)}}),'w-m')));
+  out.push(sec4);
+  readoutFn=function(){
+    var P=S().proof,l=sortedLog(),kids=[h('div',{class:'eyebrow',text:'판독 · '+(P.name.trim()||'테스트')})];
+    var ev=P.events,n=ev.length;
+    if(!n){kids.push(h('p',{class:'note',text:'종목을 정하면 여기에 결과가 나옵니다.'}));return kids}
+    var ever=l.some(fullPass),stay=stayCount(),last=l[l.length-1];
+    if(!l.length)kids.push(h('p',{class:'big',text:'아직 치르지 않았다. 첫 기록이 기준선이다.'}));
+    else if(stay>0)kids.push(h('p',{class:'big'},'유지 중. 전 종목 통과 ',h('span',{class:'num',text:stay+'회 연속'}),'.'));
+    else if(ever)kids.push(h('p',{class:'big',text:'한 번 돌아왔었다. 지금은 간격이 다시 벌어졌다.'}));
+    else{var pass=ev.filter(function(e){return last.res&&last.res[e.id]}).length;kids.push(h('p',{class:'big'},'복귀까지 ',h('span',{class:'num',text:(n-pass)+'종목'}),' 남았다.'))}
+    if(last){
+      var g=h('div',{class:'tally'});
+      l.slice(-4).forEach(function(a){var pass=ev.filter(function(e){return a.res&&a.res[e.id]}).length;g.appendChild(h('span',{class:'mono',text:a.date}));g.appendChild(h('div',{class:'bar'},h('i',{class:pass===n?'':'mute',style:'width:'+(pass/n*100)+'%'})));g.appendChild(h('span',{class:'mono',text:pass+' / '+n}))});
+      kids.push(g);
+    }
+    kids.push(h('p',{class:'note',text:'도달은 한 번 일어난다. 머무는 것은 매일 일어난다.'}));
+    return kids;
+  };
+  return out;
+}
+
+/* --- 7 card --- */
+function cardText(){
+  var s=S(),t=verbTally(),sum=assetSum(),L=[];
+  L.push("THE DRIFTER'S GUIDE TO GRAVITY","");
+  L.push('1 궤적: '+(s.line.sentence.trim()||'(미정)')+(t.length?'  ['+t.slice(0,2).map(function(x){return x[0]}).join(' + ')+']':''));
+  L.push('2 제약: '+(s.limit.pick?resName(s.limit.pick):'(미정)')+', 쓸 수 있는 시간 주 '+Math.max(freeHours(),0)+'시간');
+  L.push('3 자산: 보장 수입의 현재가치 '+money(sum.sure)+', 금융자산 '+money(sum.fin));
+  var tr=s.order.tracks,by=function(k){return tr.filter(function(x){return x.tier===k&&x.name}).map(function(x){return x.name+(k==='standby'?(x.relight?' ('+x.relight+')':''):' '+num(x.hours)+'h')}).join(', ')||'(없음)'};
+  L.push('4 순서: 중력선 '+by('gravity'),'   궤도 '+by('orbit'),'   대기 '+by('standby'));
+  L.push('5 신조:');s.creed.lines.forEach(function(l){if(l.trim())L.push('   '+l.trim())});
+  L.push('6 증명: '+(s.proof.name.trim()||'(이름 없음)'));
+  s.proof.events.forEach(function(e){if(e.name)L.push('   - '+e.name+' / '+e.standard+(e.meaning?' / '+e.meaning:''))});
+  L.push('이번 주: '+(s.proof.action.text.trim()||'(미정)')+(s.proof.action.done?' [완료]':''));
+  return L.join('\n');
+}
+function viewCard(){
+  var s=S(),t=verbTally(),sum=assetSum(),out=[];
+  var dl=h('dl',{class:'card-grid',style:'margin:0'});
+  function rowc(k,nodes){dl.appendChild(h('div',null,h('dt',{text:k}),h('dd',null,nodes)))}
+  var miss=function(txt){return h('span',{class:'fine',text:txt})};
+  rowc('1 궤적',s.line.sentence.trim()?[h('strong',{text:s.line.sentence.trim()}),t.length?h('div',{class:'fine',text:t.slice(0,3).map(function(x){return x[0]+' '+x[1]}).join(' · ')}):null]:miss('아직 한 문장이 없다.'));
+  rowc('2 제약',s.limit.pick?[h('strong',{text:resName(s.limit.pick)}),' · 쓸 수 있는 시간 주 '+Math.max(freeHours(),0)+'시간']:miss('제약을 고르지 않았다.'));
+  rowc('3 자산',sum.sure+sum.fin>0?[h('strong',{class:'mono',text:money(sum.sure)}),' 보장 수입의 현재가치 · 금융자산 ',h('span',{class:'mono',text:money(sum.fin)})]:miss('수입원을 넣지 않았다.'));
+  var names=function(k){return s.order.tracks.filter(function(x){return x.tier===k&&x.name})};
+  var g=names('gravity'),o=names('orbit'),sb=names('standby');
+  rowc('4 순서',s.order.tracks.length?[h('div',null,h('strong',{text:'중력선 '}),g.map(function(x){return x.name+' '+num(x.hours)+'h'}).join(', ')||'없음'),h('div',null,h('strong',{text:'궤도 '}),o.map(function(x){return x.name+' '+num(x.hours)+'h'}).join(', ')||'없음'),h('div',{style:'color:var(--ink2)'},h('strong',{text:'대기 '}),sb.map(function(x){return x.name+(x.relight?' ('+x.relight+')':'')}).join(', ')||'없음')]:miss('트랙을 적지 않았다.'));
+  var cl=s.creed.lines.filter(function(l){return l.trim()});
+  rowc('5 신조',cl.length?h('div',{class:'creed',style:'font-size:18px'},cl.map(function(l){return h('span',{text:l})})):miss('세 줄이 비어 있다.'));
+  var ev=s.proof.events.filter(function(e){return e.name});
+  rowc('6 증명',ev.length?[h('strong',{text:s.proof.name.trim()||'테스트'}),h('div',null,ev.map(function(e){return e.name+' '+e.standard}).join(' · ')),h('div',{class:'fine',text:sortedLog().length?('기록 '+sortedLog().length+'회, 연속 통과 '+stayCount()+'회'):'기록 없음'})]:miss('종목을 정하지 않았다.'));
+  rowc('이번 주',s.proof.action.text.trim()?[h('strong',{text:s.proof.action.text.trim()}),s.proof.action.done?h('span',{class:'note good',text:' · 완료'}):null]:miss('행동을 정하지 않았다.'));
+  var n=STEPS.slice(0,6).filter(function(x){return done(x.id)}).length;
+  var copied=h('span',{class:'status',role:'status'});
+  var ta=h('textarea',{id:'card-text',readonly:true,rows:'12',class:'mono',style:'font-size:12.5px','aria-label':'복사용 텍스트',hidden:true});
+  out.push(h('div',{class:'readout'},h('div',{class:'eyebrow',text:'여섯 지점 중 '+n+'곳 통과'}),dl));
+  out.push(h('div',{style:'display:flex;flex-wrap:wrap;gap:10px;align-items:center'},h('button',{class:'btn pri',type:'button',text:'텍스트로 복사',onclick:function(){
+    var txt=cardText();ta.value=txt;
+    var fail=function(){ta.hidden=false;ta.focus();ta.select();copied.textContent='아래 텍스트를 직접 복사하세요'};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){copied.textContent='복사됨'},fail);else fail();
+  }}),copied));
+  out.push(ta);
+  readoutFn=null;
+  return out;
+}
+
+var VIEWS={line:viewLine,limit:viewLimit,assets:viewAssets,order:viewOrder,creed:viewCreed,proof:viewProof,card:viewCard};
+
+/* ---------- chrome ---------- */
+function renderRoute(){
+  var nav=document.getElementById('route'),kids=[];
+  STEPS.forEach(function(st,i){
+    var isCard=st.id==='card';
+    kids.push(h('button',{type:'button',class:'cp'+(!isCard&&done(st.id)?' done':''),'aria-current':cur===st.id?'true':'false',onclick:function(){go(st.id)}},
+      h('span',{class:'n',text:isCard?'◎':String(i+1)}),h('span',null,h('span',{class:'t',text:st.t}),h('span',{class:'d',text:st.d}))));
+  });
+  nav.replaceChildren.apply(nav,kids);
+}
+function renderSheet(){
+  var st=STEPS[stepIndex(cur)],i=stepIndex(cur),sheet=document.getElementById('sheet');
+  var kids=[h('header',{class:'sheet-head'},h('div',{class:'eyebrow',text:st.id==='card'?'Summary':'Checkpoint '+(i+1)+' / 6'}),h('h2',{text:st.t}),h('p',{class:'rule',text:st.rule}),st.why?h('p',{class:'why',text:st.why}):null)];
+  var body=VIEWS[cur]();
+  if(cur==='card')kids=kids.concat(body);
+  else{kids=kids.concat(body);kids.push(h('section',{class:'readout',id:'readout','aria-live':'polite'},readoutFn()))}
+  kids.push(h('div',{class:'navrow'},
+    i>0?h('button',{class:'btn',type:'button',text:'← '+STEPS[i-1].t,onclick:function(){go(STEPS[i-1].id,true)}}):h('span'),
+    i<STEPS.length-1?h('button',{class:'btn pri',type:'button',text:STEPS[i+1].t+' →',onclick:function(){go(STEPS[i+1].id,true)}}):h('span')));
+  sheet.replaceChildren.apply(sheet,kids);
+}
+var confirmReset=false;
+function renderMode(){
+  var bar=document.getElementById('modebar'),kids=[];
+  if(store.mode==='own'){
+    kids.push(h('p',null,h('span',{class:'tag',text:'내 안내서'}),'여기 적는 내용은 당신에게만 보입니다.'));
+    var acts=h('div',{class:'acts'},h('span',{class:'status',id:'status',role:'status',text:statusText||'이 기기에 저장됨'}),h('button',{class:'btn sm',type:'button',text:'예시 보기',onclick:function(){store.mode='example';ex=example();confirmReset=false;saveLocal();if(sync){syncDirty=true;push()}renderAll()}}));
+    if(confirmReset)acts.appendChild(h('button',{class:'btn sm',type:'button',style:'border-color:var(--crit);color:var(--crit)',text:'정말 전부 지우기',onclick:function(){store.own=blank();confirmReset=false;save();renderAll()}}));
+    else acts.appendChild(h('button',{class:'btn sm ghost',type:'button',text:'처음부터',onclick:function(){confirmReset=true;renderMode()}}));
+    kids.push(acts);
+  }else{
+    kids.push(h('p',null,h('span',{class:'tag',text:'예시'}),'38세 재향군인 간호사의 실제 과정을 단순화한 숫자입니다. 눌러 보고 고쳐 봐도 저장되지 않습니다.'));
+    kids.push(h('div',{class:'acts'},h('button',{class:'btn pri',type:'button',text:store.own?'내 안내서로 돌아가기':'내 것으로 시작하기',onclick:function(){if(!store.own)store.own=blank();store.mode='own';save();go('line')}})));
+  }
+  bar.replaceChildren.apply(bar,kids);
+}
+function renderAll(){renderMode();renderRoute();renderSheet()}
+function go(id,scroll){
+  cur=VIEWS[id]?id:'line';
+  try{if(location.hash!=='#'+cur)history.replaceState(null,'','#'+cur)}catch(e){try{location.hash=cur}catch(e2){}}
+  renderAll();
+  if(scroll){var el=document.getElementById('route');if(el&&el.scrollIntoView)el.scrollIntoView({block:'start'})}
+}
+window.addEventListener('hashchange',function(){var id=location.hash.slice(1);if(VIEWS[id]&&id!==cur){cur=id;renderAll()}});
+
+var start=location.hash.slice(1);if(VIEWS[start])cur=start;
+renderAll();
+initSync();
+})();
+</script>
