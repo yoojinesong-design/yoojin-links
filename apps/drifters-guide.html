@@ -163,9 +163,44 @@ td.r,th.r{text-align:right}
 .card-grid dd{margin:0;min-width:0;overflow-wrap:anywhere}
 .fine{font-size:12px;color:var(--ink3);max-width:60em}
 @media (prefers-reduced-motion:no-preference){.bar>i{transition:width .25s ease}}
+
+/* app chrome */
+html,body{height:100%}
+.cover.compact .wrap{padding-block:12px}
+.cover.compact h1{font-size:19px;margin-top:0}
+.cover.compact .eyebrow,.cover.compact .ko,.cover.compact .motto{display:none}
+.navrow{position:sticky;bottom:0;background:var(--bg);padding-bottom:12px;z-index:5}
+
+/* onboarding */
+.onb[hidden]{display:none}
+.onb{min-height:100%;display:flex;flex-direction:column;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px}
+.onb-in{flex:1;display:flex;flex-direction:column;gap:24px;width:100%;max-width:560px;margin:0 auto;padding-block:20px 24px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.onb-top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px}
+.dots{display:flex;gap:6px}
+.dots i{width:22px;height:3px;background:var(--rule);border-radius:2px}
+.dots i.on{background:var(--contour)}
+.onb-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px;min-width:0}
+.onb-body h1{font-family:var(--serif);font-weight:700;font-size:clamp(34px,9vw,52px);line-height:1.1;letter-spacing:-.01em;text-wrap:balance}
+.onb-body h2{font-family:var(--serif);font-weight:700;font-size:clamp(26px,6.4vw,36px);line-height:1.25;text-wrap:balance}
+.onb-body p{font-size:16px;color:var(--ink2);max-width:32em;text-wrap:pretty}
+.onb-body .motto{align-self:flex-start;margin-top:8px}
+.onb-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.onb-list li{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);align-items:baseline}
+.onb-list li:last-child{border-bottom:none}
+.onb-list .n{font-family:var(--mono);font-size:12px;color:var(--contour)}
+.onb-list b{font-weight:600}
+.onb-list span.d{color:var(--ink2);font-size:14px;margin-left:8px}
+.pick{display:flex;flex-direction:column;gap:8px}
+.pick button{text-align:left;border:1px solid var(--rule);background:var(--surface);border-radius:3px;padding:12px 14px;cursor:pointer;font-size:15px}
+.pick button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-bg);font-weight:600}
+.onb-foot{display:flex;flex-direction:column;gap:8px}
+.onb-foot .btn{padding:13px 16px;font-size:15.5px;font-weight:600;text-align:center}
+.onb-foot .btn.plain{border-color:transparent;background:transparent;color:var(--ink2);font-weight:500}
 </style>
 
-<header class="cover">
+<div id="onb" class="onb" hidden></div>
+<div id="app" hidden>
+<header class="cover compact">
   <div class="wrap">
     <div class="cover-id">
       <div class="eyebrow">Field guide &middot; 6 checkpoints</div>
@@ -179,6 +214,7 @@ td.r,th.r{text-align:right}
 <div class="wrap shell">
   <nav class="route" id="route" aria-label="체크포인트"></nav>
   <main class="sheet" id="sheet"></main>
+</div>
 </div>
 
 <script>
@@ -276,8 +312,8 @@ function example(){return{
 }}
 
 var LS='drifters-guide:v1';
-var store={mode:'example',own:null,updatedAt:0};
-try{var raw=localStorage.getItem(LS);if(raw){var p=JSON.parse(raw);if(p&&typeof p==='object'){store.mode=p.mode==='own'&&p.own?'own':'example';store.own=p.own||null;store.updatedAt=p.updatedAt||0}}}catch(e){}
+var store={mode:'example',own:null,updatedAt:0,onboarded:false,profile:{name:'',state:''}};
+try{var raw=localStorage.getItem(LS);if(raw){var p=JSON.parse(raw);if(p&&typeof p==='object'){store.mode=p.mode==='own'&&p.own?'own':'example';store.own=p.own||null;store.updatedAt=p.updatedAt||0;store.onboarded=!!p.onboarded;if(p.profile)store.profile={name:String(p.profile.name||''),state:String(p.profile.state||'')}}}}catch(e){}
 var ex=example();
 function S(){return store.mode==='own'&&store.own?store.own:ex}
 
@@ -295,7 +331,7 @@ function save(){
 function push(){
   if(!sync||syncing||!syncDirty)return;
   syncing=true;syncDirty=false;setStatus('저장 중…');
-  sync.set({own:clone(store.own),mode:store.mode,updatedAt:store.updatedAt}).then(function(){
+  sync.set({own:clone(store.own),mode:store.mode,updatedAt:store.updatedAt,onboarded:store.onboarded,profile:clone(store.profile)}).then(function(){
     syncing=false;setStatus('계정에 저장됨');if(syncDirty)push();
   },function(){
     syncing=false;sync=null;setStatus('이 기기에 저장됨');
@@ -312,7 +348,7 @@ function initSync(){
         sync=ref;
         var d=snap.exists?snap.data():null;
         if(d&&d.own&&(d.updatedAt||0)>store.updatedAt){
-          store.own=clone(d.own);store.mode=d.mode==='example'?'example':'own';store.updatedAt=d.updatedAt;saveLocal();renderAll();
+          store.own=clone(d.own);store.mode=d.mode==='example'?'example':'own';store.updatedAt=d.updatedAt;store.onboarded=true;if(d.profile)store.profile={name:String(d.profile.name||''),state:String(d.profile.state||'')};saveLocal();enterApp();
           setStatus('계정에 저장됨');
         }else if(store.own&&store.updatedAt>((d&&d.updatedAt)||0)){syncDirty=true;push()}
         else if(store.mode==='own')setStatus('계정에 저장됨');
@@ -711,7 +747,7 @@ function renderRoute(){
 }
 function renderSheet(){
   var st=STEPS[stepIndex(cur)],i=stepIndex(cur),sheet=document.getElementById('sheet');
-  var kids=[h('header',{class:'sheet-head'},h('div',{class:'eyebrow',text:st.id==='card'?'Summary':'Checkpoint '+(i+1)+' / 6'}),h('h2',{text:st.t}),h('p',{class:'rule',text:st.rule}),st.why?h('p',{class:'why',text:st.why}):null)];
+  var kids=[h('header',{class:'sheet-head'},h('div',{class:'eyebrow'},st.id==='card'?'Summary':'Checkpoint '+(i+1)+' / 6',focusStep()===st.id?h('span',{class:'tag',style:'margin-left:10px',text:'당신에게 중요한 지점'}):null),h('h2',{text:st.t}),h('p',{class:'rule',text:st.rule}),st.why?h('p',{class:'why',text:st.why}):null)];
   var body=VIEWS[cur]();
   if(cur==='card')kids=kids.concat(body);
   else{kids=kids.concat(body);kids.push(h('section',{class:'readout',id:'readout','aria-live':'polite'},readoutFn()))}
@@ -724,8 +760,8 @@ var confirmReset=false;
 function renderMode(){
   var bar=document.getElementById('modebar'),kids=[];
   if(store.mode==='own'){
-    kids.push(h('p',null,h('span',{class:'tag',text:'내 안내서'}),'여기 적는 내용은 당신에게만 보입니다.'));
-    var acts=h('div',{class:'acts'},h('span',{class:'status',id:'status',role:'status',text:statusText||'이 기기에 저장됨'}),h('button',{class:'btn sm',type:'button',text:'예시 보기',onclick:function(){store.mode='example';ex=example();confirmReset=false;saveLocal();if(sync){syncDirty=true;push()}renderAll()}}));
+    kids.push(h('p',null,h('span',{class:'tag',text:store.profile.name.trim()?store.profile.name.trim()+'의 안내서':'내 안내서'}),'여기 적는 내용은 당신에게만 보입니다.'));
+    var acts=h('div',{class:'acts'},h('button',{class:'btn sm ghost',type:'button',text:'소개',onclick:showOnb}),h('span',{class:'status',id:'status',role:'status',text:statusText||'이 기기에 저장됨'}),h('button',{class:'btn sm',type:'button',text:'예시 보기',onclick:function(){store.mode='example';ex=example();confirmReset=false;saveLocal();if(sync){syncDirty=true;push()}renderAll()}}));
     if(confirmReset)acts.appendChild(h('button',{class:'btn sm',type:'button',style:'border-color:var(--crit);color:var(--crit)',text:'정말 전부 지우기',onclick:function(){store.own=blank();confirmReset=false;save();renderAll()}}));
     else acts.appendChild(h('button',{class:'btn sm ghost',type:'button',text:'처음부터',onclick:function(){confirmReset=true;renderMode()}}));
     kids.push(acts);
@@ -744,8 +780,51 @@ function go(id,scroll){
 }
 window.addEventListener('hashchange',function(){var id=location.hash.slice(1);if(VIEWS[id]&&id!==cur){cur=id;renderAll()}});
 
+/* ---------- onboarding ---------- */
+var STATES=[['many','하는 일이 너무 많다','order'],['lost','무엇을 해야 할지 모르겠다','line'],['stuck','방향은 아는데 움직이지 못한다','proof']];
+function focusStep(){for(var i=0;i<STATES.length;i++)if(STATES[i][0]===store.profile.state)return STATES[i][2];return''}
+var onbI=0,ONB_N=5;
+function enterApp(){document.getElementById('onb').hidden=true;document.getElementById('app').hidden=false;renderAll()}
+function showOnb(){onbI=0;document.getElementById('app').hidden=true;document.getElementById('onb').hidden=false;renderOnb();window.scrollTo(0,0)}
+function finishOnb(mode){
+  store.onboarded=true;
+  if(mode==='own'){if(!store.own)store.own=blank();store.mode='own';cur=focusStep()&&done('line')?cur:'line'}else{store.mode='example';ex=example()}
+  store.updatedAt=Date.now();saveLocal();if(sync){syncDirty=true;push()}
+  document.getElementById('onb').hidden=true;document.getElementById('app').hidden=false;go(cur);window.scrollTo(0,0);
+}
+function onbGo(i){onbI=Math.max(0,Math.min(ONB_N-1,i));renderOnb();window.scrollTo(0,0)}
+function renderOnb(){
+  var o=document.getElementById('onb'),body,foot=[];
+  var next=function(label){return h('button',{class:'btn pri',type:'button',text:label||'다음',onclick:function(){onbGo(onbI+1)}})};
+  if(onbI===0){
+    body=[h('div',{class:'eyebrow',text:'Field guide'}),h('h1',{text:"The Drifter's Guide to Gravity"}),h('p',{text:'떠도는 이를 위한 중력 안내서'}),h('div',{class:'motto','aria-label':"Don't panic. Sequence.",text:"DON'T PANIC. SEQUENCE."})];
+    foot=[next('펼치기')];
+  }else if(onbI===1){
+    body=[h('h2',{text:'길을 잃은 게 아니다. 떠도는 중이다.'}),h('p',{text:'하는 일이 많고 전부 진심인데 어디로 가는지 보이지 않는다면, 의지가 부족한 게 아니다. 무엇이 당신을 끌어당기는지 아직 세어 보지 않았을 뿐이다.'}),h('p',{text:'이 안내서는 조언하지 않는다. 묻고, 당신의 답을 세어서 돌려준다.'})];
+    foot=[next()];
+  }else if(onbI===2){
+    body=[h('h2',{text:'여섯 지점을 지난다'}),h('ol',{class:'onb-list'},STEPS.slice(0,6).map(function(s,i){return h('li',null,h('span',{class:'n',text:'0'+(i+1)}),h('span',null,h('b',{text:s.t}),h('span',{class:'d',text:s.d})))})),h('p',{text:'지점마다 질문 몇 개에 답하면 판독이 나온다. 한 번에 끝내지 않아도 되고, 나중에 고쳐도 된다.'})];
+    foot=[next()];
+  }else if(onbI===3){
+    body=[h('h2',{text:'먼저 두 가지만'}),
+      h('label',{class:'field'},h('span',{text:'뭐라고 부를까 (선택)'}),h('input',{type:'text',id:'onb-name',value:store.profile.name,maxlength:'24',placeholder:'이름이나 별명',autocomplete:'off',oninput:function(e){store.profile.name=e.target.value;saveLocal()}})),
+      h('div',{class:'field'},h('span',{text:'지금 가장 가까운 상태'}),h('div',{class:'pick'},STATES.map(function(s){return h('button',{type:'button','aria-pressed':store.profile.state===s[0]?'true':'false',text:s[1],onclick:function(){store.profile.state=store.profile.state===s[0]?'':s[0];saveLocal();renderOnb()}})}))),
+      store.profile.state?h('p',{text:'그렇다면 당신에게 가장 중요한 지점은 '+STEPS[stepIndex(focusStep())].t+'이다. 그래도 처음부터 차례로 간다. 앞 지점의 답이 뒤 지점의 재료가 된다.'}):null];
+    foot=[next()];
+  }else{
+    body=[h('h2',{text:'당신의 답은 당신 것이다'}),h('p',{text:'적는 내용은 이 기기에 저장된다. Claude 계정으로 열었다면 계정에도 저장되어 다른 기기에서 이어 쓸 수 있다. 다른 사람은 볼 수 없다.'}),h('p',{text:'어떻게 쓰는지 먼저 보고 싶다면, 실제로 이 과정을 지나간 한 사람의 예시가 채워져 있다.'})];
+    foot=[h('button',{class:'btn pri',type:'button',text:store.own?'내 안내서로 돌아가기':'내 안내서 시작하기',onclick:function(){finishOnb('own')}}),h('button',{class:'btn',type:'button',text:'예시 먼저 보기',onclick:function(){finishOnb('example')}})];
+  }
+  var dots=h('div',{class:'dots',role:'img','aria-label':(onbI+1)+' / '+ONB_N});
+  for(var i=0;i<ONB_N;i++)dots.appendChild(h('i',{class:i<=onbI?'on':''}));
+  if(onbI>0&&onbI<ONB_N-1)foot.push(h('button',{class:'btn plain',type:'button',text:'건너뛰기',onclick:function(){onbGo(ONB_N-1)}}));
+  o.replaceChildren(h('div',{class:'onb-in'},
+    h('div',{class:'onb-top'},onbI>0?h('button',{class:'btn sm ghost',type:'button',text:'← 뒤로',onclick:function(){onbGo(onbI-1)}}):h('span'),dots),
+    h('div',{class:'onb-body'},body),h('div',{class:'onb-foot'},foot)));
+}
+
 var start=location.hash.slice(1);if(VIEWS[start])cur=start;
-renderAll();
+if(store.onboarded)enterApp();else showOnb();
 initSync();
 })();
 </script>
