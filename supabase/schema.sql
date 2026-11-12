@@ -135,7 +135,7 @@ create or replace trigger on_auth_user_created
 create table public.waitlist (
   id uuid default uuid_generate_v4() primary key,
   email text not null,
-  product text not null check (product in ('detailbook', 'persona-hub', 'gage-doumi')),
+  product text not null check (product in ('detailbook', 'persona-hub', 'gage-doumi', 'simple-order')),
   name text,
   created_at timestamptz default now(),
   unique (email, product)

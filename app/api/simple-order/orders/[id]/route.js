@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server'
-import { getSupabaseServer } from '../../../../../lib/supabase-server'
+import { getSupabaseServer } from '@/lib/supabase-server'
+
+const VALID_STATUSES = ['pending', 'confirmed', 'delivered', 'cancelled']
 
 // PATCH /api/simple-order/orders/[id] — 주문 상태 변경
 export async function PATCH(request, { params }) {
   const { id } = await params
-  const { status } = await request.json()
+  const body = await request.json().catch(() => null)
+  const status = body?.status
 
-  const validStatuses = ['pending', 'confirmed', 'delivered', 'cancelled']
-  if (!validStatuses.includes(status)) {
+  if (!VALID_STATUSES.includes(status)) {
     return NextResponse.json({ error: '올바른 상태가 아닙니다.' }, { status: 400 })
   }
 

@@ -71,6 +71,7 @@ export default function CreateStore() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '저장에 실패했어요')
+      if (data.warning) setError(data.warning)
 
       // 2. localStorage에도 저장 (오프라인 폴백)
       try {
@@ -99,6 +100,7 @@ export default function CreateStore() {
           <div className="text-6xl mb-6">🎉</div>
           <h1 className="text-3xl font-extrabold text-neutral-900 mb-3">주문 페이지 완성!</h1>
           <p className="text-neutral-500 mb-8">거래처에 아래 링크를 공유하세요.</p>
+          {error && <p className="text-amber-600 text-sm mb-6">⚠️ {error} 대시보드에서 다시 확인해주세요.</p>}
           <div className="bg-neutral-50 rounded-2xl border border-neutral-200 p-5 mb-6">
             <div className="text-xs text-neutral-400 mb-2 font-medium">내 주문 페이지 링크</div>
             <div className="text-blue-600 font-bold text-sm break-all">{storeUrl}</div>
@@ -310,7 +312,7 @@ export default function CreateStore() {
                 <div className="flex justify-between"><span className="text-neutral-500">업종</span><span className="font-bold text-neutral-900">{store.type}</span></div>
                 <div className="flex justify-between"><span className="text-neutral-500">등록 상품</span><span className="font-bold text-neutral-900">{products.length}개</span></div>
                 <div className="flex justify-between"><span className="text-neutral-500">알림 이메일</span><span className="font-bold text-neutral-900">{store.email || '미설정'}</span></div>
-                <div className="flex justify-between"><span className="text-neutral-500">주문 페이지</span><span className="font-bold text-blue-600">{store.slug}.simpleorder.kr</span></div>
+                <div className="flex justify-between"><span className="text-neutral-500">주문 페이지</span><span className="font-bold text-blue-600 break-all">/simple-order/store/{store.slug}</span></div>
               </div>
             </div>
             {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}

@@ -1,7 +1,13 @@
 'use client'
 import { useState } from 'react'
-import { getSupabase } from '../../../lib/supabase-browser'
+import { getSupabase } from '@/lib/supabase-browser'
 import Link from 'next/link'
+
+// getSupabase() throws when the Supabase env vars are missing (e.g. local demo).
+function authErrorMessage(err) {
+  if (err?.message?.includes('NEXT_PUBLIC_SUPABASE')) return 'Sign-in isn\'t available yet — accounts are not set up on this site.'
+  return err?.message || 'Something went wrong — please try again.'
+}
 
 export default function AuthPage() {
   const [mode, setMode] = useState('login')
@@ -17,33 +23,36 @@ export default function AuthPage() {
     setMessage('')
     setLoading(true)
 
-    const supabase = getSupabase()
+    try {
+      const supabase = getSupabase()
 
-    if (mode === 'login') {
-      const { error: err } = await supabase.auth.signInWithPassword({ email, password })
-      if (err) {
-        setError(err.message)
-      } else {
+      if (mode === 'login') {
+        const { error: err } = await supabase.auth.signInWithPassword({ email, password })
+        if (err) throw err
         window.location.href = '/persona-hub/dashboard'
-      }
-    } else {
-      const { error: err } = await supabase.auth.signUp({ email, password })
-      if (err) {
-        setError(err.message)
       } else {
+        const { error: err } = await supabase.auth.signUp({ email, password })
+        if (err) throw err
         setMessage('Check your email for a confirmation link.')
       }
+    } catch (err) {
+      setError(authErrorMessage(err))
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const handleOAuth = async (provider) => {
-    const supabase = getSupabase()
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: `${window.location.origin}/persona-hub/dashboard` },
-    })
+    setError('')
+    try {
+      const { error: err } = await getSupabase().auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/persona-hub/dashboard` },
+      })
+      if (err) throw err
+    } catch (err) {
+      setError(authErrorMessage(err))
+    }
   }
 
   return (

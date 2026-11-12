@@ -1,19 +1,30 @@
-// Real data for KAI Sushi & Roll — 1448 E Lincoln Ave, Orange, CA 92865
-// Sources: kaisushiorange.com, Yelp (468 reviews, 4.4★), Google (4.3★),
-// DoorDash, Uber Eats, OpenTable, RestaurantGuru
+// Sample dashboard data for KAI Sushi & Roll (Orange, CA).
+//
+// PUBLIC LISTING INFO — taken from search-result summaries of the restaurant's
+// own site (kaisushiorange.com) and its Yelp / Google / delivery-app listings,
+// collected mid-2026. The listing pages themselves could not be opened, so
+// re-check anything here before showing it to the owner:
+//   SHOP_INFO, LISTINGS, MENU
+//
+// MADE UP FOR THE DEMO — not real activity at this restaurant:
+//   ORDERS, RESERVATIONS_*, SAMPLE_REVIEWS, MESSAGES_SENT
 
 export const SHOP_INFO = {
   name: 'KAI Sushi & Roll',
   address: '1448 E Lincoln Ave, Orange, CA 92865',
   phone: '(714) 637-3369',
+  // The restaurant's site lists 9:30 PM closing; Yelp lists 9:00 PM.
   hours: 'Mon–Sat 11:00 AM – 9:30 PM',
   lunchHours: '11:00 AM – 3:00 PM',
   closedDay: 'Sunday',
-  style: 'Family-owned Japanese Sushi Restaurant',
-  rating: 4.4,
-  reviewCount: 468,
-  awards: ['Neighborhood Favorite 2020', 'Neighborhood Favorite 2022', 'Neighborhood Favorite 2023'],
 }
+
+export const LISTINGS = [
+  { name: 'Yelp', detail: '468 reviews', color: '#D32323' },
+  { name: 'Google', detail: '4.3★ average', color: '#4285F4' },
+  { name: 'DoorDash', detail: 'Listed for delivery', color: '#FF3008' },
+  { name: 'Uber Eats', detail: 'Listed for delivery', color: '#06C167' },
+]
 
 export const TABS = [
   { key: 'Today', icon: '📊' },
@@ -31,32 +42,67 @@ export const PLATFORMS = {
   Phone: { color: '#F59E0B', label: 'Phone' },
 }
 
-export const RECENT_ORDERS = [
-  { time: '2:45 PM', platform: 'DoorDash', items: 'Dragon Roll, Edamame', amount: 23.90, status: 'Preparing' },
-  { time: '2:32 PM', platform: 'UberEats', items: 'House Special Roll, Miso Soup', amount: 21.90, status: 'Ready' },
-  { time: '2:15 PM', platform: 'Walk-in', items: 'Rainbow Roll, Salmon Sashimi, Gyoza', amount: 45.85, status: 'Done' },
-  { time: '1:50 PM', platform: 'DoorDash', items: 'Tiger Woods Roll, Spicy Garlic Edamame', amount: 28.90, status: 'Done' },
-  { time: '1:30 PM', platform: 'Phone', items: 'Bento Box, California Roll', amount: 33.90, status: 'Done' },
+// Prices as shown on the restaurant's delivery-app listing; in-store prices may differ.
+export const MENU = [
+  { category: 'Appetizers', items: [
+    { name: 'Edamame', price: 6.95 },
+    { name: 'Spicy Garlic Edamame', price: 8.95 },
+    { name: 'Gyoza (8pc)', price: 12.95 },
+    { name: 'Shrimp Tempura (8pc)', price: 14.95 },
+    { name: 'Miso Soup', price: 2.95 },
+  ]},
+  { category: 'Regular Rolls', items: [
+    { name: 'California Roll', price: 8.95 },
+    { name: 'Spicy California Roll', price: 9.95 },
+    { name: 'California Roll (Deep Fried)', price: 10.95 },
+    { name: 'Salmon Cut Roll', price: 11.95 },
+  ]},
+  { category: 'Special Rolls', items: [
+    { name: 'House Special Roll', price: 18.95, desc: 'Seared albacore & crab meat with spicy tuna and green onion' },
+    { name: 'Rainbow Roll', price: 16.95 },
+    { name: 'Dragon Roll', price: 16.95 },
+    { name: 'Sushi Burrito', price: 19.95, desc: 'Generous portion wrapped in soy paper' },
+    { name: 'Tiger Woods Roll', price: 19.95 },
+    { name: 'Ninja Roll', price: 16.95 },
+    { name: 'Sunshine Roll', price: 16.95 },
+    { name: 'Chicago Roll', price: 19.95 },
+    { name: 'Krunch Roll', price: 12.95 },
+    { name: 'Hot Night Roll', price: 15.95 },
+    { name: 'Miami Vice Roll', price: 17.95 },
+  ]},
+  { category: 'Sushi, Sashimi & Combos', items: [
+    { name: 'Salmon Sushi', price: 7.95 },
+    { name: 'Salmon Sashimi', price: 15.95 },
+    { name: 'Sushi & Hand Roll Combo', price: 19.99, desc: '4pc assorted sushi, spicy tuna hand roll, California hand roll, miso soup' },
+    { name: 'Bento Box', price: 24.95 },
+  ]},
 ]
 
-export const TODAY_RESERVATIONS = [
-  { time: '5:30 PM', name: 'Kim', size: 4, request: 'Birthday celebration' },
-  { time: '6:00 PM', name: 'Nguyen', size: 2, request: '' },
-  { time: '6:30 PM', name: 'Park', size: 6, request: 'Sushi platter for the table please' },
-  { time: '7:00 PM', name: 'Chen', size: 3, request: 'Allergic to shellfish' },
-]
+const PRICE = Object.fromEntries(MENU.flatMap(c => c.items).map(i => [i.name, i.price]))
 
-export const ALL_ORDERS = [
-  { id: 1, time: '2:45 PM', platform: 'DoorDash', customer: 'Mike T.', items: 'Dragon Roll, Edamame', amount: 23.90, status: 'Preparing' },
-  { id: 2, time: '2:32 PM', platform: 'UberEats', customer: 'Lisa K.', items: 'House Special Roll, Miso Soup', amount: 21.90, status: 'Ready' },
-  { id: 3, time: '2:15 PM', platform: 'Walk-in', customer: 'Table 4', items: 'Rainbow Roll, Salmon Sashimi, Gyoza', amount: 45.85, status: 'Done' },
-  { id: 4, time: '1:50 PM', platform: 'DoorDash', customer: 'Sarah L.', items: 'Tiger Woods Roll, Spicy Garlic Edamame', amount: 28.90, status: 'Done' },
-  { id: 5, time: '1:30 PM', platform: 'Phone', customer: 'James W.', items: 'Bento Box, California Roll', amount: 33.90, status: 'Done' },
-  { id: 6, time: '1:05 PM', platform: 'UberEats', customer: 'Amy C.', items: 'Sushi Burrito, Miso Soup', amount: 22.90, status: 'Done' },
-  { id: 7, time: '12:40 PM', platform: 'Walk-in', customer: 'Table 2', items: 'Chicago Roll, Ninja Roll, Edamame × 2', amount: 42.85, status: 'Done' },
-  { id: 8, time: '12:15 PM', platform: 'DoorDash', customer: 'Kevin P.', items: 'Krunch Roll, Shrimp Tempura', amount: 27.90, status: 'Done' },
-  { id: 9, time: '11:50 AM', platform: 'Walk-in', customer: 'Table 6', items: 'Lunch Combo A, Lunch Combo B', amount: 39.98, status: 'Done' },
-  { id: 10, time: '11:30 AM', platform: 'Phone', customer: 'Diana R.', items: 'Miami Vice Roll, Sunshine Roll, Edamame', amount: 41.85, status: 'Done' },
+// Builds a sample order from [name, qty] pairs so totals always match the menu.
+function order(id, time, platform, customer, status, lines) {
+  for (const [name] of lines) {
+    if (!(name in PRICE)) throw new Error(`Sample order uses an item that is not on the menu: ${name}`)
+  }
+  return {
+    id, time, platform, customer, status,
+    items: lines.map(([name, qty]) => (qty > 1 ? `${name} × ${qty}` : name)).join(', '),
+    amount: Math.round(lines.reduce((sum, [name, qty]) => sum + PRICE[name] * qty, 0) * 100) / 100,
+  }
+}
+
+export const ORDERS = [
+  order(1, '2:45 PM', 'DoorDash', 'Mike T.', 'Preparing', [['Dragon Roll', 1], ['Edamame', 1]]),
+  order(2, '2:32 PM', 'UberEats', 'Lisa K.', 'Ready', [['House Special Roll', 1], ['Miso Soup', 1]]),
+  order(3, '2:15 PM', 'Walk-in', 'Table 4', 'Done', [['Rainbow Roll', 1], ['Salmon Sashimi', 1], ['Gyoza (8pc)', 1]]),
+  order(4, '1:50 PM', 'DoorDash', 'Sarah L.', 'Done', [['Tiger Woods Roll', 1], ['Spicy Garlic Edamame', 1]]),
+  order(5, '1:30 PM', 'Phone', 'James W.', 'Done', [['Bento Box', 1], ['California Roll', 1]]),
+  order(6, '1:05 PM', 'UberEats', 'Amy C.', 'Done', [['Sushi Burrito', 1], ['Miso Soup', 1]]),
+  order(7, '12:40 PM', 'Walk-in', 'Table 2', 'Done', [['Chicago Roll', 1], ['Ninja Roll', 1], ['Edamame', 2]]),
+  order(8, '12:15 PM', 'DoorDash', 'Kevin P.', 'Done', [['Krunch Roll', 1], ['Shrimp Tempura (8pc)', 1]]),
+  order(9, '11:50 AM', 'Walk-in', 'Table 6', 'Done', [['Sushi & Hand Roll Combo', 2]]),
+  order(10, '11:30 AM', 'Phone', 'Diana R.', 'Done', [['Miami Vice Roll', 1], ['Sunshine Roll', 1], ['Edamame', 1]]),
 ]
 
 export const RESERVATIONS_TODAY = [
@@ -69,80 +115,48 @@ export const RESERVATIONS_TODAY = [
 ]
 
 export const RESERVATIONS_TOMORROW = [
-  { id: 7, time: '11:30 AM', name: 'Corporate — Acme Inc.', phone: '(714) ***-5501', size: 12, request: 'Lunch meeting, need separate checks', status: 'Confirmed' },
+  { id: 7, time: '11:30 AM', name: 'Office lunch (12)', phone: '(714) ***-5501', size: 12, request: 'Lunch meeting, need separate checks', status: 'Confirmed' },
   { id: 8, time: '5:00 PM', name: 'Johnson', phone: '(949) ***-9923', size: 4, request: '', status: 'Pending' },
   { id: 9, time: '6:00 PM', name: 'Tanaka', phone: '(714) ***-4478', size: 2, request: 'Anniversary dinner', status: 'Confirmed' },
   { id: 10, time: '7:00 PM', name: 'Garcia', phone: '(562) ***-8856', size: 6, request: '', status: 'Confirmed' },
 ]
 
-export const MENU_ITEMS = [
-  { category: 'Appetizers', items: [
-    { name: 'Edamame', price: 6.95 },
-    { name: 'Spicy Garlic Edamame', price: 8.95 },
-    { name: 'Gyoza (8pc)', price: 12.95 },
-    { name: 'Shrimp Tempura (8pc)', price: 14.95 },
-    { name: 'Miso Soup', price: 2.95 },
-  ]},
-  { category: 'Regular Rolls', items: [
-    { name: 'California Roll', price: 8.95 },
-    { name: 'Spicy California', price: 9.95 },
-    { name: 'Deep Fried California', price: 10.95 },
-    { name: 'Salmon Roll', price: 11.95 },
-  ]},
-  { category: 'Special Rolls', items: [
-    { name: 'House Special', price: 18.95, desc: 'Seared albacore & crab meat with spicy tuna and green onion' },
-    { name: 'Rainbow Roll', price: 16.95 },
-    { name: 'Dragon Roll', price: 16.95 },
-    { name: 'Sushi Burrito', price: 19.95, desc: 'Generous portion wrapped in soy paper' },
-    { name: 'Tiger Woods', price: 19.95 },
-    { name: 'Ninja', price: 16.95 },
-    { name: 'Sunshine', price: 16.95 },
-    { name: 'Chicago', price: 19.95 },
-    { name: 'Krunch', price: 12.95 },
-    { name: 'Hot Night', price: 15.95 },
-    { name: 'Miami Vice', price: 17.95 },
-  ]},
-  { category: 'Sushi & Sashimi', items: [
-    { name: 'Salmon Sushi (2pc)', price: 7.95 },
-    { name: 'Salmon Sashimi', price: 15.95 },
-    { name: 'Bento Box', price: 24.95 },
-  ]},
-]
-
-// Reviews based on real themes from Yelp (468 reviews), Google (4.3★), OpenTable
-export const REVIEWS = [
+// Written for this demo. They echo themes that come up in the restaurant's
+// public reviews (fresh fish, friendly family owners, fair prices, a wait at
+// peak hours with one chef) but are NOT real customer reviews or owner replies.
+export const SAMPLE_REVIEWS = [
   {
-    id: 1, stars: 5, platform: 'Yelp', date: '2025-03-22',
-    text: 'Easily the best sushi restaurant I\'ve been to. The Dragon Roll and House Special are incredible — fresh, generous portions, and beautifully presented. Family-owned and you can tell they care about every dish.',
-    reply: 'Thank you so much! We put our heart into every roll. Hope to see you again soon! 🙏',
+    id: 1, stars: 5,
+    text: 'The Dragon Roll and House Special were fresh, generous and beautifully presented. You can tell the family running the place cares about every dish.',
+    reply: 'Thank you so much! We put our heart into every roll. Hope to see you again soon!',
   },
   {
-    id: 2, stars: 5, platform: 'Google', date: '2025-03-18',
-    text: 'Hidden gem in Orange! The Tiger Woods roll is out of this world. Super friendly owners — husband makes everything fresh to order, wife greets you with a smile. Clean, cozy, affordable. My new go-to sushi spot.',
+    id: 2, stars: 5,
+    text: 'Great neighborhood spot. Everything is made fresh to order and the owners are so welcoming. Clean, cozy and fairly priced.',
     reply: null,
   },
   {
-    id: 3, stars: 4, platform: 'Yelp', date: '2025-03-10',
-    text: 'Great sushi at fair prices. The Rainbow Roll was beautiful and fresh. Only reason for 4 stars is the wait — there\'s just one chef so during peak hours you might wait 20-25 min. Worth it though!',
+    id: 3, stars: 4,
+    text: 'Great sushi at fair prices. The Rainbow Roll was fresh. Only four stars because of the wait — there is one chef, so at peak hours it can take a while. Worth it though!',
     reply: null,
-    aiSuggestion: 'Thank you for the kind words and your patience! You\'re right that during peak hours it can take a bit longer since everything is made fresh to order by our chef. We\'re looking into ways to reduce wait times. We hope the quality makes up for it! Come back soon 😊',
+    aiSuggestion: 'Thank you for the kind words and for your patience! Everything is made fresh to order, so peak hours can take a little longer. We’re working on shortening the wait and hope to see you again soon.',
   },
   {
-    id: 4, stars: 5, platform: 'Google', date: '2025-02-28',
-    text: 'Brought my parents here for dinner and they loved it. The Shrimp Tempura was perfectly crispy, and the Sushi Burrito is a must-try — huge portion! The owners recommended the House Special and it did not disappoint.',
-    reply: 'So happy your family enjoyed everything! The Sushi Burrito is one of our favorites too. Thank you for dining with us! 🍣',
+    id: 4, stars: 5,
+    text: 'Brought my parents for dinner and they loved it. The Shrimp Tempura was crispy and the Sushi Burrito is huge.',
+    reply: 'So happy your family enjoyed everything! Thank you for dining with us.',
   },
   {
-    id: 5, stars: 3, platform: 'Yelp', date: '2025-02-15',
-    text: 'Food was good but took a bit long due to one chef available. The California Roll and Edamame were solid. Wish they had more seating — it\'s a small spot.',
+    id: 5, stars: 3,
+    text: 'Food was good but it took a while. The California Roll and Edamame were solid. Wish there was more seating — it’s a small spot.',
     reply: null,
   },
 ]
 
 export const MESSAGES_SENT = [
-  { date: '2025-03-20', type: '🎉 Special', title: 'Spring Special — 10% off all Special Rolls this weekend!', recipients: 312 },
-  { date: '2025-03-10', type: '🚫 Closed', title: 'Closed for Easter Sunday (March 30)', recipients: 312 },
-  { date: '2025-02-14', type: '🆕 New Item', title: 'NEW — Spicy Garlic Edamame is here!', recipients: 287 },
+  { date: 'Nov 10', type: '🚫 Closed', title: 'Closed Thursday, Nov 26 for Thanksgiving', recipients: 312 },
+  { date: 'Nov 3', type: '🎉 Special', title: '10% off all Special Rolls this weekend', recipients: 312 },
+  { date: 'Oct 24', type: '🆕 New Item', title: 'Now serving Spicy Garlic Edamame', recipients: 287 },
 ]
 
 export const MESSAGE_TEMPLATES = [

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useWaitlist } from '@/hooks/useWaitlist'
 
 export default function SimpleOrderLanding() {
-  const { email, setEmail, submitted, submitting, error, handleSubmit } = useWaitlist('simple-order')
+  const { email, setEmail, submitted, submitting, error, handleSubmit } = useWaitlist('simple-order', 'ko')
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">

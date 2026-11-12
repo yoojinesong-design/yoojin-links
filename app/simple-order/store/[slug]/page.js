@@ -38,6 +38,7 @@ export default function StorePage() {
   const [ordering, setOrdering] = useState(false)
   const [orderNumber, setOrderNumber] = useState('')
   const [orderForm, setOrderForm] = useState({ name: '', contact: '', note: '' })
+  const [orderError, setOrderError] = useState('')
 
   useEffect(() => {
     async function loadStore() {
@@ -53,7 +54,7 @@ export default function StorePage() {
         const res = await fetch(`/api/simple-order/stores/${slug}`)
         if (res.ok) {
           const data = await res.json()
-          setStore({ ...data.store, products: data.products })
+          setStore({ ...data.store, products: data.products, live: true })
           setLoading(false)
           return
         }
@@ -120,6 +121,16 @@ export default function StorePage() {
   const handleOrder = async () => {
     if (!orderForm.name || !orderForm.contact) return
     setOrdering(true)
+    setOrderError('')
+
+    // 실제 가게(DB에 등록된 가게)는 서버 저장이 성공해야만 접수 완료로 표시한다.
+    // 데모/브라우저 저장 가게는 서버 없이도 주문 흐름을 체험할 수 있게 둔다.
+    const fail = (message) => {
+      setOrderError(message)
+      setOrdering(false)
+    }
+
+    let serverOrderNumber = null
     try {
       const res = await fetch('/api/simple-order/orders', {
         method: 'POST',
@@ -129,31 +140,34 @@ export default function StorePage() {
           customer_name: orderForm.name,
           customer_contact: orderForm.contact,
           customer_note: orderForm.note,
-          items: cartProducts.map(p => ({ id: p.id, name: p.name, price: p.price, qty: p.qty })),
-          total: totalPrice,
+          items: cartProducts.map(p => ({ id: p.id, qty: p.qty })),
         }),
       })
-      const data = await res.json()
-      setOrderNumber(data.order?.order_number || 'ORD-' + Date.now().toString(36).toUpperCase())
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) serverOrderNumber = data.order?.order_number
+      else if (store.live) return fail(data.error || '주문에 실패했어요. 잠시 후 다시 시도해주세요.')
     } catch {
-      setOrderNumber('ORD-' + Date.now().toString(36).toUpperCase())
+      if (store.live) return fail('네트워크 오류로 주문을 보내지 못했어요. 다시 시도해주세요.')
     }
 
-    // localStorage에도 저장 (대시보드 폴백)
-    try {
-      const orders = JSON.parse(localStorage.getItem('simpleorder_orders') || '[]')
-      orders.unshift({
-        id: Date.now().toString(),
-        storeSlug: slug,
-        customer: orderForm,
-        items: cartProducts.map(p => ({ name: p.name, price: p.price, qty: p.qty })),
-        total: totalPrice,
-        date: new Date().toISOString(),
-        status: 'pending',
-      })
-      localStorage.setItem('simpleorder_orders', JSON.stringify(orders))
-    } catch {}
+    if (!store.live) {
+      // 대시보드 데모용: 이 브라우저에 주문 저장
+      try {
+        const orders = JSON.parse(localStorage.getItem('simpleorder_orders') || '[]')
+        orders.unshift({
+          id: Date.now().toString(),
+          storeSlug: slug,
+          customer: orderForm,
+          items: cartProducts.map(p => ({ name: p.name, price: p.price, qty: p.qty })),
+          total: totalPrice,
+          date: new Date().toISOString(),
+          status: 'pending',
+        })
+        localStorage.setItem('simpleorder_orders', JSON.stringify(orders))
+      } catch {}
+    }
 
+    setOrderNumber(serverOrderNumber || 'ORD-' + Date.now().toString(36).toUpperCase())
     setOrdering(false)
     setOrderPlaced(true)
   }
@@ -300,6 +314,7 @@ export default function StorePage() {
                   placeholder="요청사항 (선택)" rows={2}
                   className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-base focus:outline-none focus:border-blue-600 transition resize-none" />
               </div>
+              {orderError && <p className="text-red-500 text-sm mb-3">{orderError}</p>}
               <button onClick={handleOrder} disabled={!orderForm.name || !orderForm.contact || ordering}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white py-4 rounded-2xl font-bold text-lg transition shadow-lg shadow-blue-600/20">
                 {ordering ? '주문 중...' : `주문 확인 — ${formatWon(totalPrice)}`}

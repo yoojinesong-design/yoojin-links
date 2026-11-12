@@ -28,6 +28,12 @@ export default function NotFound() {
           >
             PersonaHub
           </Link>
+          <Link
+            href="/simple-order"
+            className="text-sm border border-neutral-700 hover:border-neutral-500 text-neutral-300 px-5 py-2.5 rounded-lg font-medium transition"
+          >
+            SimpleOrder
+          </Link>
         </div>
       </div>
     </div>

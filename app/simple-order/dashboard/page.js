@@ -31,6 +31,17 @@ const STATUS_MAP = {
   cancelled: { label: '취소', color: 'bg-red-100 text-red-700' },
 }
 
+const STORES_KEY = 'simpleorder_stores'
+const ORDERS_KEY = 'simpleorder_orders'
+
+function readLocalOrders() {
+  try {
+    return JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
 export default function Dashboard() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-neutral-50 flex items-center justify-center"><div className="animate-pulse text-neutral-400">로딩 중...</div></div>}>
@@ -48,85 +59,100 @@ function DashboardContent() {
   const [orders, setOrders] = useState([])
   const [stores, setStores] = useState({})
   const [selectedOrder, setSelectedOrder] = useState(null)
-  const [isDemo, setIsDemo] = useState(false)
+  const [source, setSource] = useState('demo') // 'api' | 'local' | 'demo'
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState(null)
   const [squareBanner, setSquareBanner] = useState(squareStatus)
+  const [squareConnected, setSquareConnected] = useState(squareStatus === 'connected')
+  const [copiedSlug, setCopiedSlug] = useState(null)
+
+  const isDemo = source === 'demo'
+  // URL에 가게가 없으면 이 브라우저에서 만든 첫 번째 가게를 사용
+  const activeSlug = storeSlug || Object.keys(stores)[0] || ''
+
+  // 이 브라우저에서 만든 가게 목록 (한 번만 로드)
+  useEffect(() => {
+    try {
+      setStores(JSON.parse(localStorage.getItem(STORES_KEY) || '{}'))
+    } catch {}
+  }, [])
 
   const loadOrders = useCallback(async () => {
-    const slug = storeSlug || Object.keys(stores)[0]
+    const show = (nextOrders, nextSource) => {
+      setOrders(nextOrders)
+      setSource(nextSource)
+      setLoading(false)
+      setLastRefresh(new Date())
+    }
 
-    // API에서 주문 가져오기
-    if (slug) {
+    // 1. 서버(DB)에 가게가 있으면 그 주문을 그대로 보여준다 (0건이어도)
+    if (activeSlug) {
       try {
-        const res = await fetch(`/api/simple-order/orders?store_slug=${slug}`)
+        const res = await fetch(`/api/simple-order/orders?store_slug=${encodeURIComponent(activeSlug)}`)
         if (res.ok) {
           const data = await res.json()
-          if (!data.demo && data.orders.length > 0) {
-            setOrders(data.orders)
-            setIsDemo(false)
-            setLoading(false)
-            setLastRefresh(new Date())
-            return
-          }
+          if (!data.demo) return show(data.orders, 'api')
         }
       } catch {}
     }
 
-    // localStorage 폴백
-    try {
-      const savedOrders = JSON.parse(localStorage.getItem('simpleorder_orders') || '[]')
-      if (savedOrders.length > 0) {
-        setOrders(savedOrders.map(o => ({
-          ...o,
-          customer: o.customer || { name: o.customer_name, contact: o.customer_contact, note: o.customer_note },
-          date: o.date || o.created_at,
-        })))
-        setIsDemo(false)
-        setLoading(false)
-        setLastRefresh(new Date())
-        return
-      }
-    } catch {}
+    // 2. DB 미연결 시: 이 브라우저에 저장된 주문
+    const localOrders = readLocalOrders().filter(o => !activeSlug || !o.storeSlug || o.storeSlug === activeSlug)
+    if (localOrders.length > 0) return show(localOrders, 'local')
 
-    // 데모 데이터
-    setOrders(DEMO_ORDERS)
-    setIsDemo(true)
-    setLoading(false)
-    setLastRefresh(new Date())
-  }, [storeSlug, stores])
+    // 3. 아무것도 없으면 데모 데이터
+    show(DEMO_ORDERS, 'demo')
+  }, [activeSlug])
 
+  // 처음 + 30초마다 자동 새로고침
   useEffect(() => {
-    // 가게 목록 로드
-    try {
-      const savedStores = JSON.parse(localStorage.getItem('simpleorder_stores') || '{}')
-      setStores(savedStores)
-    } catch {}
     loadOrders()
-  }, [loadOrders])
-
-  // 30초마다 자동 새로고침
-  useEffect(() => {
     const interval = setInterval(loadOrders, 30000)
     return () => clearInterval(interval)
   }, [loadOrders])
 
-  const updateOrderStatus = async (orderId, newStatus) => {
-    // API로 상태 변경
-    try {
-      await fetch(`/api/simple-order/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      })
-    } catch {}
+  // Square 연결 상태는 서버에서 확인 (새로고침해도 유지)
+  useEffect(() => {
+    if (!activeSlug) return
+    let cancelled = false
+    fetch(`/api/simple-order/stores/${encodeURIComponent(activeSlug)}`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (!cancelled && data?.store?.square_connected) setSquareConnected(true) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [activeSlug])
 
-    // 로컬 상태 업데이트
-    setOrders(prev => {
-      const next = prev.map(o => (o.id === orderId ? { ...o, status: newStatus } : o))
-      try { localStorage.setItem('simpleorder_orders', JSON.stringify(next)) } catch {}
-      return next
-    })
+  const updateOrderStatus = async (orderId, newStatus) => {
+    if (source === 'api') {
+      try {
+        const res = await fetch(`/api/simple-order/orders/${orderId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        })
+        if (!res.ok) throw new Error()
+      } catch {
+        alert('상태 변경에 실패했어요. 잠시 후 다시 시도해주세요.')
+        return
+      }
+    }
+
+    if (source === 'local') {
+      try {
+        const saved = readLocalOrders().map(o => (o.id === orderId ? { ...o, status: newStatus } : o))
+        localStorage.setItem(ORDERS_KEY, JSON.stringify(saved))
+      } catch {}
+    }
+
+    setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: newStatus } : o)))
+  }
+
+  const copyStoreLink = async (slug) => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/simple-order/store/${slug}`)
+      setCopiedSlug(slug)
+      setTimeout(() => setCopiedSlug(null), 2000)
+    } catch {}
   }
 
   const todayOrders = orders.filter(o => new Date(o.date).toDateString() === new Date().toDateString())
@@ -198,7 +224,7 @@ function DashboardContent() {
               <span className="text-xl">❌</span>
               <div>
                 <div className="font-bold text-sm">Square 연결에 실패했어요</div>
-                <div className="text-xs text-red-600">잠시 후 다시 시도해주세요.</div>
+                <div className="text-xs text-red-600">잠시 후 다시 시도해주세요. 계속 실패하면 Square 연동 설정을 확인해주세요.</div>
               </div>
             </div>
             <button onClick={() => setSquareBanner(null)} className="text-red-400 hover:text-red-600 text-lg">✕</button>
@@ -271,8 +297,8 @@ function DashboardContent() {
                     )}
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <div className="font-bold text-neutral-900">{order.customer?.name || order.customer_name}</div>
-                        <div className="text-xs text-neutral-400 mt-0.5">{formatDate(order.date)} · {order.customer?.contact || order.customer_contact}</div>
+                        <div className="font-bold text-neutral-900">{order.customer?.name}</div>
+                        <div className="text-xs text-neutral-400 mt-0.5">{formatDate(order.date)} · {order.customer?.contact}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-extrabold text-neutral-900">{formatWon(order.total)}</span>
@@ -282,9 +308,9 @@ function DashboardContent() {
                     <div className="text-sm text-neutral-500">
                       {order.items.map(i => `${i.name} ×${i.qty}`).join(', ')}
                     </div>
-                    {(order.customer?.note || order.customer_note) && (
+                    {order.customer?.note && (
                       <div className="mt-2 text-xs text-neutral-400 bg-neutral-50 rounded-lg px-3 py-2">
-                        💬 {order.customer?.note || order.customer_note}
+                        💬 {order.customer.note}
                       </div>
                     )}
 
@@ -356,16 +382,16 @@ function DashboardContent() {
                     </div>
                     <div className="bg-neutral-50 rounded-xl px-4 py-3 mb-4">
                       <div className="text-xs text-neutral-400 mb-1">주문 링크</div>
-                      <div className="text-blue-600 font-bold text-sm">{s.slug}.simpleorder.kr</div>
+                      <div className="text-blue-600 font-bold text-sm break-all">/simple-order/store/{s.slug}</div>
                     </div>
                     <div className="flex gap-2">
                       <Link href={`/simple-order/store/${s.slug}`}
                         className="flex-1 text-center border border-neutral-200 hover:border-neutral-300 text-neutral-700 py-2.5 rounded-xl font-bold text-sm transition">
                         페이지 보기
                       </Link>
-                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/simple-order/store/${s.slug}`) }}
+                      <button onClick={() => copyStoreLink(s.slug)}
                         className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-sm transition">
-                        📋 링크 복사
+                        {copiedSlug === s.slug ? '✓ 복사됨' : '📋 링크 복사'}
                       </button>
                     </div>
                   </div>
@@ -403,7 +429,7 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {squareBanner === 'connected' ? (
+              {squareConnected ? (
                 <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-4">
                   <div className="flex items-center gap-3">
                     <span className="w-2.5 h-2.5 bg-green-500 rounded-full" />
@@ -433,9 +459,9 @@ function DashboardContent() {
                     </ul>
                   </div>
 
-                  {storeSlug ? (
+                  {activeSlug ? (
                     <a
-                      href={`/api/simple-order/square/connect?store=${storeSlug}`}
+                      href={`/api/simple-order/square/connect?store=${encodeURIComponent(activeSlug)}`}
                       className="inline-flex items-center gap-2 bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3 rounded-xl font-bold text-sm transition w-full justify-center"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">

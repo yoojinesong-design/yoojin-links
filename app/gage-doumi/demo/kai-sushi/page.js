@@ -2,10 +2,25 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  SHOP_INFO, TABS, PLATFORMS, RECENT_ORDERS, TODAY_RESERVATIONS,
-  ALL_ORDERS, RESERVATIONS_TODAY, RESERVATIONS_TOMORROW,
-  MENU_ITEMS, REVIEWS, MESSAGES_SENT, MESSAGE_TEMPLATES,
+  SHOP_INFO, LISTINGS, TABS, PLATFORMS, ORDERS,
+  RESERVATIONS_TODAY, RESERVATIONS_TOMORROW,
+  MENU, SAMPLE_REVIEWS, MESSAGES_SENT, MESSAGE_TEMPLATES,
 } from '@/data/kai-sushi-demo'
+
+// Summary numbers are derived from the sample data so the tabs always agree.
+const REVENUE = ORDERS.reduce((sum, o) => sum + o.amount, 0)
+const DELIVERY_ORDERS = ORDERS.filter(o => o.platform === 'DoorDash' || o.platform === 'UberEats')
+const GUESTS_TODAY = RESERVATIONS_TODAY.reduce((sum, r) => sum + r.size, 0)
+const UNANSWERED_REVIEWS = SAMPLE_REVIEWS.filter(r => !r.reply).length
+const AVG_SAMPLE_STARS = SAMPLE_REVIEWS.reduce((sum, r) => sum + r.stars, 0) / SAMPLE_REVIEWS.length
+
+function SampleNote({ children }) {
+  return (
+    <div className="text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+      {children}
+    </div>
+  )
+}
 
 function fmt$(n) { return '$' + n.toFixed(2) }
 
@@ -53,16 +68,17 @@ function TabToday() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="💰" label="Today's Revenue" value={fmt$(1842.50)} sub="+18% vs last Sat ↑" subColor="#22C55E" />
-        <StatCard icon="🛵" label="Delivery Orders" value="31" sub="DD 14 / UE 10 / Phone 7" />
-        <StatCard icon="📅" label="Reservations" value="6 tables" sub="23 guests total" />
-        <StatCard icon="⭐" label="New Reviews" value="2" sub="Avg ⭐ 4.4" />
+        <StatCard icon="💰" label="Today's Revenue" value={fmt$(REVENUE)} sub={`${ORDERS.length} orders so far`} />
+        <StatCard icon="🛵" label="Delivery Orders" value={DELIVERY_ORDERS.length}
+          sub={`DoorDash ${DELIVERY_ORDERS.filter(o => o.platform === 'DoorDash').length} / Uber Eats ${DELIVERY_ORDERS.filter(o => o.platform === 'UberEats').length}`} />
+        <StatCard icon="📅" label="Reservations" value={`${RESERVATIONS_TODAY.length} tables`} sub={`${GUESTS_TODAY} guests total`} />
+        <StatCard icon="⭐" label="Reviews to Answer" value={UNANSWERED_REVIEWS} sub="1 AI reply ready" />
       </div>
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
         <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">🔔 Recent Orders</h2>
         <div className="space-y-3">
-          {RECENT_ORDERS.map((o, i) => (
+          {ORDERS.slice(0, 5).map((o, i) => (
             <div key={i} className="flex flex-wrap items-center gap-3 bg-neutral-800/60 rounded-xl p-4 border border-neutral-700/50">
               <span className="text-lg font-bold text-neutral-300 min-w-[80px]">{o.time}</span>
               <PlatformBadge platform={o.platform} />
@@ -77,7 +93,7 @@ function TabToday() {
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
         <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">📅 Today's Reservations</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {TODAY_RESERVATIONS.map((r, i) => (
+          {RESERVATIONS_TODAY.slice(0, 4).map((r, i) => (
             <div key={i} className="bg-neutral-800/60 rounded-xl p-4 border border-neutral-700/50">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-lg font-bold text-amber-400">🕐 {r.time}</span>
@@ -97,7 +113,7 @@ function TabOrders() {
   const [filter, setFilter] = useState('All')
   const filters = ['All', 'DoorDash', 'Uber Eats', 'Walk-in', 'Phone']
   const filterMap = { 'Uber Eats': 'UberEats' }
-  const filtered = filter === 'All' ? ALL_ORDERS : ALL_ORDERS.filter(o => o.platform === (filterMap[filter] || filter))
+  const filtered = filter === 'All' ? ORDERS : ORDERS.filter(o => o.platform === (filterMap[filter] || filter))
 
   return (
     <div className="space-y-5">
@@ -235,8 +251,9 @@ function TabMyShop() {
       </div>
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-        <h2 className="text-xl font-bold text-white mb-4">🍣 Menu</h2>
-        {MENU_ITEMS.map((cat, ci) => (
+        <h2 className="text-xl font-bold text-white mb-1">🍣 Menu</h2>
+        <p className="text-sm text-neutral-500 mb-4">Prices as shown on the restaurant's delivery-app listing; in-store prices may differ.</p>
+        {MENU.map((cat, ci) => (
           <div key={ci} className="mb-6 last:mb-0">
             <h3 className="text-base font-bold text-rose-400 uppercase tracking-wider mb-3">{cat.category}</h3>
             <div className="space-y-2">
@@ -255,23 +272,18 @@ function TabMyShop() {
       </div>
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-        <h2 className="text-xl font-bold text-white mb-4">🌐 Online Platforms</h2>
+        <h2 className="text-xl font-bold text-white mb-1">🌐 Online Listings</h2>
+        <p className="text-sm text-neutral-500 mb-4">Where the restaurant is listed today. With 가게도우미 these would be connected to one screen.</p>
         <div className="space-y-3">
-          {[
-            { name: 'Yelp', rating: '4.4★ · 468 reviews', color: '#D32323', connected: true },
-            { name: 'Google Business', rating: '4.3★ · 380+ reviews', color: '#4285F4', connected: true },
-            { name: 'DoorDash', rating: 'Active', color: '#FF3008', connected: true },
-            { name: 'Uber Eats', rating: 'Active', color: '#06C167', connected: true },
-          ].map((p, i) => (
-            <div key={i} className="flex flex-wrap items-center gap-3 bg-neutral-800/60 rounded-xl p-4 border border-neutral-700/50">
-              <span className="text-lg font-bold text-white" style={{ color: p.color }}>{p.name}</span>
-              <span className="text-base text-neutral-300">{p.rating}</span>
+          {LISTINGS.map((p) => (
+            <div key={p.name} className="flex flex-wrap items-center gap-3 bg-neutral-800/60 rounded-xl p-4 border border-neutral-700/50">
+              <span className="text-lg font-bold" style={{ color: p.color }}>{p.name}</span>
+              <span className="text-base text-neutral-300">{p.detail}</span>
               <div className="flex-1" />
-              <span className="text-green-400 font-bold text-sm">✅ Connected</span>
+              <span className="text-neutral-400 font-bold text-sm">Sample: connected</span>
             </div>
           ))}
         </div>
-        <div className="text-sm text-neutral-500 mt-3">🏆 Neighborhood Favorite: 2020, 2022, 2023</div>
       </div>
     </div>
   )
@@ -282,24 +294,29 @@ function TabReviews() {
   const [reviewFilter, setReviewFilter] = useState('All')
   const filters = ['All', 'Needs Reply', 'Lowest First']
 
-  let filtered = [...REVIEWS]
+  let filtered = [...SAMPLE_REVIEWS]
   if (reviewFilter === 'Needs Reply') filtered = filtered.filter(r => !r.reply)
   if (reviewFilter === 'Lowest First') filtered = filtered.sort((a, b) => a.stars - b.stars)
 
   return (
     <div className="space-y-6">
+      <SampleNote>
+        These reviews and replies are <strong>samples written for this demo</strong>, not real customer reviews.
+        They show how reviews from Yelp and Google would appear here with suggested replies.
+      </SampleNote>
+
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 text-center">
-          <div className="text-base text-neutral-400 mb-1">⭐ Avg Rating</div>
-          <div className="text-2xl font-bold text-amber-400">{SHOP_INFO.rating}</div>
+          <div className="text-base text-neutral-400 mb-1">⭐ Sample Avg</div>
+          <div className="text-2xl font-bold text-amber-400">{AVG_SAMPLE_STARS.toFixed(1)}</div>
         </div>
         <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 text-center">
-          <div className="text-base text-neutral-400 mb-1">📝 Total Reviews</div>
-          <div className="text-2xl font-bold text-white">{SHOP_INFO.reviewCount}</div>
+          <div className="text-base text-neutral-400 mb-1">📝 Shown Here</div>
+          <div className="text-2xl font-bold text-white">{SAMPLE_REVIEWS.length}</div>
         </div>
         <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 text-center">
-          <div className="text-base text-neutral-400 mb-1">📈 This Month</div>
-          <div className="text-2xl font-bold text-green-400">+12</div>
+          <div className="text-base text-neutral-400 mb-1">✏️ Needs Reply</div>
+          <div className="text-2xl font-bold text-rose-400">{UNANSWERED_REVIEWS}</div>
         </div>
       </div>
 
@@ -318,14 +335,13 @@ function TabReviews() {
           <div key={r.id} className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <span className="text-lg">{'⭐'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)}</span>
-              <span className="text-sm text-neutral-400 px-3 py-1 rounded-full bg-neutral-800 border border-neutral-700">{r.platform}</span>
-              <span className="text-sm text-neutral-500">{r.date}</span>
+              <span className="text-sm text-amber-200/90 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30">Sample review</span>
             </div>
             <p className="text-base text-neutral-200 mb-4 leading-relaxed">{r.text}</p>
 
             {r.reply && (
               <div className="bg-neutral-800/60 rounded-xl p-4 border border-neutral-700/50 mb-3">
-                <div className="text-sm text-neutral-400 mb-2">💬 Owner Reply</div>
+                <div className="text-sm text-neutral-400 mb-2">💬 Owner Reply (sample)</div>
                 <p className="text-base text-neutral-300">{r.reply}</p>
               </div>
             )}
@@ -403,7 +419,7 @@ function TabMessages() {
       )}
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-        <h2 className="text-xl font-bold text-white mb-4">📨 Sent Messages</h2>
+        <h2 className="text-xl font-bold text-white mb-4">📨 Sent Messages (sample)</h2>
         <div className="space-y-3">
           {MESSAGES_SENT.map((m, i) => (
             <div key={i} className="flex flex-wrap items-center gap-3 bg-neutral-800/60 rounded-xl p-4 border border-neutral-700/50">
@@ -445,12 +461,19 @@ export default function KaiSushiDemo() {
               🍣 가게도우미
             </Link>
             <h1 className="text-2xl font-bold text-white mt-1">KAI Sushi & Roll</h1>
-            <div className="text-sm text-neutral-500">1448 E Lincoln Ave, Orange, CA</div>
+            <div className="text-sm text-neutral-500">{SHOP_INFO.address}</div>
           </div>
           <div className="text-right">
-            <div className="flex items-center gap-1 text-amber-400 font-bold">⭐ {SHOP_INFO.rating} <span className="text-neutral-500 font-normal text-sm">({SHOP_INFO.reviewCount})</span></div>
-            <div className="text-sm text-neutral-500">Mon–Sat 11 AM – 9:30 PM</div>
+            <div className="text-sm text-neutral-300 font-semibold">{SHOP_INFO.phone}</div>
+            <div className="text-sm text-neutral-500">{SHOP_INFO.hours}</div>
           </div>
+        </div>
+
+        <div className="mb-6">
+          <SampleNote>
+            <strong>Sample dashboard.</strong> This shows what 가게도우미 could look like for KAI Sushi & Roll.
+            The shop info and menu are from public listings; the orders, reservations and reviews are made up.
+          </SampleNote>
         </div>
 
         {/* Tab Nav */}
@@ -474,8 +497,9 @@ export default function KaiSushiDemo() {
         <div className="mt-8 pt-6 border-t border-neutral-800 text-center space-y-2">
           <p className="text-sm text-neutral-500">🍣 가게도우미 — Restaurant management made simple</p>
           <p className="text-xs text-neutral-600">
-            Demo built with real data from KAI Sushi & Roll (kaisushiorange.com, Yelp, Google).
-            Simulated orders & reservations for illustration. Not affiliated with KAI Sushi.
+            Address, phone, hours and menu come from KAI Sushi & Roll's public listings and may be out of date.
+            Orders, reservations, reviews, messages and all numbers are made up for this demo.
+            가게도우미 is not affiliated with or endorsed by KAI Sushi & Roll.
           </p>
         </div>
       </div>

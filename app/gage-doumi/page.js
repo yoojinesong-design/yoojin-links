@@ -32,7 +32,7 @@ const STEPS = [
 ]
 
 export default function GageDoumiLanding() {
-  const { email, setEmail, submitted, submitting, error, handleSubmit } = useWaitlist('gage-doumi')
+  const { email, setEmail, submitted, submitting, error, handleSubmit } = useWaitlist('gage-doumi', 'ko')
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">

@@ -1,13 +1,13 @@
 'use client'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { parseDistroKidCSV, matchToPersonas } from '../../../lib/csv-parser'
-import { getSupabase } from '../../../lib/supabase-browser'
+import { parseDistroKidCSV, matchToPersonas } from '@/lib/csv-parser'
+import { getSupabase } from '@/lib/supabase-browser'
 import {
   COLORS, MOCK_PERSONAS, MOCK_RELEASES, PLATFORMS, MOCK_LINKS,
   STATUS_STYLE, MONTHS, MOCK_PLATFORM_STREAMS, MOCK_MONTHLY_GROWTH,
   MOCK_TOP_TRACKS, MOCK_GEO,
-} from '../../../lib/persona-hub-data'
+} from '@/lib/persona-hub-data'
 
 function PersonaCard({ persona, onEdit }) {
   return (

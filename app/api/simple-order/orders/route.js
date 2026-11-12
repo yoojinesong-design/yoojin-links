@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server'
-import { getSupabaseServer } from '../../../../lib/supabase-server'
-import { createSquareOrder } from '../../../../lib/square'
+import { getSupabaseServer } from '@/lib/supabase-server'
+import { createSquareOrder } from '@/lib/square'
+import { getSquareCredentials } from '@/lib/square-credentials'
+
+const MAX_QTY = 9999
 
 // POST /api/simple-order/orders — 주문 생성 + 알림 + Square POS 연동
 export async function POST(request) {
-  const body = await request.json()
-  const { store_slug, customer_name, customer_contact, customer_note, items, total } = body
+  const body = await request.json().catch(() => null)
+  const { store_slug, customer_name, customer_contact, customer_note, items } = body || {}
 
-  if (!store_slug || !customer_name || !customer_contact || !items?.length) {
+  if (!store_slug || !customer_name || !customer_contact || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: '필수 정보가 빠졌어요.' }, { status: 400 })
   }
 
@@ -21,10 +24,9 @@ export async function POST(request) {
     })
   }
 
-  // 가게 조회 (Square 연동 정보 포함)
   const { data: store } = await supabase
     .from('stores')
-    .select('id, name, notification_email, square_access_token, square_location_id')
+    .select('id, name, notification_email')
     .eq('slug', store_slug)
     .single()
 
@@ -32,10 +34,28 @@ export async function POST(request) {
     return NextResponse.json({ error: '가게를 찾을 수 없어요.' }, { status: 404 })
   }
 
-  // 주문번호 생성
+  // 가격은 브라우저가 보낸 값을 믿지 않고 DB의 상품 가격으로 다시 계산한다
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, name, price')
+    .eq('store_id', store.id)
+    .eq('active', true)
+
+  const productById = new Map((products || []).map(p => [String(p.id), p]))
+  const orderItems = []
+
+  for (const item of items) {
+    const product = productById.get(String(item?.id))
+    const qty = Number(item?.qty)
+    if (!product || !Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) {
+      return NextResponse.json({ error: '주문 상품 정보가 올바르지 않아요. 페이지를 새로고침 후 다시 시도해주세요.' }, { status: 400 })
+    }
+    orderItems.push({ id: product.id, name: product.name, price: product.price, qty })
+  }
+
+  const total = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0)
   const orderNumber = 'ORD-' + Date.now().toString(36).toUpperCase()
 
-  // 주문 저장
   const { data: order, error: orderErr } = await supabase
     .from('orders')
     .insert({
@@ -44,7 +64,7 @@ export async function POST(request) {
       customer_name,
       customer_contact,
       customer_note: customer_note || '',
-      items,
+      items: orderItems,
       total,
       status: 'pending',
     })
@@ -56,51 +76,34 @@ export async function POST(request) {
     return NextResponse.json({ error: '주문 저장에 실패했어요.' }, { status: 500 })
   }
 
+  // Square POS 연동 — 연결된 가게면 Square에도 주문 전송.
+  // 실패해도 주문 자체는 성공으로 처리한다.
   let squareOrderId = null
-
-  // Square POS 연동 — 토큰이 있으면 자동으로 Square에 주문 전송
-  if (store.square_access_token && store.square_location_id) {
-    try {
-      const squareOrder = await createSquareOrder(
-        store.square_access_token,
-        store.square_location_id,
-        {
-          id: order.id,
-          order_number: orderNumber,
-          customer_name,
-          customer_contact,
-          customer_note: customer_note || '',
-          items,
-          total,
-        }
-      )
-      squareOrderId = squareOrder.id
-
-      // Square 주문 ID를 DB에 저장
-      await supabase
-        .from('orders')
-        .update({ square_order_id: squareOrderId })
-        .eq('id', order.id)
-    } catch (e) {
-      console.error('Square order sync error:', e)
-      // Square 실패해도 주문 자체는 성공 — 다음 번에 재시도 가능
+  try {
+    const credentials = await getSquareCredentials(store.id)
+    if (credentials) {
+      const squareOrder = await createSquareOrder(credentials, order)
+      squareOrderId = squareOrder?.id || null
+      if (squareOrderId) {
+        await supabase.from('orders').update({ square_order_id: squareOrderId }).eq('id', order.id)
+      }
     }
+  } catch (e) {
+    console.error('Square order sync error:', e)
   }
 
-  // 이메일 알림 (notification_email이 있으면)
   if (store.notification_email) {
     try {
-      await sendOrderNotification(store, order, items)
+      await sendOrderNotification(store, order)
     } catch (e) {
       console.error('Notification error:', e)
-      // 알림 실패해도 주문은 성공
     }
   }
 
   return NextResponse.json({
     ok: true,
-    order: { id: order.id, order_number: orderNumber },
-    square_synced: !!squareOrderId,
+    order: { id: order.id, order_number: orderNumber, total },
+    square_synced: Boolean(squareOrderId),
   })
 }
 
@@ -119,7 +122,6 @@ export async function GET(request) {
     return NextResponse.json({ orders: [], demo: true })
   }
 
-  // 가게 ID 조회
   const { data: store } = await supabase
     .from('stores')
     .select('id')
@@ -130,16 +132,20 @@ export async function GET(request) {
     return NextResponse.json({ error: '가게를 찾을 수 없어요.' }, { status: 404 })
   }
 
-  // 주문 목록
-  const { data: orders } = await supabase
+  const { data: orders, error } = await supabase
     .from('orders')
     .select('*')
     .eq('store_id', store.id)
     .order('created_at', { ascending: false })
     .limit(100)
 
+  if (error) {
+    console.error('Orders fetch error:', error)
+    return NextResponse.json({ error: '주문을 불러오지 못했어요.' }, { status: 500 })
+  }
+
   return NextResponse.json({
-    orders: (orders || []).map(o => ({
+    orders: orders.map(o => ({
       id: o.id,
       order_number: o.order_number,
       customer: {
@@ -155,18 +161,19 @@ export async function GET(request) {
   })
 }
 
-// 이메일 알림 함수 (향후 Resend/SendGrid 등 연동)
-async function sendOrderNotification(store, order, items) {
-  // Resend API 키가 있으면 이메일 발송
+// 새 주문 이메일 알림 (RESEND_API_KEY가 있을 때만 발송)
+async function sendOrderNotification(store, order) {
   const resendKey = process.env.RESEND_API_KEY
+  const won = (n) => `₩${n.toLocaleString('ko-KR')}`
+
   if (!resendKey) {
-    console.log(`[알림] ${store.name}에 새 주문: ${order.order_number} (₩${order.total.toLocaleString()}) — 이메일 서비스 미연결`)
+    console.log(`[알림] ${store.name}에 새 주문: ${order.order_number} (${won(order.total)}) — 이메일 서비스 미연결`)
     return
   }
 
-  const itemList = items.map(i => `• ${i.name} × ${i.qty} = ₩${(i.price * i.qty).toLocaleString()}`).join('\n')
+  const itemList = order.items.map(i => `• ${i.name} × ${i.qty} = ${won(i.price * i.qty)}`).join('\n')
 
-  await fetch('https://api.resend.com/emails', {
+  const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${resendKey}`,
@@ -175,8 +182,10 @@ async function sendOrderNotification(store, order, items) {
     body: JSON.stringify({
       from: 'SimpleOrder <noreply@simpleorder.kr>',
       to: store.notification_email,
-      subject: `[주문알림] ${order.customer_name}님이 ₩${order.total.toLocaleString()} 주문했어요`,
-      text: `새 주문이 들어왔어요!\n\n주문번호: ${order.order_number}\n업체: ${order.customer_name}\n연락처: ${order.customer_contact}\n\n${itemList}\n\n합계: ₩${order.total.toLocaleString()}\n\n대시보드에서 확인하세요.`,
+      subject: `[주문알림] ${order.customer_name}님이 ${won(order.total)} 주문했어요`,
+      text: `새 주문이 들어왔어요!\n\n주문번호: ${order.order_number}\n업체: ${order.customer_name}\n연락처: ${order.customer_contact}\n\n${itemList}\n\n합계: ${won(order.total)}\n\n대시보드에서 확인하세요.`,
     }),
   })
+
+  if (!res.ok) throw new Error(`Resend responded ${res.status}`)
 }
